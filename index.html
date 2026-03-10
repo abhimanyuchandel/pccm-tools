@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>OHCA ECPR CALCULATOR</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>ELSO OHCA ECPR CALC</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <div class="card">
+  <header class="hdr">
+    <h1>Out-of-hospital ECPR Favorable Cerebral Performance Category (CPC) Calculator</h1>
+    <p class="sub">
+      Predicts the probability of survival to hospital discharge with a favorable CPC (CPC 1–2) after out-of-hospital cardiac arrest prior to extracorporeal cardiopulmonary resuscitation (ECPR). Requires all fields.
+    </p>
+  </header>
+
+  <section class="grid">
+    <label class="field">
+      <span>Location of cardiac arrest</span>
+      <select id="la_out_of_hospital" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="Home / Other">Home / Other</option>
+        <option value="Public / Healthcare–EMS">Public, Outpatient healthcare facility, or EMS</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Witnessed arrest</span>
+      <select id="witnessed_arrest" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Initial cardiac arrest rhythm</span>
+      <select id="initial_rhythm" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="Non-shockable">Non-shockable</option>
+        <option value="Shockable">Shockable</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Number of defibrillation shocks</span>
+      <input id="number_of_shocks" type="number" inputmode="numeric" step="1" min="0" max="50" placeholder="e.g., 3" required />
+    </label>
+
+    <label class="field has-help">
+      <div class="labelRow">
+        <span>ROSC before cannulation</span>
+        <button type="button" class="helpBtn" data-help="roscHelp" aria-label="ROSC definition">?</button>
+      </div>
+      <select id="rosc_before_cannulation" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+      <div class="helpText" id="roscHelp" hidden>
+        <strong>ROSC before cannulation</strong>: Return of spontaneous circulation (for at least 30 seconds) achieved at any point
+        <em>before</em> ECMO cannulation.
+      </div>
+    </label>
+
+    <label class="field has-help">
+      <div class="labelRow">
+        <span>Multiple cardiac arrests</span>
+        <button type="button" class="helpBtn" data-help="multiHelp" aria-label="Multiple arrest definition">?</button>
+      </div>
+      <select id="multiple_cpa" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+      <div class="helpText" id="multiHelp" hidden>
+        <strong>Multiple cardiac arrests</strong>: More than one distinct arrest episode during the event/course
+        (i.e., re-arrest after ROSC).
+      </div>
+    </label>
+
+    <label class="field has-help">
+      <div class="labelRow">
+        <span>Signs of life prior to cannulation</span>
+        <button type="button" class="helpBtn" data-help="solHelp" aria-label="Signs of life definition">?</button>
+      </div>
+      <select id="signs_of_life_pre_ecls" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+      <div class="helpText" id="solHelp" hidden>
+        <strong>Signs of life</strong>: Any evidence of physiologic/neurologic activity before cannulation
+        (e.g., movement, gasping, respiratory effort).
+      </div>
+    </label>
+
+    <label class="field">
+      <span>Total CPR duration (minutes)</span>
+      <input id="total_cpr_time" type="number" inputmode="numeric" step="1" min="0" max="400" placeholder="e.g., 42" required />
+    </label>
+
+    <label class="field field-wide">
+      <span>Rhythm at time of cannulation</span>
+      <select id="cannulation_rhythm_collapsed" required>
+        <option value="" selected disabled>Choose…</option>
+        <option value="Asystole">Asystole</option>
+        <option value="PEA">PEA</option>
+        <option value="VF / VT">VF / VT</option>
+        <option value="Other perfusing rhythm">Other perfusing rhythm</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="actions">
+    <button id="calcBtn" class="primary" disabled>Calculate</button>
+    <button id="resetBtn" class="secondary">Reset</button>
+  </section>
+
+  <section class="result" id="resultCard" aria-live="polite" data-band="none">
+    <div class="pill" id="bandPill">Enter all fields to calculate</div>
+    <div class="big" id="riskOut">—</div>
+    <div class="small" id="noteOut">Predicted probability of survival with a favorable CPC (CPC 1–2)</div>
+  </section>
+
+  <details class="about">
+    <summary>About this calculator</summary>
+    <div class="aboutBody">
+      <p>
+        <strong>Outcome definition (CPC).</strong><br />
+        The Cerebral Performance Category (CPC) scale is a commonly used measure of neurologic outcome following cardiac arrest.
+        CPC ranges from 1 to 5, where CPC 1 indicates good cerebral performance, CPC 2 moderate disability but independent function,
+        CPC 3 severe disability, CPC 4 vegetative state, and CPC 5 death. In this calculator, a <em>favorable neurologic outcome</em>
+        is defined as survival to hospital discharge with a CPC of 1-2.
+      </p>
+
+      <p>
+        <strong>Model development.</strong><br />
+        This calculator was developed and validated using adult patients supported with extracorporeal cardiopulmonary resuscitation (ECPR)
+        from a large, world-wide, multicenter registry.
+      </p>
+
+      <p>
+        <strong>Authors.</strong><br />
+        Ahmad A. Abdul-Aziz, MD<br />
+        Abhimanyu Chandel, MD MAS<br />
+        Ran Lee, MD<br />
+        Chase Donaldson, MD<br />
+        Adam Green, MD<br />
+        Christopher S. King, MD
+      </p>
+
+      <p>
+        <strong>Intended use.</strong><br />
+        This tool is intended to support clinical discussion, risk stratification, and shared decision-making. It is
+        <em>not</em> intended to be used in isolation to determine candidacy for ECPR or decisions about life-sustaining therapy.
+      </p>
+
+      <p class="fine">
+        This calculator is provided for research and educational purposes only and has not been approved as a medical device.
+        Use does not replace expert clinical assessment.
+      </p>
+    </div>
+  </details>
+</div>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
