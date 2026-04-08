@@ -1,0 +1,3505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PCCM Tools | PERT Team Support</title>
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --surface: #ffffff;
+      --surface-soft: #f5f8fc;
+      --ink: #102540;
+      --muted: #4b627e;
+      --line: #c7d4e2;
+      --accent: #0f4f86;
+      --accent-soft: #e6eef7;
+      --amber: #b86100;
+      --amber-soft: #fff1de;
+      --orange: #b8451a;
+      --orange-soft: #ffefe7;
+      --red: #a51d2d;
+      --red-soft: #ffe9ed;
+      --green: #1f7a39;
+      --green-soft: #e7f7eb;
+      --shadow: 0 14px 30px rgba(0, 33, 71, 0.1);
+      --radius: 14px;
+      --radius-sm: 10px;
+      --focus: 0 0 0 3px rgba(15, 79, 134, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(160deg, #edf3f8 0%, #f7f8fb 42%, #eaf1f9 100%);
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", "Trebuchet MS", sans-serif;
+    }
+
+    .pccm-bar-wrap {
+      padding: 24px 18px 0;
+    }
+
+    .pccm-bar {
+      max-width: 1420px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 20px;
+      border: 1px solid rgba(146, 166, 191, 0.95);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 14px 28px rgba(0, 33, 71, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .pccm-home {
+      color: #001a36;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-decoration: none;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pccm-tag {
+      margin: 0;
+      color: #314866;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .shell {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 26px 18px 30px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(1200px 320px at 100% -20%, rgba(15, 79, 134, 0.14), transparent 42%),
+        radial-gradient(850px 260px at -10% 120%, rgba(184, 97, 0, 0.10), transparent 44%),
+        var(--surface);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 0.72rem;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 8px 0 8px;
+      line-height: 1.15;
+      font-size: clamp(1.38rem, 2.5vw, 2rem);
+      font-weight: 700;
+    }
+
+    .hero-sub {
+      margin: 0;
+      color: var(--muted);
+      max-width: none;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.45;
+      font-size: clamp(0.78rem, 1.02vw, 0.86rem);
+      white-space: nowrap;
+    }
+
+    .testing-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 6px 10px;
+      border: 1px solid #d6e0eb;
+      border-radius: 999px;
+      background: #f4f8fc;
+      color: #37506c;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.95fr);
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .form-panel {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      padding: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      grid-column: span 6;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field.third {
+      grid-column: span 4;
+    }
+
+    label {
+      font-size: 0.82rem;
+      color: #2a3c33;
+      font-weight: 650;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid #c8d7d0;
+      padding: 10px 11px;
+      font-size: 0.9rem;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    textarea {
+      min-height: 320px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: var(--focus);
+    }
+
+    .input-flag {
+      border-color: var(--red) !important;
+      background: var(--red-soft) !important;
+      box-shadow: 0 0 0 3px rgba(165, 29, 45, 0.14);
+    }
+
+    .toggle-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .score-block {
+      margin-top: 8px;
+    }
+
+    .score-block[hidden] {
+      display: none !important;
+    }
+
+    .score-result {
+      margin: 10px 0 0;
+      padding: 8px 10px;
+      border: 1px dashed #bfd3ca;
+      border-radius: 10px;
+      background: #f8fcfa;
+      font-size: 0.82rem;
+      color: #345043;
+      line-height: 1.35;
+    }
+
+    .case-text {
+      min-height: 140px;
+    }
+
+    .narrative-output {
+      min-height: 220px;
+    }
+
+    .privacy-callout {
+      margin: 8px 0 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid #f1c89d;
+      background: #fff5e8;
+      color: #6f3e00;
+      font-size: 0.83rem;
+      line-height: 1.35;
+      font-weight: 650;
+    }
+
+    .status-warn {
+      color: #8a3a16;
+      font-weight: 650;
+    }
+
+    .status-ok {
+      color: #1d6d4a;
+      font-weight: 650;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid #d6e1db;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #f9fcfb;
+      font-size: 0.84rem;
+      color: #1f352a;
+    }
+
+    .toggle input[type="checkbox"] {
+      margin: 0;
+      width: 16px;
+      height: 16px;
+    }
+
+    .output-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      position: sticky;
+      top: 10px;
+      height: calc(100vh - 20px);
+      max-height: 1100px;
+      overflow: auto;
+    }
+
+    .risk-box {
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 11px 12px;
+      background: var(--surface-soft);
+    }
+
+    .risk-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .risk-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .risk-badge {
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 800;
+      font-size: 0.86rem;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .sev-a { background: var(--green-soft); border-color: #b5e3c1; color: #1f6a34; }
+    .sev-b { background: var(--accent-soft); border-color: #afe4d9; color: #145f54; }
+    .sev-c { background: var(--amber-soft); border-color: #ffd59f; color: #905112; }
+    .sev-d { background: var(--orange-soft); border-color: #f7c7b1; color: #983b17; }
+    .sev-e { background: var(--red-soft); border-color: #f4b7c1; color: #8d1a28; }
+    .sev-u { background: #eef2f1; border-color: #c8d3cf; color: #40514a; }
+
+    .overall {
+      margin: 2px 0 0;
+      font-size: 0.92rem;
+      line-height: 1.42;
+      color: #1f352a;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    .section-overall {
+      position: relative;
+      border-color: #0f7569;
+      background: linear-gradient(180deg, #ecf8f5 0%, #f7fcfb 100%);
+      box-shadow: inset 0 0 0 1px #bfe3da;
+      padding-left: 16px;
+    }
+
+    .section-overall::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: #0f7569;
+      border-radius: 12px 0 0 12px;
+    }
+
+    .section-overall h3 {
+      color: #0d5b51;
+    }
+
+    .section h3 {
+      margin: 0 0 7px;
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
+    }
+
+    .section.collapsible h3 {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .section.collapsible h3::after {
+      content: "Collapse";
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #42665b;
+      background: #edf6f2;
+      border: 1px solid #c7ddd5;
+      border-radius: 999px;
+      padding: 3px 8px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .section.collapsible.collapsed h3::after {
+      content: "Expand";
+    }
+
+    .section.collapsible.collapsed .list {
+      display: none;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 17px;
+      font-size: 0.86rem;
+      line-height: 1.38;
+      display: grid;
+      gap: 5px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #ecc6ce;
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: #fff2f5;
+      color: #861d2b;
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.14s ease;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #1b5f97 0%, #0f4f86 100%);
+      color: #fff;
+      border-color: #0f4f86;
+    }
+
+    .btn-secondary {
+      background: #f3f7fb;
+      color: #173458;
+      border-color: #c7d4e2;
+    }
+
+    .status {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .footnote {
+      margin: 12px 0 0;
+      font-size: 0.77rem;
+      color: #4b627e;
+      line-height: 1.38;
+    }
+
+    @media (max-width: 1120px) {
+      .pccm-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .pccm-tag {
+        text-align: left;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .output-panel {
+        position: static;
+        height: auto;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .field,
+      .field.third {
+        grid-column: 1 / -1;
+      }
+
+      .shell {
+        padding: 14px 10px 24px;
+      }
+
+      .hero {
+        padding: 16px;
+      }
+
+      .hero-sub {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="pccm-bar-wrap">
+    <div class="pccm-bar">
+      <a class="pccm-home" href="/">Home</a>
+      <p class="pccm-tag">Pulmonary embolism clinical decision support</p>
+    </div>
+  </div>
+  <div class="shell">
+    <header class="hero">
+      <p class="eyebrow">Clinical Decision Support</p>
+      <h1>Acute Pulmonary Embolism Management Decision Tool</h1>
+      <p class="hero-sub">
+        Guideline-mapped workflow for acute PE evaluation and management based on the 2026 Guideline for the Evaluation and Management of Acute Pulmonary Embolism in Adults.
+      </p>
+      <p class="hero-sub">
+        Enter clinically important findings to generate a category-based recommendation and editable PERT documentation draft.
+      </p>
+      <div class="testing-note">Testing Version</div>
+    </header>
+
+    <div class="layout">
+      <form id="pe-form" class="panel form-panel">
+        <section class="card">
+          <h2>Case Discussion Capture (De-identified)</h2>
+          <p class="hint">
+            Optional: record a case discussion first. The captured text is scrubbed for likely identifiers and merged with key structured inputs into a copy-ready narrative for external AI tools.
+          </p>
+          <p class="hint">
+            Mobile note: native phone keyboard dictation inside the text box is often more accurate than browser-based live listening. If live capture is inconsistent on your phone, tap into the narrative box and use the device microphone on the keyboard.
+          </p>
+          <p class="privacy-callout">
+            Reminder: during case discussion, avoid patient identifiers such as name, medical record number, birth date, and similar details.
+          </p>
+          <div class="toolbar">
+            <button id="start-listening" type="button" class="btn btn-primary">Start Listening</button>
+            <button id="stop-listening" type="button" class="btn btn-secondary" disabled>Stop Listening</button>
+            <button id="scrub-transcript" type="button" class="btn btn-secondary">Scrub Text</button>
+            <button id="clear-transcript" type="button" class="btn btn-secondary">Clear</button>
+          </div>
+          <p id="listening-status" class="status">Microphone transcription idle.</p>
+          <div class="grid score-block">
+            <div class="field full">
+              <label for="case-narrative">De-identified case narrative (editable)</label>
+              <textarea id="case-narrative" class="case-text" placeholder="Paste or dictate a de-identified case presentation." autocapitalize="sentences" autocorrect="on" spellcheck="true"></textarea>
+            </div>
+          </div>
+          <p id="phi-status" class="status"></p>
+        </section>
+
+        <section class="card">
+          <h2>Patient Context</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="discussion-time">PERT Discussion Date/Time</label>
+              <input id="discussion-time" type="datetime-local">
+            </div>
+            <div class="field">
+              <label for="symptomatic">Symptomatic acute PE</label>
+              <select id="symptomatic">
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="confirmed-pe">Diagnosis status</label>
+              <select id="confirmed-pe">
+                <option value="confirmed" selected>Confirmed acute PE</option>
+                <option value="suspected">Suspected PE (imaging pending)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="clot-location">Most proximal clot location</label>
+              <select id="clot-location">
+                <option value="subsegmental">Subsegmental only</option>
+                <option value="segmental" selected>Segmental/lobar/proximal</option>
+                <option value="saddle">Main PA or saddle</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="provoking-factor">VTE provoking factor profile</label>
+              <select id="provoking-factor">
+                <option value="unknown" selected>Unknown / not yet defined</option>
+                <option value="major-reversible">Major reversible risk factor (eg, major surgery, immobilization, pregnancy)</option>
+                <option value="minor-reversible">Minor reversible risk factor (eg, long-distance travel, hormonal contraception, transient illness)</option>
+                <option value="persistent">Persistent risk factor (eg, metastatic cancer, chronic inflammatory disease, thrombophilia)</option>
+                <option value="unprovoked">No clear risk factor (unprovoked)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="weight-kg">Actual body weight (kg)</label>
+              <input id="weight-kg" type="number" min="20" max="350" step="0.1" placeholder="e.g., 84.5">
+            </div>
+            <div class="field">
+              <label for="crcl">Estimated creatinine clearance (mL/min)</label>
+              <input id="crcl" type="number" min="5" max="250" step="1" placeholder="e.g., 42">
+            </div>
+          </div>
+          <div class="toggle-grid" style="margin-top: 9px;">
+            <label class="toggle">
+              <input id="incidental" type="checkbox">
+              Incidentally discovered PE (imaging for another reason)
+            </label>
+            <label class="toggle">
+              <input id="imaging-delayed" type="checkbox">
+              Imaging delayed / not immediately accessible
+            </label>
+            <label class="toggle">
+              <input id="clot-transit" type="checkbox">
+              Clot-in-transit (right atrium / RV)
+            </label>
+            <label class="toggle">
+              <input id="recurrent-on-therapy" type="checkbox">
+              Recurrent PE despite therapeutic anticoagulation
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Clinical Severity Score</h2>
+          <p class="hint">
+            Choose one severity approach. You can enter pre-calculated values manually or have the tool calculate the selected score from required inputs.
+          </p>
+          <div class="grid">
+            <div class="field full">
+              <label for="score-mode">Chosen clinical severity score</label>
+              <select id="score-mode">
+                <option value="manual" selected>Manual entry (pre-calculated values)</option>
+                <option value="calc-spesi">Calculate sPESI</option>
+                <option value="calc-pesi">Calculate PESI</option>
+                <option value="calc-hestia">Calculate Hestia</option>
+                <option value="calc-bova">Calculate Bova</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="manual-score-fields" class="grid score-block">
+            <div class="field third">
+              <label for="pesi">PESI</label>
+              <input id="pesi" type="number" min="0" step="1" placeholder="e.g., 102">
+            </div>
+            <div class="field third">
+              <label for="spesi">sPESI</label>
+              <input id="spesi" type="number" min="0" step="1" placeholder="e.g., 1">
+            </div>
+            <div class="field third">
+              <label for="hestia">Hestia positive items</label>
+              <input id="hestia" type="number" min="0" step="1" placeholder="e.g., 0">
+            </div>
+            <div class="field third">
+              <label for="bova">Bova score</label>
+              <input id="bova" type="number" min="0" step="1" placeholder="e.g., 5">
+            </div>
+            <div class="field third">
+              <label for="manual-score-hr">Manual score HR (bpm, optional)</label>
+              <input id="manual-score-hr" type="number" min="20" max="260" step="1" placeholder="e.g., 118">
+            </div>
+            <div class="field third">
+              <label for="manual-score-rr">Manual score respiratory rate (optional)</label>
+              <input id="manual-score-rr" type="number" min="6" max="70" step="1" placeholder="e.g., 32">
+            </div>
+          </div>
+
+          <div id="spesi-calc-fields" class="grid score-block" hidden>
+            <div class="field third">
+              <label for="calc-spesi-age">Age (years)</label>
+              <input id="calc-spesi-age" type="number" min="18" max="120" step="1" placeholder="e.g., 73">
+            </div>
+            <div class="field third">
+              <label for="calc-spesi-hr">Heart rate (bpm)</label>
+              <input id="calc-spesi-hr" type="number" min="20" max="260" step="1" placeholder="e.g., 118">
+            </div>
+            <div class="field third">
+              <label for="calc-spesi-sbp">Systolic BP (mm Hg)</label>
+              <input id="calc-spesi-sbp" type="number" min="40" max="260" step="1" placeholder="e.g., 96">
+            </div>
+            <div class="field third">
+              <label for="calc-spesi-sao2">O2 saturation (%)</label>
+              <input id="calc-spesi-sao2" type="number" min="40" max="100" step="1" placeholder="e.g., 88">
+            </div>
+          </div>
+          <div id="spesi-calc-toggles" class="toggle-grid score-block" hidden>
+            <label class="toggle">
+              <input id="calc-spesi-cancer" type="checkbox">
+              History of cancer
+            </label>
+            <label class="toggle">
+              <input id="calc-spesi-cardiopulm" type="checkbox">
+              Chronic cardiopulmonary disease
+            </label>
+          </div>
+
+          <div id="pesi-calc-fields" class="grid score-block" hidden>
+            <div class="field third">
+              <label for="calc-pesi-age">Age (years)</label>
+              <input id="calc-pesi-age" type="number" min="18" max="120" step="1" placeholder="e.g., 73">
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-sex">Sex</label>
+              <select id="calc-pesi-sex">
+                <option value="male">Male</option>
+                <option value="female" selected>Female</option>
+              </select>
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-hr">Heart rate (bpm)</label>
+              <input id="calc-pesi-hr" type="number" min="20" max="260" step="1" placeholder="e.g., 118">
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-sbp">Systolic BP (mm Hg)</label>
+              <input id="calc-pesi-sbp" type="number" min="40" max="260" step="1" placeholder="e.g., 96">
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-rr">Respiratory rate</label>
+              <input id="calc-pesi-rr" type="number" min="6" max="70" step="1" placeholder="e.g., 32">
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-temp">Temperature (°C)</label>
+              <input id="calc-pesi-temp" type="number" min="30" max="43" step="0.1" placeholder="e.g., 35.8">
+            </div>
+            <div class="field third">
+              <label for="calc-pesi-sao2">O2 saturation (%)</label>
+              <input id="calc-pesi-sao2" type="number" min="40" max="100" step="1" placeholder="e.g., 88">
+            </div>
+          </div>
+          <div id="pesi-calc-toggles" class="toggle-grid score-block" hidden>
+            <label class="toggle">
+              <input id="calc-pesi-cancer" type="checkbox">
+              History of cancer
+            </label>
+            <label class="toggle">
+              <input id="calc-pesi-heart-failure" type="checkbox">
+              History of heart failure
+            </label>
+            <label class="toggle">
+              <input id="calc-pesi-lung-disease" type="checkbox">
+              Chronic lung disease
+            </label>
+            <label class="toggle">
+              <input id="calc-pesi-ams" type="checkbox">
+              Altered mental status
+            </label>
+          </div>
+
+          <div id="hestia-calc-toggles" class="toggle-grid score-block" hidden>
+            <label class="toggle">
+              <input id="calc-hestia-hemodynamic-unstable" type="checkbox">
+              Hemodynamic instability
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-thrombolysis-needed" type="checkbox">
+              Thrombolysis/embolectomy needed
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-active-bleeding" type="checkbox">
+              Active bleeding or high bleeding risk
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-oxygen-need" type="checkbox">
+              Needs oxygen &gt;24h to keep sat &gt;90%
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-pe-on-anticoag" type="checkbox">
+              PE diagnosed while on anticoagulation
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-severe-pain" type="checkbox">
+              Severe pain requiring IV analgesia &gt;24h
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-med-social-admit" type="checkbox">
+              Medical/social reason for admission
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-crcl-low" type="checkbox">
+              Creatinine clearance &lt;30 mL/min
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-liver-impairment" type="checkbox">
+              Severe liver impairment
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-pregnant" type="checkbox">
+              Pregnant
+            </label>
+            <label class="toggle">
+              <input id="calc-hestia-hit" type="checkbox">
+              History of HIT
+            </label>
+          </div>
+
+          <div id="bova-calc-fields" class="grid score-block" hidden>
+            <div class="field third">
+              <label for="calc-bova-hr">Heart rate (bpm)</label>
+              <input id="calc-bova-hr" type="number" min="20" max="260" step="1" placeholder="e.g., 118">
+            </div>
+            <div class="field third">
+              <label for="calc-bova-sbp">Systolic BP (mm Hg)</label>
+              <input id="calc-bova-sbp" type="number" min="40" max="260" step="1" placeholder="e.g., 96">
+            </div>
+          </div>
+          <div id="bova-calc-toggles" class="toggle-grid score-block" hidden>
+            <label class="toggle">
+              <input id="calc-bova-troponin" type="checkbox">
+              Elevated troponin
+            </label>
+            <label class="toggle">
+              <input id="calc-bova-rv" type="checkbox">
+              RV dysfunction
+            </label>
+          </div>
+
+          <p id="score-summary" class="score-result">Manual score entry mode selected.</p>
+        </section>
+
+        <section class="card">
+          <h2>Hemodynamics and Perfusion</h2>
+          <div class="grid">
+            <div class="field third">
+              <label for="map">MAP (mm Hg)</label>
+              <input id="map" type="number" min="20" max="180" step="1" placeholder="e.g., 72">
+            </div>
+            <div class="field third">
+              <label for="lactate">Lactate (mmol/L)</label>
+              <input id="lactate" type="number" min="0" max="25" step="0.1" placeholder="e.g., 2.8">
+            </div>
+            <div class="field third">
+              <label for="vasopressors">Vasopressor support</label>
+              <select id="vasopressors">
+                <option value="0" selected>None</option>
+                <option value="1">Single vasopressor</option>
+                <option value="2plus">Two or more vasopressors</option>
+              </select>
+            </div>
+          </div>
+          <div class="toggle-grid" style="margin-top: 9px;">
+            <label class="toggle">
+              <input id="persistent-hypotension" type="checkbox">
+              Persistent/recurrent hypotension or shock
+            </label>
+            <label class="toggle">
+              <input id="transient-hypotension" type="checkbox">
+              Transient hypotension (SBP &lt;90 or drop &gt;40 mm Hg lasting &lt;15 min or responsive to IV fluids)
+            </label>
+            <label class="toggle">
+              <input id="cardiac-arrest" type="checkbox">
+              Cardiac arrest / prolonged failed ROSC
+            </label>
+            <label class="toggle">
+              <input id="renal-hypoperfusion" type="checkbox">
+              Acute kidney injury or urine output &lt;0.5 mL/kg/hr
+            </label>
+            <label class="toggle">
+              <input id="mental-status" type="checkbox">
+              Mental status change
+            </label>
+            <label class="toggle">
+              <input id="low-cardiac-index" type="checkbox">
+              Cardiac index &lt;2.2 L/min/m²
+            </label>
+            <label class="toggle">
+              <input id="shock-score" type="checkbox">
+              Shock score/stage increased
+            </label>
+            <label class="toggle">
+              <input id="unable-lie-flat" type="checkbox">
+              Unable to lie flat (may preclude IR-based procedures)
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>RV / Biomarkers / Respiratory Status</h2>
+          <div class="grid">
+            <div class="field third">
+              <label for="rv-dysfunction">RV dysfunction (echo or CT)</label>
+              <select id="rv-dysfunction">
+                <option value="unknown" selected>Unknown</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field third">
+              <label for="troponin">Troponin</label>
+              <select id="troponin">
+                <option value="unknown" selected>Unknown</option>
+                <option value="yes">Elevated</option>
+                <option value="no">Not elevated</option>
+              </select>
+            </div>
+            <div class="field third">
+              <label for="bnp">BNP/NT-proBNP</label>
+              <select id="bnp">
+                <option value="unknown" selected>Unknown</option>
+                <option value="yes">Elevated</option>
+                <option value="no">Not elevated</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="oxygen-sat">O2 saturation (%)</label>
+              <input id="oxygen-sat" type="number" min="40" max="100" step="1" placeholder="e.g., 88">
+            </div>
+            <div class="field">
+              <label for="rr">Respiratory rate</label>
+              <input id="rr" type="number" min="6" max="70" step="1" placeholder="e.g., 32">
+            </div>
+            <div class="field">
+              <label for="oxygen-support">Current oxygen/ventilation support</label>
+              <select id="oxygen-support">
+                <option value="room-air" selected>Room air</option>
+                <option value="o2-low">≤6 L/min nasal cannula</option>
+                <option value="o2-high">&gt;6 L/min NC or non-rebreather</option>
+                <option value="hfnc">HFNC</option>
+                <option value="niv">Noninvasive positive-pressure ventilation</option>
+                <option value="imv">Invasive mechanical ventilation</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Bleeding Risk</h2>
+          <p class="hint">Absolute contraindications to thrombolysis / VA-ECMO</p>
+          <div class="toggle-grid">
+            <label class="toggle">
+              <input id="bleed-absolute-active" type="checkbox">
+              Active bleeding
+            </label>
+            <label class="toggle">
+              <input id="bleed-absolute-ich" type="checkbox">
+              Prior intracranial hemorrhage
+            </label>
+            <label class="toggle">
+              <input id="bleed-absolute-dissection" type="checkbox">
+              Suspected or confirmed aortic dissection
+            </label>
+            <label class="toggle">
+              <input id="bleed-absolute-neuro-surgery" type="checkbox">
+              Brain or spinal surgery within 3 months
+            </label>
+            <label class="toggle">
+              <input id="bleed-absolute-intracranial" type="checkbox">
+              Intracranial neoplasm, vascular malformation, or other structural brain disease
+            </label>
+          </div>
+          <p class="hint">Relative bleeding risk considerations</p>
+          <div class="toggle-grid">
+            <label class="toggle">
+              <input id="bleed-relative-coagulopathy" type="checkbox">
+              Coagulopathy (e.g., INR &gt;1.7)
+            </label>
+            <label class="toggle">
+              <input id="bleed-relative-htn" type="checkbox">
+              Uncontrolled severe hypertension
+            </label>
+            <label class="toggle">
+              <input id="bleed-relative-recent-surgery" type="checkbox">
+              Recent major surgery (within 14 days)
+            </label>
+            <label class="toggle">
+              <input id="bleed-relative-serious-trauma" type="checkbox">
+              Recent serious trauma
+            </label>
+            <label class="toggle">
+              <input id="bleed-relative-pregnancy" type="checkbox">
+              Pregnancy
+            </label>
+            <label class="toggle">
+              <input id="bleed-relative-gi-bleed" type="checkbox">
+              Recent gastrointestinal bleeding
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Special Populations</h2>
+          <div class="toggle-grid">
+            <label class="toggle">
+              <input id="pregnancy" type="checkbox">
+              Pregnancy
+            </label>
+            <label class="toggle">
+              <input id="breastfeeding" type="checkbox">
+              Breastfeeding
+            </label>
+            <label class="toggle">
+              <input id="active-cancer" type="checkbox">
+              Active cancer
+            </label>
+            <label class="toggle">
+              <input id="aps" type="checkbox">
+              Thrombotic antiphospholipid antibody syndrome
+            </label>
+            <label class="toggle">
+              <input id="severe-ckd" type="checkbox">
+              Severe CKD (stage 4-5) / dialysis
+            </label>
+          </div>
+        </section>
+      </form>
+
+      <aside class="panel output-panel">
+        <div class="risk-box">
+          <div class="risk-top">
+            <span class="risk-label">Calculated PE Category</span>
+            <span id="risk-badge" class="risk-badge sev-u">Pending</span>
+          </div>
+          <p id="overall" class="overall">Calculated PE category pending until clinical criteria are entered.</p>
+        </div>
+
+        <section class="section section-overall">
+          <h3>Overall Recommendation</h3>
+          <ul id="recommendation-list" class="list"></ul>
+        </section>
+
+        <section class="section" style="display:grid; gap: 8px;">
+          <h3>Narrative for External AI (De-identified)</h3>
+          <textarea id="narrative-text" class="narrative-output" readonly></textarea>
+          <div class="toolbar">
+            <button id="copy-narrative" type="button" class="btn btn-primary">Copy Narrative</button>
+          </div>
+          <p id="narrative-copy-status" class="status"></p>
+        </section>
+
+        <section class="section collapsible collapsed">
+          <h3>PERT Action Bundle (Next 6 Hours)</h3>
+          <ul id="action-list" class="list"></ul>
+        </section>
+
+        <section class="section collapsible collapsed">
+          <h3>Medication Recommendations (Dose + Route)</h3>
+          <ul id="medication-list" class="list"></ul>
+        </section>
+
+        <section class="section collapsible collapsed">
+          <h3>Monitoring Recommendations</h3>
+          <ul id="monitoring-list" class="list"></ul>
+        </section>
+
+        <section class="section collapsible collapsed">
+          <h3>Escalation / Backup Pathway</h3>
+          <ul id="backup-list" class="list"></ul>
+        </section>
+
+        <section class="section collapsible collapsed">
+          <h3>Rationale From Inputs</h3>
+          <ul id="rationale-list" class="list"></ul>
+        </section>
+
+        <section class="section">
+          <h3>Cautions / Modifiers</h3>
+          <div id="alert-chips" class="chips"></div>
+        </section>
+
+        <section class="section" style="display:grid; gap: 8px;">
+          <h3>PERT Documentation Draft</h3>
+          <textarea id="plan-text"></textarea>
+          <div class="toolbar">
+            <button id="copy-plan" type="button" class="btn btn-primary">Copy Plan Text</button>
+            <button id="reset-form" type="button" class="btn btn-secondary">Reset Inputs</button>
+          </div>
+          <p id="copy-status" class="status"></p>
+        </section>
+
+        <p class="footnote">
+          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 8, 2026.
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("pe-form");
+    const riskBadge = document.getElementById("risk-badge");
+    const overallEl = document.getElementById("overall");
+    const recommendationsEl = document.getElementById("recommendation-list");
+    const actionListEl = document.getElementById("action-list");
+    const medicationListEl = document.getElementById("medication-list");
+    const monitoringListEl = document.getElementById("monitoring-list");
+    const backupListEl = document.getElementById("backup-list");
+    const rationaleEl = document.getElementById("rationale-list");
+    const alertsEl = document.getElementById("alert-chips");
+    const narrativeTextEl = document.getElementById("narrative-text");
+    const copyNarrativeEl = document.getElementById("copy-narrative");
+    const narrativeCopyStatusEl = document.getElementById("narrative-copy-status");
+    const planTextEl = document.getElementById("plan-text");
+    const copyStatusEl = document.getElementById("copy-status");
+    const scoreSummaryEl = document.getElementById("score-summary");
+    const caseNarrativeEl = document.getElementById("case-narrative");
+    const startListeningEl = document.getElementById("start-listening");
+    const stopListeningEl = document.getElementById("stop-listening");
+    const scrubTranscriptEl = document.getElementById("scrub-transcript");
+    const clearTranscriptEl = document.getElementById("clear-transcript");
+    const listeningStatusEl = document.getElementById("listening-status");
+    const phiStatusEl = document.getElementById("phi-status");
+
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "") ||
+      (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+    const PHI_SCRUB_PATTERNS = [
+      { label: "MRN/long numeric identifier", regex: /\b\d{6,}\b/g },
+      { label: "MRN label/value", regex: /\b(?:mrn|medical record number|patient id)\s*[:#=-]?\s*[A-Z0-9-]{4,}\b/gi },
+      { label: "DOB/date", regex: /\b(?:\d{1,2}[\/-]\d{1,2}[\/-](?:\d{2}|\d{4})|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,\s*\d{2,4})?)\b/gi },
+      { label: "phone number", regex: /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g },
+      { label: "email", regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
+      { label: "SSN", regex: /\b\d{3}-\d{2}-\d{4}\b/g },
+      { label: "street address", regex: /\b\d{1,5}\s+[A-Za-z0-9'.-]+(?:\s+[A-Za-z0-9'.-]+){0,4}\s(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd|court|ct|way|parkway|pkwy)\b/gi },
+      { label: "name cue", regex: /\b(?:name is|patient is|patient name is|mr\.?|mrs\.?|ms\.?|miss|dr\.?)\s+[A-Za-z]+(?:\s+[A-Za-z]+)?\b/gi },
+      { label: "name field", regex: /\b(?:name|patient name|pt name)\s*[:=-]\s*[A-Za-z]+(?:\s+[A-Za-z]+){0,2}\b/gi }
+    ];
+    const PHI_FLAG_PATTERNS = [
+      { label: "MRN keyword", regex: /\b(?:mrn|medical record number|patient id)\b/gi },
+      { label: "DOB keyword", regex: /\b(?:dob|date of birth|born on)\b/gi },
+      { label: "phone-like pattern", regex: /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g },
+      { label: "email-like pattern", regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
+      { label: "long numeric identifier", regex: /\b\d{6,}\b/g },
+      { label: "title+name cue", regex: /\b(?:mr|mrs|ms|miss|dr)\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g }
+    ];
+    const ABSOLUTE_BLEEDING_RISK_FIELDS = [
+      { key: "bleedAbsoluteActive", label: "active bleeding" },
+      { key: "bleedAbsoluteICh", label: "prior intracranial hemorrhage" },
+      { key: "bleedAbsoluteDissection", label: "suspected/confirmed aortic dissection" },
+      { key: "bleedAbsoluteNeuroSurgery", label: "brain or spinal surgery within 3 months" },
+      { key: "bleedAbsoluteIntracranial", label: "intracranial neoplasm/vascular malformation/aneurysm/structural brain disease" }
+    ];
+    const RELATIVE_BLEEDING_RISK_FIELDS = [
+      { key: "bleedRelativeCoagulopathy", label: "coagulopathy" },
+      { key: "bleedRelativeHypertension", label: "uncontrolled severe hypertension" },
+      { key: "bleedRelativeRecentSurgery", label: "recent major surgery within 14 days" },
+      { key: "bleedRelativeSeriousTrauma", label: "recent serious trauma" },
+      { key: "bleedRelativeRecentGiBleed", label: "recent gastrointestinal bleeding" },
+      { key: "bleedRelativePregnancy", label: "pregnancy" }
+    ];
+    const CLINICAL_CRITERIA_INPUT_IDS = [
+      "symptomatic",
+      "confirmed-pe",
+      "clot-location",
+      "provoking-factor",
+      "weight-kg",
+      "crcl",
+      "incidental",
+      "imaging-delayed",
+      "clot-transit",
+      "recurrent-on-therapy",
+      "pesi",
+      "spesi",
+      "hestia",
+      "bova",
+      "manual-score-hr",
+      "manual-score-rr",
+      "calc-spesi-age",
+      "calc-spesi-hr",
+      "calc-spesi-sbp",
+      "calc-spesi-sao2",
+      "calc-spesi-cancer",
+      "calc-spesi-cardiopulm",
+      "calc-pesi-age",
+      "calc-pesi-sex",
+      "calc-pesi-hr",
+      "calc-pesi-sbp",
+      "calc-pesi-rr",
+      "calc-pesi-temp",
+      "calc-pesi-sao2",
+      "calc-pesi-cancer",
+      "calc-pesi-heart-failure",
+      "calc-pesi-lung-disease",
+      "calc-pesi-ams",
+      "calc-hestia-hemodynamic-unstable",
+      "calc-hestia-thrombolysis-needed",
+      "calc-hestia-active-bleeding",
+      "calc-hestia-oxygen-need",
+      "calc-hestia-pe-on-anticoag",
+      "calc-hestia-severe-pain",
+      "calc-hestia-med-social-admit",
+      "calc-hestia-crcl-low",
+      "calc-hestia-liver-impairment",
+      "calc-hestia-pregnant",
+      "calc-hestia-hit",
+      "calc-bova-hr",
+      "calc-bova-sbp",
+      "calc-bova-troponin",
+      "calc-bova-rv",
+      "map",
+      "lactate",
+      "vasopressors",
+      "persistent-hypotension",
+      "transient-hypotension",
+      "cardiac-arrest",
+      "renal-hypoperfusion",
+      "mental-status",
+      "low-cardiac-index",
+      "shock-score",
+      "unable-lie-flat",
+      "rv-dysfunction",
+      "troponin",
+      "bnp",
+      "oxygen-sat",
+      "rr",
+      "oxygen-support",
+      "bleed-absolute-active",
+      "bleed-absolute-ich",
+      "bleed-absolute-dissection",
+      "bleed-absolute-neuro-surgery",
+      "bleed-absolute-intracranial",
+      "bleed-relative-coagulopathy",
+      "bleed-relative-htn",
+      "bleed-relative-recent-surgery",
+      "bleed-relative-serious-trauma",
+      "bleed-relative-pregnancy",
+      "bleed-relative-gi-bleed",
+      "pregnancy",
+      "breastfeeding",
+      "active-cancer",
+      "aps",
+      "severe-ckd"
+    ];
+    const INPUT_VALIDATION_SPECS = [
+      { id: "weight-kg", key: "weightKg", label: "weight", min: 20, max: 350, unit: "kg" },
+      { id: "crcl", key: "crcl", label: "estimated creatinine clearance", min: 0, max: 250, unit: "mL/min" },
+      { id: "manual-score-hr", key: "manualScoreHr", label: "manual score heart rate", min: 20, max: 260, unit: "bpm" },
+      { id: "manual-score-rr", key: "manualScoreRr", label: "manual score respiratory rate", min: 6, max: 70, unit: "/min" },
+      { id: "calc-spesi-age", key: "calcSpesiAge", label: "sPESI age", min: 18, max: 120, unit: "years" },
+      { id: "calc-spesi-hr", key: "calcSpesiHr", label: "sPESI heart rate", min: 20, max: 260, unit: "bpm" },
+      { id: "calc-spesi-sbp", key: "calcSpesiSbp", label: "sPESI systolic BP", min: 40, max: 260, unit: "mm Hg" },
+      { id: "calc-spesi-sao2", key: "calcSpesiSao2", label: "sPESI O2 saturation", min: 40, max: 100, unit: "%" },
+      { id: "calc-pesi-age", key: "calcPesiAge", label: "PESI age", min: 18, max: 120, unit: "years" },
+      { id: "calc-pesi-hr", key: "calcPesiHr", label: "PESI heart rate", min: 20, max: 260, unit: "bpm" },
+      { id: "calc-pesi-sbp", key: "calcPesiSbp", label: "PESI systolic BP", min: 40, max: 260, unit: "mm Hg" },
+      { id: "calc-pesi-rr", key: "calcPesiRr", label: "PESI respiratory rate", min: 6, max: 70, unit: "/min" },
+      { id: "calc-pesi-temp", key: "calcPesiTemp", label: "PESI temperature", min: 30, max: 43, unit: "C" },
+      { id: "calc-pesi-sao2", key: "calcPesiSao2", label: "PESI O2 saturation", min: 40, max: 100, unit: "%" },
+      { id: "calc-bova-hr", key: "calcBovaHr", label: "Bova heart rate", min: 20, max: 260, unit: "bpm" },
+      { id: "calc-bova-sbp", key: "calcBovaSbp", label: "Bova systolic BP", min: 40, max: 260, unit: "mm Hg" },
+      { id: "map", key: "map", label: "MAP", min: 20, max: 180, unit: "mm Hg" },
+      { id: "lactate", key: "lactate", label: "lactate", min: 0, max: 25, unit: "mmol/L" },
+      { id: "oxygen-sat", key: "oxygenSat", label: "O2 saturation", min: 40, max: 100, unit: "%" },
+      { id: "rr", key: "rr", label: "respiratory rate", min: 6, max: 70, unit: "/min" }
+    ];
+
+    const aiState = {
+      recognition: null,
+      listening: false,
+      latestScrubFindings: [],
+      interimText: "",
+      manualStop: false
+    };
+
+    function value(id) {
+      return document.getElementById(id).value;
+    }
+
+    function checked(id) {
+      const el = document.getElementById(id);
+      return !!(el && el.checked);
+    }
+
+    function numberValue(id) {
+      const raw = value(id).trim();
+      if (raw === "") return null;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function yesNoUnknown(v) {
+      if (v === "yes") return "Yes";
+      if (v === "no") return "No";
+      return "Unknown";
+    }
+
+    function tenecteplaseDoseMg(weightKg) {
+      if (weightKg === null || weightKg <= 0) return null;
+      if (weightKg <= 60) return 30;
+      if (weightKg <= 69) return 35;
+      if (weightKg <= 79) return 40;
+      if (weightKg <= 89) return 45;
+      return 50;
+    }
+
+    function renderList(target, items, fallbackText) {
+      target.innerHTML = "";
+      if (!items.length) {
+        const li = document.createElement("li");
+        li.textContent = fallbackText;
+        target.appendChild(li);
+        return;
+      }
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        target.appendChild(li);
+      });
+    }
+
+    function annotateStrength(items, fallbackStrength) {
+      return items.map((item) => item.replace(/^\[[^\]]+\]\s*/, ""));
+    }
+
+    function normalizeWhitespace(text) {
+      return (text || "")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/[ \t]{2,}/g, " ")
+        .trim();
+    }
+
+    function scrubPotentialIdentifiers(text) {
+      let cleaned = text || "";
+      const findings = [];
+      PHI_SCRUB_PATTERNS.forEach((pattern) => {
+        cleaned = cleaned.replace(pattern.regex, (match) => {
+          findings.push(pattern.label);
+          return "****";
+        });
+      });
+      cleaned = normalizeWhitespace(cleaned);
+      return {
+        cleaned,
+        findings: Array.from(new Set(findings))
+      };
+    }
+
+    function detectPotentialIdentifiers(text) {
+      const flags = [];
+      PHI_FLAG_PATTERNS.forEach((pattern) => {
+        pattern.regex.lastIndex = 0;
+        if (pattern.regex.test(text || "")) {
+          flags.push(pattern.label);
+        }
+      });
+      return Array.from(new Set(flags));
+    }
+
+    function updatePhiStatus(text, scrubFindings) {
+      const residualFlags = detectPotentialIdentifiers(text);
+      const findings = scrubFindings || [];
+      phiStatusEl.className = "status";
+      if (findings.length && residualFlags.length) {
+        phiStatusEl.classList.add("status-warn");
+        phiStatusEl.textContent = `Identifiers were redacted (${findings.join(", ")}). Residual identifier risk detected (${residualFlags.join(", ")}); edit before copy/sharing.`;
+      } else if (findings.length) {
+        phiStatusEl.classList.add("status-ok");
+        phiStatusEl.textContent = `Identifier scrubber redacted: ${findings.join(", ")}.`;
+      } else if (residualFlags.length) {
+        phiStatusEl.classList.add("status-warn");
+        phiStatusEl.textContent = `Potential identifier risk detected (${residualFlags.join(", ")}). Please de-identify before copy/sharing.`;
+      } else if (text.trim().length) {
+        phiStatusEl.classList.add("status-ok");
+        phiStatusEl.textContent = "No obvious identifiers detected by automated checks.";
+      } else {
+        phiStatusEl.textContent = "No narrative entered.";
+      }
+      return residualFlags;
+    }
+
+    function appendScrubbedCaseText(snippet) {
+      const next = normalizeWhitespace([caseNarrativeEl.value, snippet].filter(Boolean).join("\n"));
+      caseNarrativeEl.value = next;
+      const residual = updatePhiStatus(next, aiState.latestScrubFindings);
+      return residual;
+    }
+
+    function scrubCurrentNarrative() {
+      const prior = caseNarrativeEl.value || "";
+      const scrubbed = scrubPotentialIdentifiers(prior);
+      aiState.latestScrubFindings = scrubbed.findings;
+      caseNarrativeEl.value = scrubbed.cleaned;
+      const residual = updatePhiStatus(scrubbed.cleaned, scrubbed.findings);
+      return { scrubbedText: scrubbed.cleaned, residual };
+    }
+
+    function setupCollapsibles() {
+      document.querySelectorAll(".section.collapsible").forEach((section) => {
+        const header = section.querySelector("h3");
+        if (!header || header.dataset.bound === "1") return;
+        header.dataset.bound = "1";
+        header.setAttribute("role", "button");
+        header.setAttribute("tabindex", "0");
+        const toggle = () => {
+          section.classList.toggle("collapsed");
+        };
+        header.addEventListener("click", toggle);
+        header.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggle();
+          }
+        });
+      });
+    }
+
+    function syncHemodynamicDependencies() {
+      const vasopressorValue = value("vasopressors");
+      const persistentHypotensionEl = document.getElementById("persistent-hypotension");
+      if (vasopressorValue !== "0" && persistentHypotensionEl && !persistentHypotensionEl.checked) {
+        persistentHypotensionEl.checked = true;
+      }
+    }
+
+    function syncRenalDependencies() {
+      const crcl = numberValue("crcl");
+      const severeCkdEl = document.getElementById("severe-ckd");
+      if (!severeCkdEl) return;
+      if (crcl !== null && crcl < 30) {
+        severeCkdEl.checked = true;
+      }
+    }
+
+    function syncPregnancyDependencies(changedSource) {
+      const pregnancyIds = ["pregnancy", "bleed-relative-pregnancy", "calc-hestia-pregnant"];
+      const pregnancyControls = pregnancyIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      if (!pregnancyControls.length) return;
+
+      const sourceControl = changedSource
+        ? document.getElementById(changedSource)
+        : null;
+      if (sourceControl && pregnancyIds.includes(changedSource)) {
+        pregnancyControls.forEach((el) => {
+          if (el !== sourceControl) el.checked = sourceControl.checked;
+        });
+        return;
+      }
+
+      const syncedValue = pregnancyControls.some((el) => el.checked);
+      pregnancyControls.forEach((el) => {
+        el.checked = syncedValue;
+      });
+    }
+
+    function syncPregnancyBreastfeedingExclusivity(changedSource) {
+      const breastfeedingEl = document.getElementById("breastfeeding");
+      const pregnancyIds = ["pregnancy", "bleed-relative-pregnancy", "calc-hestia-pregnant"];
+      const pregnancyControls = pregnancyIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      if (!breastfeedingEl || !pregnancyControls.length) return;
+
+      const pregnancySelected = pregnancyControls.some((el) => el.checked);
+
+      if (changedSource === "breastfeeding" && breastfeedingEl.checked) {
+        pregnancyControls.forEach((el) => {
+          el.checked = false;
+        });
+        return;
+      }
+
+      if (pregnancySelected) {
+        breastfeedingEl.checked = false;
+      }
+    }
+
+    function syncPregnancyEligibility() {
+      const raw = {
+        scoreMode: value("score-mode"),
+        calcSpesiAge: numberValue("calc-spesi-age"),
+        calcPesiAge: numberValue("calc-pesi-age"),
+        calcPesiSex: value("calc-pesi-sex")
+      };
+      const age = derivePatientAge(raw);
+      const sex = derivePatientSex(raw);
+      const breastfeedingEl = document.getElementById("breastfeeding");
+      const breastfeedingSelected = !!(breastfeedingEl && breastfeedingEl.checked);
+      const ineligible = sex === "male" || (age !== null && age > 60);
+      const reason = sex === "male"
+        ? "Pregnancy cannot be selected when sex is male."
+        : age !== null && age > 60
+          ? "Pregnancy cannot be selected when age is greater than 60 years."
+          : "";
+
+      ["pregnancy", "bleed-relative-pregnancy", "calc-hestia-pregnant"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = ineligible;
+        if (ineligible) {
+          el.checked = false;
+          el.title = reason;
+        } else if (breastfeedingSelected) {
+          el.title = "Pregnancy cannot be selected at the same time as breastfeeding.";
+        } else {
+          el.removeAttribute("title");
+        }
+      });
+    }
+
+    function preferredRecognitionLanguage() {
+      const candidates = [...(navigator.languages || []), navigator.language].filter(Boolean);
+      const englishCandidate = candidates.find((item) => /^en(?:-|$)/i.test(item));
+      return englishCandidate || candidates[0] || "en-US";
+    }
+
+    function setupSpeechRecognition() {
+      if (!SpeechRecognitionCtor) {
+        startListeningEl.disabled = true;
+        stopListeningEl.disabled = true;
+        listeningStatusEl.className = "status status-warn";
+        listeningStatusEl.textContent = "Browser speech recognition is unavailable. Paste narrative manually, then scrub.";
+        return;
+      }
+      const recognition = new SpeechRecognitionCtor();
+      recognition.continuous = !isMobileDevice;
+      recognition.interimResults = !isMobileDevice;
+      recognition.lang = preferredRecognitionLanguage();
+      if ("maxAlternatives" in recognition) {
+        recognition.maxAlternatives = 1;
+      }
+
+      recognition.onresult = (event) => {
+        let finalText = "";
+        let interimText = "";
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const segment = event.results[i][0].transcript || "";
+          if (event.results[i].isFinal) {
+            finalText += `${segment} `;
+          } else {
+            interimText += `${segment} `;
+          }
+        }
+
+        if (finalText.trim().length) {
+          const scrubbed = scrubPotentialIdentifiers(finalText);
+          aiState.latestScrubFindings = scrubbed.findings;
+          appendScrubbedCaseText(scrubbed.cleaned);
+          updateOutput();
+        }
+
+        aiState.interimText = interimText.trim();
+        if (aiState.interimText.length) {
+          listeningStatusEl.className = "status";
+          listeningStatusEl.textContent = `Listening... interim text captured (not saved until finalized).`;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        listeningStatusEl.className = "status status-warn";
+        listeningStatusEl.textContent = `Microphone transcription error: ${event.error || "unknown"}.`;
+        aiState.manualStop = true;
+        aiState.listening = false;
+        startListeningEl.disabled = false;
+        stopListeningEl.disabled = true;
+      };
+
+      recognition.onend = () => {
+        if (aiState.listening && !aiState.manualStop && isMobileDevice) {
+          listeningStatusEl.className = "status";
+          listeningStatusEl.textContent = "Listening... mobile microphone restarted for the next phrase.";
+          window.setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (err) {
+              aiState.listening = false;
+              aiState.manualStop = true;
+              startListeningEl.disabled = false;
+              stopListeningEl.disabled = true;
+              listeningStatusEl.className = "status status-warn";
+              listeningStatusEl.textContent = `Mobile microphone restart failed: ${err.message}`;
+            }
+          }, 250);
+          return;
+        }
+        aiState.listening = false;
+        startListeningEl.disabled = false;
+        stopListeningEl.disabled = true;
+        if (!listeningStatusEl.classList.contains("status-warn")) {
+          listeningStatusEl.className = "status";
+          listeningStatusEl.textContent = "Microphone transcription idle.";
+        }
+      };
+
+      aiState.recognition = recognition;
+    }
+
+    function renderAlerts(items) {
+      alertsEl.innerHTML = "";
+      if (!items.length) {
+        const span = document.createElement("span");
+        span.className = "chip";
+        span.style.background = "#f0f6f3";
+        span.style.borderColor = "#cde0d7";
+        span.style.color = "#2f5d47";
+        span.textContent = "No major caution flags selected.";
+        alertsEl.appendChild(span);
+        return;
+      }
+      items.forEach((item) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = item;
+        alertsEl.appendChild(chip);
+      });
+    }
+
+    function renderPendingAlerts() {
+      alertsEl.innerHTML = "";
+      const span = document.createElement("span");
+      span.className = "chip";
+      span.style.background = "#f5f6f7";
+      span.style.borderColor = "#d7ddda";
+      span.style.color = "#53605a";
+      span.textContent = "Awaiting clinical inputs.";
+      alertsEl.appendChild(span);
+    }
+
+    function defaultSelectValue(el) {
+      const defaultOption = Array.from(el.options).find((option) => option.defaultSelected) || el.options[0];
+      return defaultOption ? defaultOption.value : "";
+    }
+
+    function hasClinicalCriteriaInput() {
+      return CLINICAL_CRITERIA_INPUT_IDS.some((id) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+
+        if (el.type === "checkbox" || el.type === "radio") {
+          return el.checked !== el.defaultChecked;
+        }
+
+        if (el.tagName === "SELECT") {
+          return el.value !== defaultSelectValue(el);
+        }
+
+        const currentValue = (el.value || "").trim();
+        const defaultValue = (el.defaultValue || "").trim();
+        return currentValue !== "" && currentValue !== defaultValue;
+      });
+    }
+
+    function initialPendingClassification() {
+      return {
+        category: "Pending",
+        base: "initial-pending",
+        family: "U",
+        hasScore: false,
+        lowSeverity: false,
+        elevatedSeverity: false,
+        rvPositive: false,
+        biomarkerPositive: false,
+        hypoperfusionMarkers: false,
+        significantResp: false,
+        respiratoryFailure: false,
+        pendingSeverityScore: false
+      };
+    }
+
+    function derivePatientAge(raw) {
+      if (raw.scoreMode === "calc-spesi" && raw.calcSpesiAge !== null) return raw.calcSpesiAge;
+      if (raw.scoreMode === "calc-pesi" && raw.calcPesiAge !== null) return raw.calcPesiAge;
+      if (raw.calcSpesiAge !== null) return raw.calcSpesiAge;
+      if (raw.calcPesiAge !== null) return raw.calcPesiAge;
+      return null;
+    }
+
+    function derivePatientSex(raw) {
+      if (raw.scoreMode === "calc-pesi") return raw.calcPesiSex || null;
+      return null;
+    }
+
+    function selectedRiskLabels(defs, data) {
+      return defs.filter((item) => data[item.key]).map((item) => item.label);
+    }
+
+    function bleedingRiskSummary(data) {
+      return {
+        absolute: selectedRiskLabels(ABSOLUTE_BLEEDING_RISK_FIELDS, data),
+        relative: selectedRiskLabels(RELATIVE_BLEEDING_RISK_FIELDS, data)
+      };
+    }
+
+    function formatValidationBound(value) {
+      return Number.isInteger(value) ? `${value}` : `${value}`;
+    }
+
+    function fieldIsVisible(el) {
+      return !!el && !el.closest("[hidden]");
+    }
+
+    function applyInputValidationFlags(data) {
+      const warnings = [];
+      INPUT_VALIDATION_SPECS.forEach((spec) => {
+        const el = document.getElementById(spec.id);
+        if (!el) return;
+        el.classList.remove("input-flag");
+        el.removeAttribute("aria-invalid");
+        el.removeAttribute("title");
+
+        if (!fieldIsVisible(el)) return;
+        const value = data[spec.key];
+        if (value === null || value === undefined) return;
+        if (value < spec.min || value > spec.max) {
+          el.classList.add("input-flag");
+          el.setAttribute("aria-invalid", "true");
+          el.title = `Outside expected range: ${formatValidationBound(spec.min)}-${formatValidationBound(spec.max)} ${spec.unit}`;
+          warnings.push(`Verify ${spec.label}: ${value} is outside the expected physiologic/input range (${formatValidationBound(spec.min)}-${formatValidationBound(spec.max)} ${spec.unit}).`);
+        }
+      });
+      return warnings;
+    }
+
+    function specialConditionsSummary(flags) {
+      const labels = [];
+      if (flags.pregnancy) labels.push("pregnancy");
+      if (flags.breastfeeding) labels.push("breastfeeding");
+      if (flags.activeCancer) labels.push("active cancer");
+      if (flags.aps) labels.push("thrombotic APS");
+      if (flags.severeCKD) labels.push("severe CKD/dialysis");
+      return labels;
+    }
+
+    function computeSelectedScore(raw) {
+      let pesi = raw.manualPesi;
+      let spesi = raw.manualSpesi;
+      let hestia = raw.manualHestia;
+      let bova = raw.manualBova;
+      let scoreHr = raw.manualScoreHr;
+      let chosenScoreName = "Manual severity entries";
+      let chosenScoreValue = `PESI ${pesi ?? "n/a"}, sPESI ${spesi ?? "n/a"}, Hestia ${hestia ?? "n/a"}, Bova ${bova ?? "n/a"}, score HR ${raw.manualScoreHr ?? "n/a"}, score RR ${raw.manualScoreRr ?? "n/a"}`;
+      const scoreWarnings = [];
+      let scoreReady = pesi !== null || spesi !== null || hestia !== null || bova !== null;
+      let scoreSummary = scoreReady
+        ? "Manual score entry mode selected."
+        : "Manual score mode selected. Enter at least one severity score value.";
+
+      if (raw.scoreMode === "calc-spesi") {
+        pesi = null;
+        hestia = null;
+        bova = null;
+        scoreHr = raw.calcSpesiHr;
+        chosenScoreName = "sPESI (calculated)";
+        const missing = [];
+        if (raw.calcSpesiAge === null) missing.push("age");
+        if (raw.calcSpesiHr === null) missing.push("heart rate");
+        if (raw.calcSpesiSbp === null) missing.push("systolic BP");
+        if (raw.calcSpesiSao2 === null) missing.push("O2 saturation");
+
+        if (missing.length) {
+          spesi = null;
+          scoreReady = false;
+          chosenScoreValue = "not calculable";
+          scoreSummary = `sPESI requires: ${missing.join(", ")}.`;
+          scoreWarnings.push("Chosen score not fully calculable due to missing inputs.");
+        } else {
+          let score = 0;
+          if (raw.calcSpesiAge > 80) score += 1;
+          if (raw.calcSpesiCancer) score += 1;
+          if (raw.calcSpesiCardiopulm) score += 1;
+          if (raw.calcSpesiHr >= 110) score += 1;
+          if (raw.calcSpesiSbp < 100) score += 1;
+          if (raw.calcSpesiSao2 < 90) score += 1;
+          spesi = score;
+          scoreReady = true;
+          chosenScoreValue = `${score}`;
+          scoreSummary = `Calculated sPESI: ${score} (${score === 0 ? "low severity threshold met" : "elevated severity threshold met"}).`;
+        }
+      } else if (raw.scoreMode === "calc-pesi") {
+        spesi = null;
+        hestia = null;
+        bova = null;
+        scoreHr = raw.calcPesiHr;
+        chosenScoreName = "PESI (calculated)";
+        const missing = [];
+        if (raw.calcPesiAge === null) missing.push("age");
+        if (raw.calcPesiHr === null) missing.push("heart rate");
+        if (raw.calcPesiSbp === null) missing.push("systolic BP");
+        if (raw.calcPesiRr === null) missing.push("respiratory rate");
+        if (raw.calcPesiTemp === null) missing.push("temperature");
+        if (raw.calcPesiSao2 === null) missing.push("O2 saturation");
+
+        if (missing.length) {
+          pesi = null;
+          scoreReady = false;
+          chosenScoreValue = "not calculable";
+          scoreSummary = `PESI requires: ${missing.join(", ")}.`;
+          scoreWarnings.push("Chosen score not fully calculable due to missing inputs.");
+        } else {
+          let score = raw.calcPesiAge;
+          if (raw.calcPesiSex === "male") score += 10;
+          if (raw.calcPesiCancer) score += 30;
+          if (raw.calcPesiHeartFailure) score += 10;
+          if (raw.calcPesiLungDisease) score += 10;
+          if (raw.calcPesiHr >= 110) score += 20;
+          if (raw.calcPesiSbp < 100) score += 30;
+          if (raw.calcPesiRr >= 30) score += 20;
+          if (raw.calcPesiTemp < 36) score += 20;
+          if (raw.calcPesiAms) score += 60;
+          if (raw.calcPesiSao2 < 90) score += 20;
+          pesi = score;
+          scoreReady = true;
+          let pesiClass = "I";
+          if (score > 125) pesiClass = "V";
+          else if (score > 105) pesiClass = "IV";
+          else if (score > 85) pesiClass = "III";
+          else if (score > 65) pesiClass = "II";
+          chosenScoreValue = `${score} (Class ${pesiClass})`;
+          scoreSummary = `Calculated PESI: ${score} (Class ${pesiClass}; ${score <= 85 ? "low" : "elevated"} severity threshold by guideline cutpoint).`;
+        }
+      } else if (raw.scoreMode === "calc-hestia") {
+        pesi = null;
+        spesi = null;
+        bova = null;
+        scoreHr = null;
+        chosenScoreName = "Hestia (calculated)";
+        const positives = [
+          raw.calcHestiaHemodynamicUnstable,
+          raw.calcHestiaThrombolysisNeeded,
+          raw.calcHestiaActiveBleeding,
+          raw.calcHestiaOxygenNeed,
+          raw.calcHestiaPeOnAnticoag,
+          raw.calcHestiaSeverePain,
+          raw.calcHestiaMedSocialAdmit,
+          raw.calcHestiaCrclLow,
+          raw.calcHestiaLiverImpairment,
+          raw.calcHestiaPregnant,
+          raw.calcHestiaHit
+        ];
+        hestia = positives.filter(Boolean).length;
+        scoreReady = true;
+        chosenScoreValue = `${hestia} positive item(s)`;
+        scoreSummary = `Calculated Hestia positives: ${hestia} (${hestia === 0 ? "low severity threshold met" : "elevated severity threshold met"}).`;
+      } else if (raw.scoreMode === "calc-bova") {
+        pesi = null;
+        spesi = null;
+        hestia = null;
+        scoreHr = raw.calcBovaHr;
+        chosenScoreName = "Bova (calculated)";
+        const missing = [];
+        if (raw.calcBovaHr === null) missing.push("heart rate");
+        if (raw.calcBovaSbp === null) missing.push("systolic BP");
+        if (missing.length) {
+          bova = null;
+          scoreReady = false;
+          chosenScoreValue = "not calculable";
+          scoreSummary = `Bova requires: ${missing.join(", ")}.`;
+          scoreWarnings.push("Chosen score not fully calculable due to missing inputs.");
+        } else {
+          let score = 0;
+          if (raw.calcBovaSbp >= 90 && raw.calcBovaSbp <= 100) score += 2;
+          if (raw.calcBovaTroponin) score += 2;
+          if (raw.calcBovaRv) score += 2;
+          if (raw.calcBovaHr >= 110) score += 1;
+          bova = score;
+          scoreReady = true;
+          let stage = "I";
+          if (score > 4) stage = "III";
+          else if (score > 2) stage = "II";
+          chosenScoreValue = `${score} (Stage ${stage})`;
+          scoreSummary = `Calculated Bova: ${score} (Stage ${stage}; ${score <= 4 ? "low" : "elevated"} severity threshold by guideline cutpoint).`;
+          if (raw.calcBovaSbp < 90) {
+            scoreWarnings.push("Bova is primarily validated in normotensive PE; SBP <90 suggests a higher-risk physiology.");
+          }
+        }
+      }
+
+      return {
+        pesi,
+        spesi,
+        hestia,
+        bova,
+        scoreHr,
+        chosenScoreName,
+        chosenScoreValue,
+        scoreSummary,
+        scoreWarnings,
+        scoreReady
+      };
+    }
+
+    function updateScoreModeFields() {
+      const mode = value("score-mode");
+      const blocks = {
+        manual: ["manual-score-fields"],
+        "calc-spesi": ["spesi-calc-fields", "spesi-calc-toggles"],
+        "calc-pesi": ["pesi-calc-fields", "pesi-calc-toggles"],
+        "calc-hestia": ["hestia-calc-toggles"],
+        "calc-bova": ["bova-calc-fields", "bova-calc-toggles"]
+      };
+
+      Object.values(blocks).flat().forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.hidden = true;
+      });
+
+      (blocks[mode] || []).forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.hidden = false;
+      });
+    }
+
+    function syncRespiratoryInputsFromScoreInputs() {
+      const mode = value("score-mode");
+      let scoreRr = null;
+      let scoreO2Sat = null;
+      if (mode === "manual") {
+        scoreRr = numberValue("manual-score-rr");
+      } else if (mode === "calc-pesi") {
+        scoreRr = numberValue("calc-pesi-rr");
+        scoreO2Sat = numberValue("calc-pesi-sao2");
+      } else if (mode === "calc-spesi") {
+        scoreO2Sat = numberValue("calc-spesi-sao2");
+      }
+
+      const rrField = document.getElementById("rr");
+      if (rrField && scoreRr !== null) {
+        rrField.value = `${scoreRr}`;
+      }
+
+      const oxygenSatField = document.getElementById("oxygen-sat");
+      if (oxygenSatField && scoreO2Sat !== null) {
+        oxygenSatField.value = `${scoreO2Sat}`;
+      }
+    }
+
+    function buildExternalNarrative(data, cls) {
+      const scrubbed = scrubPotentialIdentifiers(data.caseNarrative || "");
+      const caseText = scrubbed.cleaned || "[No case discussion entered]";
+      const bleeding = bleedingRiskSummary(data);
+      const lines = [];
+      lines.push("DE-IDENTIFIED PE CASE NARRATIVE FOR EXTERNAL AI TOOL");
+      lines.push("Do not add patient identifiers in prompts or follow-up messages.");
+      lines.push("");
+      lines.push("Case Discussion (Scrubbed)");
+      lines.push(caseText);
+      lines.push("");
+      lines.push("Key Inputs");
+      lines.push(`- Calculated category: ${cls.category} (${categoryDescriptor(cls.base)})`);
+      lines.push(`- Diagnosis status: ${data.confirmedPe}`);
+      lines.push(`- Symptomatic acute PE: ${data.symptomatic}`);
+      lines.push(`- Incidental finding: ${data.incidental ? "yes" : "no"}`);
+      lines.push(`- Most proximal clot location: ${data.clotLocation}`);
+      lines.push(`- Severity method: ${data.chosenScoreName} (${data.chosenScoreValue})`);
+      lines.push(`- PESI / sPESI / Hestia+ / Bova: ${data.pesi ?? "n/a"} / ${data.spesi ?? "n/a"} / ${data.hestia ?? "n/a"} / ${data.bova ?? "n/a"}`);
+      lines.push(`- Age: ${data.patientAge ?? "n/a"}`);
+      lines.push(`- Hemodynamics: MAP ${data.map ?? "n/a"}, lactate ${data.lactate ?? "n/a"}, vasopressors ${data.vasopressors}, persistent hypotension/shock ${data.persistentHypotension ? "yes" : "no"}, transient hypotension ${data.transientHypotension ? "yes" : "no"}`);
+      lines.push(`- Respiratory status: O2 saturation ${data.oxygenSat ?? "n/a"}%, support ${data.oxygenSupport}, RR ${data.rr ?? "n/a"}, RV dysfunction ${data.rvDysfunction}, troponin ${data.troponin}, BNP ${data.bnp}`);
+      lines.push(`- Bleeding risk: absolute contraindication ${data.absoluteBleedingRisk ? "yes" : "no"}${bleeding.absolute.length ? ` (${bleeding.absolute.join(", ")})` : ""}; relative bleeding risk ${data.relativeBleedingRisk ? "yes" : "no"}${bleeding.relative.length ? ` (${bleeding.relative.join(", ")})` : ""}; anticoagulation contraindication ${data.contraAnticoag ? "yes" : "no"}`);
+      lines.push(`- Special factors: unable to lie flat ${data.unableLieFlat ? "yes" : "no"}`);
+      lines.push(`- Comorbid/special populations: pregnancy ${data.pregnancy ? "yes" : "no"}, breastfeeding ${data.breastfeeding ? "yes" : "no"}, active cancer ${data.activeCancer ? "yes" : "no"}, APS ${data.aps ? "yes" : "no"}, severe CKD/dialysis ${data.severeCKD ? "yes" : "no"}`);
+      lines.push("");
+      lines.push("Request Template");
+      lines.push("Using this de-identified case summary, provide immediate 0-24 hour PE management recommendations, including anticoagulation choice/dose/route, any advanced therapy recommendations, monitoring priorities, and escalation triggers. Please be as concrete as possible with your recommendations. Include recommendations in a copy/pastable format.");
+      return lines.join("\n");
+    }
+
+    function buildPendingExternalNarrative(data) {
+      const scrubbed = scrubPotentialIdentifiers(data.caseNarrative || "");
+      const caseText = scrubbed.cleaned || "[No case discussion entered]";
+      return [
+        "DE-IDENTIFIED PE CASE NARRATIVE FOR EXTERNAL AI TOOL",
+        "Do not add patient identifiers in prompts or follow-up messages.",
+        "",
+        "Case Discussion (Scrubbed)",
+        caseText,
+        "",
+        "Structured PE category and management recommendations are pending until clinical criteria are entered."
+      ].join("\n");
+    }
+
+    function classify(data) {
+      const hasScore = data.pesi !== null || data.spesi !== null || data.hestia !== null;
+      const lowByPesi = data.pesi !== null && data.pesi <= 85;
+      const lowBySpesi = data.spesi !== null && data.spesi === 0;
+      const lowByHestia = data.hestia !== null && data.hestia === 0;
+      const lowSeverity = lowByPesi || lowBySpesi || lowByHestia;
+
+      const elevatedByPesi = data.pesi !== null && data.pesi > 85;
+      const elevatedBySpesi = data.spesi !== null && data.spesi >= 1;
+      const elevatedByHestia = data.hestia !== null && data.hestia >= 1;
+      const elevatedSeverity = elevatedByPesi || elevatedBySpesi || elevatedByHestia;
+
+      const rvPositive = data.rvDysfunction === "yes";
+      const troponinPositive = data.troponin === "yes";
+      const bnpPositive = data.bnp === "yes";
+      const biomarkerPositive = troponinPositive || bnpPositive;
+
+      const hypoperfusionMarkers =
+        data.aki ||
+        data.oliguria ||
+        data.mentalStatus ||
+        data.lowCardiacIndex ||
+        data.shockScore ||
+        (data.lactate !== null && data.lactate > 2) ||
+        (data.map !== null && data.map < 60);
+
+      const respiratoryFailure = ["niv", "imv"].includes(data.oxygenSupport);
+      const needsAnySupplementalO2 = data.oxygenSupport !== "room-air";
+      const needsHighSupportO2 = ["o2-high", "hfnc", "niv", "imv"].includes(data.oxygenSupport);
+      const lowOxygenSaturation = data.oxygenSat !== null && data.oxygenSat < 90;
+
+      const normotensiveShock = hypoperfusionMarkers && !data.persistentHypotension && !data.cardiacArrest;
+
+      let base = "BC-pending";
+      if ((data.symptomatic === "no" && data.incidental) || (data.symptomatic === "no" && data.confirmedPe === "confirmed")) {
+        base = data.clotLocation === "subsegmental" ? "A1" : "A2";
+      } else if (data.cardiacArrest || data.persistentHypotension || data.vasopressors === "2plus") {
+        base = (data.cardiacArrest || data.vasopressors === "2plus" || respiratoryFailure) ? "E2" : "E1";
+      } else if (normotensiveShock || (data.transientHypotension && hypoperfusionMarkers)) {
+        base = "D2";
+      } else if (data.transientHypotension) {
+        base = "D1";
+      } else if (elevatedSeverity) {
+        if (rvPositive && biomarkerPositive) {
+          base = "C3";
+        } else if (rvPositive || biomarkerPositive) {
+          base = "C2";
+        } else {
+          base = "C1";
+        }
+      } else if (lowSeverity) {
+        base = data.clotLocation === "subsegmental" ? "B1" : "B2";
+      }
+
+      let significantResp = false;
+      if (base.charAt(0) === "C") {
+        significantResp = lowOxygenSaturation || (data.rr !== null && data.rr >= 30) || needsAnySupplementalO2;
+      } else if (["D", "E"].includes(base.charAt(0))) {
+        significantResp = needsHighSupportO2;
+      }
+
+      const category = base === "BC-pending" ? "B/C pending" : base + (significantResp ? "R" : "");
+      const family = base === "BC-pending" ? "U" : base.charAt(0);
+      return {
+        category,
+        base,
+        family,
+        hasScore,
+        lowSeverity,
+        elevatedSeverity,
+        rvPositive,
+        biomarkerPositive,
+        hypoperfusionMarkers,
+        significantResp,
+        respiratoryFailure,
+        pendingSeverityScore: base === "BC-pending"
+      };
+    }
+
+    function categoryDescriptor(base) {
+      if (base === "initial-pending") return "Clinical category pending until clinical criteria are entered";
+      if (base === "BC-pending") return "Symptomatic stable acute PE pending clinical severity score";
+      const family = base.charAt(0);
+      if (family === "A") return "Asymptomatic / incidental acute PE profile";
+      if (family === "B") return "Symptomatic low-risk acute PE profile";
+      if (family === "C") return "Elevated clinical severity acute PE profile";
+      if (family === "D") return "Incipient cardiopulmonary failure profile";
+      return "Cardiopulmonary failure / shock profile";
+    }
+
+    function severityClass(family) {
+      if (family === "A") return "sev-a";
+      if (family === "B") return "sev-b";
+      if (family === "C") return "sev-c";
+      if (family === "D") return "sev-d";
+      if (family === "U") return "sev-u";
+      return "sev-e";
+    }
+
+    function lowRiskScoreThresholdsMet(data) {
+      const thresholds = [];
+      if (data.hestia !== null && data.hestia === 0) thresholds.push("Hestia 0");
+      if (data.pesi !== null && data.pesi < 86) thresholds.push("PESI <86");
+      if (data.spesi !== null && data.spesi === 0) thresholds.push("sPESI 0");
+      if (data.bova !== null && data.bova <= 4) thresholds.push("Bova <=4");
+      return thresholds;
+    }
+
+    function deriveScoreSbp(data) {
+      if (data.scoreMode === "calc-spesi" && data.calcSpesiSbp !== null) return data.calcSpesiSbp;
+      if (data.scoreMode === "calc-pesi" && data.calcPesiSbp !== null) return data.calcPesiSbp;
+      if (data.scoreMode === "calc-bova" && data.calcBovaSbp !== null) return data.calcBovaSbp;
+      return null;
+    }
+
+    function hiPeithoAssessment(data, cls) {
+      const scoreSbp = deriveScoreSbp(data);
+      const hrCriterion = data.scoreHr !== null && data.scoreHr > 100;
+      const sbpCriterion =
+        (scoreSbp !== null && scoreSbp < 110) ||
+        data.transientHypotension ||
+        data.persistentHypotension;
+      const rrCriterion = data.rr !== null && data.rr > 20;
+      const highSupportCriterion = ["o2-high", "hfnc", "niv", "imv"].includes(data.oxygenSupport);
+      const confirmedDiagnosis = data.confirmedPe === "confirmed";
+      const noThrombolysisContraindication = !data.highBleedingRisk && !data.contraThrombolysis;
+      const metLabels = [];
+      if (hrCriterion) metLabels.push("HR >100 bpm");
+      if (sbpCriterion) metLabels.push("SBP <110 mm Hg");
+      if (rrCriterion) metLabels.push("RR >20/min");
+      if (highSupportCriterion) metLabels.push(">6 L/min oxygen, HFNC, NIV, or IMV");
+      const eligibleCategory = ["C2", "C3", "D1", "D2"].includes(cls.base);
+      const proximalClotBurden = ["segmental", "saddle"].includes(data.clotLocation);
+      return {
+        confirmedDiagnosis,
+        noThrombolysisContraindication,
+        eligibleCategory,
+        proximalClotBurden,
+        featureCount: metLabels.length,
+        metLabels,
+        absoluteEligible:
+          confirmedDiagnosis &&
+          eligibleCategory &&
+          proximalClotBurden &&
+          metLabels.length >= 2 &&
+          noThrombolysisContraindication,
+        relativeEligible:
+          confirmedDiagnosis &&
+          eligibleCategory &&
+          proximalClotBurden &&
+          metLabels.length >= 2
+      };
+    }
+
+    function buildPertConsensus(data, cls) {
+      const summary = [];
+      const actions = [];
+      const backup = [];
+
+      const canAnticoag = !data.contraAnticoag;
+      const lysisEligible = !data.contraThrombolysis && !data.highBleedingRisk;
+      const ecmoEligible = !data.absoluteBleedingRisk;
+      const c2Plus = ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const suspectedHighRiskProfile =
+        data.confirmedPe === "suspected" &&
+        c2Plus &&
+        !data.highBleedingRisk &&
+        canAnticoag;
+      const suspectedLowerRiskProfile =
+        data.confirmedPe === "suspected" &&
+        !c2Plus;
+      const suspectedHighRiskDelayedImaging =
+        data.confirmedPe === "suspected" &&
+        data.imagingDelayed &&
+        c2Plus &&
+        !data.highBleedingRisk &&
+        canAnticoag;
+      const advancedCandidate = ["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit;
+      const clotInTransitAdvancedTherapy =
+        data.clotTransit &&
+        ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const breakthroughPeFilterEligible =
+        data.recurrentOnTherapy &&
+        ["B", "C", "D", "E"].includes(cls.family);
+      const subsegmentalDisproportionatePresentation =
+        data.clotLocation === "subsegmental" &&
+        ["D1", "D2", "E1", "E2"].includes(cls.base) &&
+        !clotInTransitAdvancedTherapy;
+      const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
+      const extremeLmwhWeight = data.weightKg !== null && data.weightKg > 150;
+      const severeRenalExtremeWeightPregnancy = severeRenal && extremeLmwhWeight && data.pregnancy;
+      const cToE1Profile = ["C1", "C2", "C3", "D1", "D2", "E1"].includes(cls.base);
+      const severeRenalExtremeWeightC1 = severeRenal && extremeLmwhWeight && cls.base === "C1" && !data.pregnancy && !data.breastfeeding && !data.aps;
+      const severeRenalExtremeWeightC2ToE2 = severeRenal && extremeLmwhWeight && ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const outpatientDispositionSupported = ["A", "B"].includes(cls.family) && (!cls.hasScore || cls.lowSeverity);
+      const outpatientDispositionWithLowRiskScore = ["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity;
+      const outpatientSevereRenalOption =
+        outpatientDispositionSupported &&
+        severeRenal &&
+        !data.pregnancy &&
+        !data.breastfeeding &&
+        !data.aps;
+      const lowRiskScoreThresholds = lowRiskScoreThresholdsMet(data);
+      const pendingSeverityScore = cls.pendingSeverityScore;
+      const lowRiskScoreText = lowRiskScoreThresholds.length
+        ? ` (${lowRiskScoreThresholds.join(", ")})`
+        : "";
+      const lowRiskPregnancySevereRenal = outpatientDispositionSupported && data.pregnancy && severeRenal && !extremeLmwhWeight;
+      const lowRiskPregnancyRenalExtreme = outpatientDispositionSupported && data.pregnancy && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeeding = outpatientDispositionSupported && data.breastfeeding;
+      const lowRiskBreastfeedingSevereRenalExtreme = lowRiskBreastfeeding && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingSevereRenal = lowRiskBreastfeeding && severeRenal && !extremeLmwhWeight;
+      const lowRiskBreastfeedingExtremeWeight = lowRiskBreastfeeding && !severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingStandard = lowRiskBreastfeeding && !severeRenal && !extremeLmwhWeight;
+      const severeRenalExtremeWeightBreastfeeding = severeRenal && extremeLmwhWeight && data.breastfeeding;
+      const lowRiskDispositionSupport = (requirementsText) => cls.hasScore
+        ? `Disposition support: the incorporated clinical severity score${lowRiskScoreText} supports outpatient or early discharge if ${requirementsText}.`
+        : `Disposition support: outpatient or early discharge may be reasonable if home-treatment criteria are met and ${requirementsText}.`;
+      const lowRiskHospitalOverride = (reasonText) => cls.hasScore
+        ? `Disposition support: although the incorporated clinical severity score${lowRiskScoreText} supports outpatient or early discharge, ${reasonText}`
+        : `Disposition support: ${reasonText}`;
+      const normotensiveIntermediateHigh =
+        cls.base === "C3" &&
+        !data.persistentHypotension &&
+        !data.transientHypotension &&
+        data.vasopressors === "0" &&
+        (data.map === null || data.map >= 65);
+      const scoreHrTachy = data.scoreHr !== null && data.scoreHr > 110;
+      const relativeThrombolysisConcern = data.relativeBleedingRisk && !data.contraThrombolysis;
+      const hiPeitho = hiPeithoAssessment(data, cls);
+      const pushLmwhHighWeightSummary = () => {
+        if (extremeLmwhWeight) {
+          summary.push(`If LMWH is selected at weight ${data.weightKg} kg, consider peak anti-Xa monitoring (3-5 hours after dose at steady state) with pharmacy-guided dose review.`);
+        }
+      };
+
+      if (["A", "B"].includes(cls.family)) {
+        if (lowRiskPregnancyRenalExtreme) {
+          summary.push("Disposition: hospital admission is recommended because pregnancy with severe renal dysfunction and body weight >150 kg makes outpatient anticoagulant selection and dosing less certain.");
+        } else if (lowRiskBreastfeedingSevereRenalExtreme) {
+          summary.push("Disposition: hospital admission is recommended because breastfeeding with severe renal dysfunction and body weight >150 kg makes anticoagulant selection and dosing less certain.");
+        } else
+        if (outpatientDispositionWithLowRiskScore) {
+          summary.push("Disposition: outpatient or early-discharge pathway is reasonable if rapid follow-up can be provided.");
+        } else if (!cls.hasScore) {
+          summary.push("Disposition: outpatient or early-discharge pathway is reasonable if home-treatment criteria and rapid follow-up are met.");
+        } else {
+          summary.push("Disposition: incorporated score does not confirm a low-risk outpatient pathway; reassess whether observation or admission is more appropriate.");
+        }
+      } else if (pendingSeverityScore) {
+        summary.push("Disposition: symptomatic stable PE is unclassified between category B and C pending a documented PESI, sPESI, or Hestia result; complete one now to guide disposition.");
+      } else if (cls.base === "C1" || cls.base === "C2") {
+        summary.push("Disposition: hospital admission (telemetry or stepdown based on trajectory).");
+      } else if (cls.base === "C3") {
+        summary.push("Disposition: monitored unit (high-acuity stepdown or ICU depending trajectory).");
+      } else if (cls.base === "D1" || cls.base === "D2") {
+        summary.push("Disposition: ICU or high-acuity intermediate care with continuous monitoring.");
+      } else if (cls.base === "E1") {
+        summary.push("Disposition: ICU shock-level care with immediate reperfusion capability.");
+      } else if (cls.base === "E2") {
+        summary.push("Disposition: ICU shock-level care with immediate reperfusion-capable response.");
+      }
+
+      if (["C1", "C2", "C3", "D1", "D2", "E1"].includes(cls.base)) {
+        summary.push("Risk stratification: consider transthoracic echocardiography for further risk stratification if not already performed.");
+      }
+
+      if (cls.family === "C" && data.lactate === null) {
+        summary.push("Risk stratification: measuring lactate is reasonable to help further stratify clinical severity.");
+      }
+
+      if (["C2", "C3"].includes(cls.base)) {
+        summary.push("Monitoring/escalation: maintain close surveillance for clinical deterioration and escalate immediately to the next reperfusion tier when indicated.");
+      }
+
+      if (suspectedHighRiskProfile) {
+        summary.push("Suspected PE: in suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk, consider administration of therapeutic anticoagulation when imaging is delayed or not immediately accessible.");
+      } else if (suspectedLowerRiskProfile) {
+        summary.push("Suspected PE: obtain diagnostic imaging as soon as possible before initiating anticoagulation.");
+      }
+
+      if (clotInTransitAdvancedTherapy) {
+        summary.push("Advanced therapy: with free-floating right atrial and/or RV clot-in-transit, advanced therapies are reasonable over anticoagulation alone to reduce the risk of clinical deterioration.");
+      }
+
+      if (data.bleedAbsoluteActive) {
+        summary.push("Anticoagulation: active bleeding is present; do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE.");
+      } else if (!canAnticoag) {
+        summary.push("Anticoagulation: therapeutic anticoagulation is contraindicated; defer anticoagulation and use a non-anticoagulation pathway.");
+      } else if (severeRenalExtremeWeightBreastfeeding) {
+        summary.push("Anticoagulation: breastfeeding with severe renal dysfunction and body weight >150 kg is present; hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
+      } else if (lowRiskBreastfeedingSevereRenal) {
+        summary.push("Anticoagulation: breastfeeding with severe renal dysfunction is present; use enoxaparin 1 mg/kg SC every 24 hours with outpatient/inpatient bridge to warfarin. Consider pharmacy consultation and monitoring of peak anti-Xa levels.");
+      } else if (lowRiskBreastfeedingExtremeWeight) {
+        summary.push("Anticoagulation: breastfeeding with body weight >150 kg is present; use enoxaparin 1 mg/kg SC every 12 hours with outpatient/inpatient bridge to warfarin. Consider pharmacy consultation regarding dose adjustment in extreme weight and monitoring of peak anti-Xa levels.");
+        pushLmwhHighWeightSummary();
+      } else if (lowRiskBreastfeedingStandard) {
+        summary.push("Anticoagulation: breastfeeding is present; use enoxaparin 1 mg/kg SC every 12 hours with outpatient bridge to warfarin.");
+      } else if (data.breastfeeding) {
+        summary.push("Anticoagulation: breastfeeding is present; start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+      } else if (lowRiskPregnancyRenalExtreme) {
+        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+      } else if (severeRenalExtremeWeightPregnancy) {
+        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+      } else if (lowRiskPregnancySevereRenal) {
+        summary.push("Anticoagulation: start enoxaparin 1 mg/kg SC every 24 hours (pregnancy-preferred); use UFH infusion if rapid reversibility is needed.");
+      } else if (severeRenalExtremeWeightC2ToE2) {
+        summary.push("Anticoagulation: severe renal dysfunction and body weight >150 kg are present; use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion given uncertainty regarding LMWH dosing in this setting.");
+      } else if (severeRenalExtremeWeightC1) {
+        summary.push("Anticoagulation: severe renal dysfunction and body weight >150 kg are present; in category C1, initiating a DOAC may be reasonable. If parenteral anticoagulation is preferred, use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion given uncertainty regarding LMWH dosing.");
+      } else if (cls.base === "E2") {
+        summary.push("Anticoagulation: start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
+      } else if (severeRenal && cToE1Profile) {
+        summary.push("Anticoagulation: severe renal dysfunction is present; either UFH 80 units/kg IV bolus then 18 units/kg/hour infusion or enoxaparin 1 mg/kg SC every 24 hours is appropriate.");
+      } else if (data.pregnancy) {
+        summary.push("Anticoagulation: start enoxaparin 1 mg/kg SC every 12 hours (pregnancy-preferred); use UFH infusion if rapid reversibility is needed.");
+        pushLmwhHighWeightSummary();
+      } else if (data.aps) {
+        summary.push("Anticoagulation: start therapeutic parenteral anticoagulation (eg, enoxaparin 1 mg/kg SC every 12 hours) and bridge to warfarin (target INR 2.0-3.0).");
+        pushLmwhHighWeightSummary();
+      } else if (outpatientSevereRenalOption) {
+        summary.push("Anticoagulation: for outpatient/early-discharge severe CKD or dialysis, apixaban or warfarin may be used. If apixaban is selected, use usual VTE dosing or confirm dosing with pharmacy. If warfarin is selected, hospital admission is required; begin UFH infusion and start warfarin 2.5-5 mg PO daily.");
+      } else if (severeRenal || data.cardiacArrest) {
+        summary.push("Anticoagulation: start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion; if LMWH is used in severe renal impairment, use enoxaparin 1 mg/kg SC every 24 hours.");
+      } else if (data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base) || pendingSeverityScore)) {
+        summary.push("Anticoagulation: oral option apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily; parenteral option enoxaparin 1 mg/kg SC every 12 hours.");
+      } else {
+        summary.push("Anticoagulation: start enoxaparin 1 mg/kg SC every 12 hours.");
+        pushLmwhHighWeightSummary();
+      }
+
+      if (hiPeitho.absoluteEligible) {
+        summary.push(`Advanced therapy (HI-PEITHO): this confirmed category ${cls.base} profile meets at least two HI-PEITHO clinical severity features (${hiPeitho.metLabels.join(", ")}). Catheter-directed thrombolysis using the HI-PEITHO regimen may be reasonable over anticoagulation alone; if CDL is not readily available, reduced-dose systemic alteplase 4 mg IV bolus followed by 2 mg/hour for 7 hours may be reasonable (HI-PEITHO, NEJM 2026; DOI: 10.1056/NEJMoa2516567).`);
+      }
+
+      if (data.recurrentOnTherapy) {
+        summary.push(`Breakthrough PE: evaluate immediately for clinical and pharmacologic contributors to recurrence. If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, switching to an alternative anticoagulant drug class is reasonable; if recurrence occurred on reduced-dose DOAC therapy, returning to full-dose DOAC within the same class is reasonable.${breakthroughPeFilterEligible ? " In AHA/ACC categories B-E, retrievable IVC filter placement may also be considered to reduce short-term recurrent PE." : ""}${data.activeCancer ? " If active cancer and recurrence occurred despite therapeutic LMWH, LMWH dose escalation by 20%-25% is reasonable." : ""}`);
+      }
+
+      if (["D1", "D2", "E1", "E2"].includes(cls.base)) {
+        if (subsegmentalDisproportionatePresentation) {
+          summary.push("Advanced therapy: severity of clinical presentation may be out of proportion to the extent of pulmonary embolism (subsegmental PE) and may be multifactorial; the patient is unlikely to benefit from CDT, MT, surgical thrombectomy, or systemic thrombolysis.");
+        } else if (cls.base === "E2") {
+          if (relativeThrombolysisConcern) {
+            summary.push(`Advanced therapy: Relative contraindication to systemic thrombolysis is present. Systemic thrombolysis may still be reasonable if bleeding risk is acceptable; also evaluate CDL, MT, or surgical thrombectomy based on immediate availability.${ecmoEligible ? " It is reasonable to institute VA-ECMO to stabilize hemodynamics and improve oxygenation when resources are available and bleeding risk is deemed acceptable." : ""}`);
+          } else if (lysisEligible) {
+            summary.push(`Advanced therapy: systemic thrombolysis is reasonable if bleeding risk is acceptable; also evaluate CDL, MT, or surgical thrombectomy based on immediate availability.${ecmoEligible ? " It is reasonable to institute VA-ECMO to stabilize hemodynamics and improve oxygenation when resources are available." : ""}`);
+          } else {
+            summary.push("Advanced therapy: systemic thrombolysis is not suitable; prioritize consideration of CDL, MT, or surgical thrombectomy.");
+          }
+        } else if (relativeThrombolysisConcern) {
+          summary.push("Advanced therapy: Relative contraindication to systemic thrombolysis is present. Systemic thrombolysis may still be reasonable if bleeding risk is acceptable; also evaluate CDL, MT, or surgical thrombectomy based on immediate availability.");
+        } else if (lysisEligible) {
+          summary.push("Advanced therapy: consider systemic thrombolysis (if bleeding risk acceptable), CDL, MT, or surgical thrombectomy (based on local capabilities and specialty consultation).");
+        } else {
+          summary.push("Advanced therapy: systemic thrombolysis is not suitable; prioritize consideration of CDL, MT, or surgical thrombectomy.");
+        }
+
+        if (data.unableLieFlat && !subsegmentalDisproportionatePresentation) {
+          summary.push(`Advanced therapy modifier: inability to lie flat may preclude IR-based options; favor ${data.absoluteBleedingRisk ? "surgical thrombectomy or another non-lytic reperfusion pathway" : "systemic thrombolysis (if acceptable bleeding risk) or surgical thrombectomy"}.`);
+        }
+      }
+
+      if (["C3", "D1", "D2"].includes(cls.base)) {
+        summary.push("Transfer: if local advanced therapies are limited, transfer to an advanced-therapy center after initial stabilization.");
+      }
+
+      if (pendingSeverityScore && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now.");
+        actions.push("Disposition support: symptomatic stable PE remains unclassified between category B and C until PESI, sPESI, or Hestia is documented; complete one of these now before labeling the patient low risk or selecting an outpatient pathway.");
+      } else if (lowRiskPregnancyRenalExtreme && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH with bridge to warfarin).");
+        actions.push(lowRiskHospitalOverride("pregnancy with severe renal dysfunction and body weight >150 kg favors inpatient UFH initiation and warfarin bridge."));
+      } else if (lowRiskBreastfeedingSevereRenalExtreme && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (pharmacist-guided LMWH vs. UFH).");
+        actions.push(lowRiskHospitalOverride("breastfeeding with severe renal dysfunction and body weight >150 kg favors hospitalization for anticoagulant selection and dosing."));
+      } else if (lowRiskPregnancySevereRenal && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (renal-adjusted LMWH; UFH if rapid reversibility is needed).");
+        actions.push(lowRiskDispositionSupport("rapid follow-up, anticoagulation access, and renal-adjusted LMWH planning can be provided"));
+      } else if (lowRiskBreastfeedingSevereRenal && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (LMWH with bridge to warfarin).");
+        actions.push(lowRiskDispositionSupport("anticoagulation access, pharmacy consultation, anti-Xa planning, and warfarin bridge follow-up can be provided"));
+      } else if (lowRiskBreastfeedingExtremeWeight && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (LMWH with bridge to warfarin).");
+        actions.push(lowRiskDispositionSupport("anticoagulation access, pharmacy input on dose adjustment, anti-Xa monitoring, and warfarin bridge follow-up can be provided"));
+      } else if (lowRiskBreastfeedingStandard && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (LMWH with outpatient bridge to warfarin).");
+        actions.push(lowRiskDispositionSupport("anticoagulation access, warfarin bridge planning, and rapid follow-up can be provided"));
+      } else if (severeRenalExtremeWeightPregnancy && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH).");
+      } else if (severeRenalExtremeWeightC1 && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (DOAC vs. UFH).");
+      } else if (severeRenalExtremeWeightC2ToE2 && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH).");
+      } else if (["A", "B"].includes(cls.family) && canAnticoag) {
+        if (data.pregnancy) {
+          actions.push("[COR 1] Start therapeutic anticoagulation now with pregnancy-preferred LMWH.");
+        } else {
+          actions.push("[COR 1] Start therapeutic anticoagulation now.");
+        }
+
+        if (!cls.hasScore) {
+          actions.push("Disposition support: if disposition is being considered for outpatient or early discharge, use a validated decision tool such as Hestia, sPESI, PESI, or Bova to help identify patients suitable for home treatment.");
+        } else if (cls.lowSeverity) {
+          const scoreText = lowRiskScoreThresholds.length
+            ? ` (${lowRiskScoreThresholds.join(", ")})`
+            : "";
+          actions.push(`Disposition support: the incorporated clinical severity score${scoreText} supports an outpatient or early-discharge pathway if home-treatment criteria and rapid follow-up are met.`);
+        } else {
+          actions.push("Disposition support: the incorporated clinical severity score does not support a low-risk outpatient pathway; use observation or hospital admission for initial treatment.");
+        }
+      } else if (data.breastfeeding && canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH with bridge to warfarin).");
+      } else if (canAnticoag) {
+        actions.push("[COR 1] Start therapeutic anticoagulation now; if parenteral therapy is used, LMWH dosing is provided in the medication section.");
+      } else {
+        actions.push("[Operational] Document absolute anticoagulation contraindication now and initiate a non-anticoagulation pathway.");
+      }
+
+      if (suspectedHighRiskDelayedImaging) {
+        actions.push("[COR 2a] With suspected acute PE, an AHA/ACC category C2 or higher profile, and low bleeding risk, initiate therapeutic anticoagulation while imaging is delayed or not immediately accessible.");
+      }
+
+      if (hiPeitho.absoluteEligible) {
+        actions.push("[Operational] HI-PEITHO-style escalation is reasonable to evaluate now: if catheter-directed thrombolysis is available, use the study-style low-dose catheter regimen; if CDL is not readily available, reduced-dose systemic alteplase may be a reasonable alternative.");
+      }
+
+      if (["C3", "D1", "D2", "E1", "E2"].includes(cls.base)) {
+        actions.push("[COR 1] Use continuous telemetry and frequent perfusion reassessment (MAP, lactate, urine output, mental status).");
+      }
+
+      if (normotensiveIntermediateHigh && scoreHrTachy) {
+        actions.push("Alert: score-derived heart rate >110 bpm in a normotensive intermediate-high-risk profile may signal imminent hemodynamic collapse; increase reassessment frequency and maintain immediate escalation readiness.");
+      }
+
+      if (data.unableLieFlat) {
+        actions.push("[Operational] Flag inability to lie flat in handoff; IR-based procedures may be precluded.");
+      }
+
+      if (cls.base === "E2" && ecmoEligible) {
+        actions.push("[COR 2b] Initiate shock pathway now; VA-ECMO is reasonable when refractory shock or severe hypoxemia requires stabilization and resources are available.");
+      }
+
+      if (["D1", "D2", "E1", "E2"].includes(cls.base)) {
+        actions.push("Hemodynamic support: consider inhaled pulmonary vasodilators to reduce RV afterload; if low-output or shock features are present, vasopressors and/or inotropes may be needed to improve cardiac output and systemic perfusion.");
+      }
+
+      if (["D2", "E1", "E2"].includes(cls.base)) {
+        actions.push("For cardiogenic shock or low-output physiology, use vasopressors and/or inotropes as needed to improve cardiac output and systemic perfusion.");
+      }
+
+      if (data.recurrentOnTherapy) {
+        actions.push("Perform immediate breakthrough-PE evaluation: confirm adherence, therapeutic intensity, drug interactions, absorption/administration issues, renal function, and clinical factors contributing to recurrence.");
+        actions.push("If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, plan a switch to an alternative anticoagulant drug class rather than continuing the same class.");
+      }
+
+      if (advancedCandidate) {
+        backup.push("In the event of clinical deterioration, including worsening hypoxia or end-organ hypoperfusion, escalate immediately to the next reperfusion tier.");
+      }
+
+      if (pendingSeverityScore) {
+        backup.push("If clinical status worsens before formal severity scoring is completed, move to monitored inpatient care and reclassify immediately.");
+      } else if (lowRiskPregnancyRenalExtreme || lowRiskBreastfeedingSevereRenalExtreme) {
+        backup.push("If clinical status worsens or anticoagulant management becomes difficult, maintain inpatient care and reclassify PE severity immediately.");
+      } else if (["A", "B"].includes(cls.family)) {
+        backup.push("If outpatient trajectory worsens, upgrade to inpatient monitored care and reclassify PE severity.");
+      } else if (cls.base === "C3") {
+        backup.push("If clinical status worsens despite anticoagulation-first strategy, move to immediate reperfusion pathway.");
+      } else if (cls.base === "D1" || cls.base === "D2") {
+        backup.push("If hemodynamics worsen toward persistent hypotension/shock, proceed with immediate reperfusion.");
+      } else if (cls.base === "E1") {
+        backup.push(`If instability persists after first reperfusion strategy, activate an alternate reperfusion modality${ecmoEligible ? ", including consideration for VA-ECMO," : ""} without delay.`);
+      } else if (cls.base === "E2") {
+        backup.push("If instability persists after first reperfusion strategy, activate an alternate reperfusion modality without delay.");
+      }
+
+      if (data.unableLieFlat) {
+        backup.push(`If IR access is not feasible due to positioning intolerance, pivot to ${data.absoluteBleedingRisk ? "a surgical or other non-lytic reperfusion approach" : "systemic thrombolysis (if eligible) or surgical approach"}.`);
+      }
+
+      if (data.contraThrombolysis) {
+        backup.push("If systemic thrombolysis is contraindicated, prioritize MT or surgical pathways based on fastest local capability.");
+      }
+
+      if (data.contraAnticoag) {
+        backup.push("If anticoagulation cannot be given, consider temporary retrievable IVC filter and remove once anticoagulation is feasible.");
+      }
+
+      if (cls.base === "E2" && ecmoEligible) {
+        backup.push("If refractory shock/cardiac arrest persists despite initial reperfusion, escalate to VA-ECMO-capable support in combination with catheter-based or surgical reperfusion.");
+      }
+
+      backup.push("Reassess management plan after each major clinical change and at minimum every 6 hours in unstable patients.");
+
+      return { summary, actions, backup };
+    }
+
+    function buildRecommendations(data, cls) {
+      const recommendations = [];
+      const rationale = [];
+      const alerts = [];
+
+      const specialFlags = {
+        pregnancy: data.pregnancy,
+        breastfeeding: data.breastfeeding,
+        activeCancer: data.activeCancer,
+        aps: data.aps,
+        severeCKD: data.severeCKD
+      };
+
+      const specialSummary = specialConditionsSummary(specialFlags);
+      const bleeding = bleedingRiskSummary(data);
+      const family = cls.family;
+      const canAnticoag = !data.contraAnticoag;
+      const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
+      const extremeLmwhWeight = data.weightKg !== null && data.weightKg > 150;
+      const outpatientDispositionSupported = ["A", "B"].includes(cls.family) && (!cls.hasScore || cls.lowSeverity);
+      const lowRiskPregnancySevereRenal = outpatientDispositionSupported && data.pregnancy && severeRenal && !extremeLmwhWeight;
+      const lowRiskPregnancyRenalExtreme = outpatientDispositionSupported && data.pregnancy && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeeding = outpatientDispositionSupported && data.breastfeeding;
+      const lowRiskBreastfeedingSevereRenalExtreme = lowRiskBreastfeeding && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingSevereRenal = lowRiskBreastfeeding && severeRenal && !extremeLmwhWeight;
+      const lowRiskBreastfeedingExtremeWeight = lowRiskBreastfeeding && !severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingStandard = lowRiskBreastfeeding && !severeRenal && !extremeLmwhWeight;
+      const severeRenalExtremeWeightBreastfeeding = severeRenal && extremeLmwhWeight && data.breastfeeding;
+      const severeRenalExtremeWeightPregnancy = severeRenal && extremeLmwhWeight && data.pregnancy;
+      const clotInTransitAdvancedTherapy =
+        data.clotTransit &&
+        ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const subsegmentalDisproportionatePresentation =
+        data.clotLocation === "subsegmental" &&
+        ["D1", "D2", "E1", "E2"].includes(cls.base) &&
+        !clotInTransitAdvancedTherapy;
+      const subsegmentalEndovascularConcern =
+        data.clotLocation === "subsegmental" &&
+        (["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit) &&
+        !clotInTransitAdvancedTherapy;
+      const normotensiveIntermediateHigh =
+        cls.base === "C3" &&
+        !data.persistentHypotension &&
+        !data.transientHypotension &&
+        data.vasopressors === "0" &&
+        (data.map === null || data.map >= 65);
+      const scoreHrTachy = data.scoreHr !== null && data.scoreHr > 110;
+      const pendingSeverityScore = cls.pendingSeverityScore;
+      const hiPeitho = hiPeithoAssessment(data, cls);
+
+      rationale.push(`Computed AHA/ACC category: ${cls.category} (${categoryDescriptor(cls.base)}).`);
+      rationale.push(`Symptoms: ${data.symptomatic === "yes" ? "present" : "not reported"}; incidental discovery: ${data.incidental ? "yes" : "no"}.`);
+      rationale.push(`Clot location input: ${data.clotLocation}.`);
+      rationale.push(`Chosen severity method: ${data.chosenScoreName} (${data.chosenScoreValue}).`);
+
+      if (data.pesi !== null || data.spesi !== null || data.hestia !== null || data.bova !== null) {
+        rationale.push(`Severity values used: PESI ${data.pesi ?? "n/a"}, sPESI ${data.spesi ?? "n/a"}, Hestia positives ${data.hestia ?? "n/a"}, Bova ${data.bova ?? "n/a"}.`);
+      } else {
+        rationale.push("No PESI, sPESI, Hestia, or Bova result is documented.");
+      }
+
+      rationale.push(`RV dysfunction: ${yesNoUnknown(data.rvDysfunction)}; troponin: ${yesNoUnknown(data.troponin)}; BNP: ${yesNoUnknown(data.bnp)}.`);
+      rationale.push(`Hemodynamic profile: persistent hypotension ${data.persistentHypotension ? "yes" : "no"}, transient hypotension ${data.transientHypotension ? "yes" : "no"}, MAP ${data.map ?? "n/a"}, lactate ${data.lactate ?? "n/a"}, unable to lie flat ${data.unableLieFlat ? "yes" : "no"}.`);
+      rationale.push(`Respiratory status: O2 saturation ${data.oxygenSat ?? "n/a"}%, ${data.oxygenSupport.replace("-", " ")}${data.rr !== null ? `, RR ${data.rr}` : ""}.`);
+      if (data.caseNarrative.trim().length) {
+        rationale.push("De-identified case narrative was provided and merged into the external-use narrative output.");
+      }
+
+      if (pendingSeverityScore) {
+        rationale.push("A symptomatic stable acute PE profile cannot be assigned to category B or C until PESI, sPESI, or Hestia is documented.");
+      }
+
+      if (specialSummary.length) {
+        rationale.push(`Special considerations: ${specialSummary.join(", ")}.`);
+      }
+
+      if (bleeding.absolute.length || bleeding.relative.length) {
+        const bleedingNotes = [];
+        if (bleeding.absolute.length) bleedingNotes.push(`absolute bleeding contraindications: ${bleeding.absolute.join(", ")}`);
+        if (bleeding.relative.length) bleedingNotes.push(`relative bleeding risk factors: ${bleeding.relative.join(", ")}`);
+        rationale.push(`Bleeding-risk profile: ${bleedingNotes.join("; ")}.`);
+      }
+
+      if ((data.inputValidationWarnings || []).length) {
+        rationale.push(`Input validation flags: ${data.inputValidationWarnings.join("; ")}`);
+      }
+
+      if (cls.base === "D2") {
+        rationale.push("D2 classification reflects normotensive shock physiology driven by isolated hypoperfusion markers (eg, lactate >2, AKI, oliguria, mental status change, cardiac index <2.2, MAP <60, or increased shock score/stage).");
+      } else if (cls.base === "D1") {
+        rationale.push("D1 classification reflects transient hypotension physiology without the isolated hypoperfusion features that define D2.");
+      }
+
+      if (subsegmentalDisproportionatePresentation) {
+        rationale.push("Subsegmental-only PE with D/E physiology suggests the severity of presentation may be out of proportion to embolic burden and may be multifactorial.");
+      }
+
+      if (hiPeitho.relativeEligible) {
+        rationale.push(`HI-PEITHO features present: ${hiPeitho.featureCount}/4 (${hiPeitho.metLabels.join(", ")}).`);
+      }
+
+      if (normotensiveIntermediateHigh && scoreHrTachy) {
+        alerts.push("Score-derived HR >110 bpm in normotensive intermediate-high-risk PE may indicate imminent hemodynamic collapse.");
+        recommendations.push("[Operational] Score-derived HR >110 bpm in normotensive intermediate-high-risk PE should trigger intensified surveillance and immediate escalation readiness.");
+      }
+
+      if (data.unableLieFlat) {
+        alerts.push("Unable to lie flat: IR-based procedures may be precluded.");
+        recommendations.push(`[Operational] In this category ${cls.base} case, inability to lie flat may preclude IR-based procedures (CDL/MT) and should shape reperfusion choice.`);
+      }
+
+      if (subsegmentalDisproportionatePresentation) {
+        alerts.push("Subsegmental-only PE with D/E physiology: advanced PE reperfusion therapy is unlikely to provide benefit.");
+      } else if (subsegmentalEndovascularConcern) {
+        alerts.push("Subsegmental-only clot burden: catheter-directed thrombectomy is unlikely to be suitable.");
+      }
+
+      if (data.bleedAbsoluteActive) {
+        recommendations.push("[COR 2a] Active bleeding is present: do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE.");
+        alerts.push("Active bleeding selected: anticoagulation should be withheld.");
+      } else if (data.contraAnticoag) {
+        recommendations.push("[COR 2a] Absolute anticoagulation contraindication present: defer anticoagulation and evaluate immediate retrievable IVC filter placement if clinically needed.");
+        alerts.push("Absolute anticoagulation contraindication selected.");
+      } else if (lowRiskPregnancySevereRenal) {
+        recommendations.push("[COR 1] In a low-risk pregnancy profile with severe renal dysfunction, start enoxaparin 1 mg/kg SC every 24 hours; use UFH if rapid reversibility is needed.");
+      } else if (lowRiskPregnancyRenalExtreme) {
+        recommendations.push("[COR 1] In a low-risk pregnancy profile with severe renal dysfunction and body weight >150 kg, recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+      } else if (lowRiskBreastfeedingSevereRenalExtreme) {
+        recommendations.push("[COR 1] In a low-risk breastfeeding profile with severe renal dysfunction and body weight >150 kg, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
+      } else if (lowRiskBreastfeedingSevereRenal) {
+        recommendations.push("[COR 1] In a low-risk breastfeeding profile with severe renal dysfunction, use enoxaparin 1 mg/kg SC every 24 hours with outpatient/inpatient bridge to warfarin; involve pharmacy and plan peak anti-Xa monitoring.");
+      } else if (lowRiskBreastfeedingExtremeWeight) {
+        recommendations.push("[COR 1] In a low-risk breastfeeding profile with body weight >150 kg, use enoxaparin 1 mg/kg SC every 12 hours with outpatient/inpatient bridge to warfarin; involve pharmacy for dose review and plan peak anti-Xa monitoring.");
+      } else if (lowRiskBreastfeedingStandard) {
+        recommendations.push("[COR 1] In a low-risk breastfeeding profile without severe renal dysfunction or extreme weight, use LMWH with outpatient bridge to warfarin; avoid DOACs.");
+      } else if (severeRenalExtremeWeightPregnancy) {
+        recommendations.push("[COR 1] Pregnancy with severe renal dysfunction and body weight >150 kg: recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+      } else if (severeRenalExtremeWeightBreastfeeding) {
+        recommendations.push("[COR 1] Breastfeeding with severe renal dysfunction and body weight >150 kg: hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
+      } else if (data.pregnancy) {
+        recommendations.push("[COR 1] Pregnancy: use LMWH (eg, enoxaparin 1 mg/kg SC every 12 hours) or UFH; avoid DOACs and warfarin.");
+      } else if (data.breastfeeding) {
+        recommendations.push("[COR 1] Breastfeeding: use UFH with bridge to warfarin; avoid DOACs and do not use LMWH in this tool pathway.");
+      } else if (data.aps) {
+        recommendations.push("[COR 1] Established thrombotic APS: VKA is preferred over DOAC.");
+      }
+
+      if (!data.contraAnticoag && data.confirmedPe === "suspected" && data.imagingDelayed && !data.highBleedingRisk && ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base)) {
+        recommendations.push("[COR 2a] In suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk, therapeutic anticoagulation is reasonable when imaging is delayed or not immediately accessible.");
+      }
+
+      if (["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base)) {
+        recommendations.push(`[COR 3: Harm] In category ${cls.base}, systemic thrombolysis should not be used over anticoagulation alone.`);
+      }
+
+      if (cls.base === "C3") {
+        recommendations.push("[COR 2b] In category C3, the benefit of systemic thrombolysis over anticoagulation alone is uncertain.");
+      }
+
+      if (clotInTransitAdvancedTherapy) {
+        recommendations.push("[COR 2a] With free-floating right atrial and/or RV clot-in-transit, advanced therapies are reasonable over anticoagulation alone to reduce the risk of clinical deterioration.");
+      }
+
+      if (hiPeitho.absoluteEligible) {
+        recommendations.push(`[Operational] In confirmed category ${cls.base} PE with at least two HI-PEITHO clinical severity features (${hiPeitho.metLabels.join(", ")}), catheter-directed thrombolysis using the HI-PEITHO regimen may be reasonable over anticoagulation alone; if CDL is not readily available, reduced-dose systemic alteplase 4 mg IV bolus followed by 2 mg/hour for 7 hours may be reasonable (HI-PEITHO, NEJM 2026; DOI: 10.1056/NEJMoa2516567).`);
+      }
+
+      if (data.contraThrombolysis) {
+        alerts.push("Absolute bleeding contraindication selected: do not use systemic thrombolysis or VA-ECMO.");
+        recommendations.push(`[Operational] In category ${cls.base}, systemic thrombolysis is contraindicated; prioritize non-lytic advanced therapy (MT or surgical pathway) when reperfusion is required.`);
+      }
+
+      if (data.relativeBleedingRisk) {
+        alerts.push("Relative bleeding risk factors selected.");
+      }
+
+      (data.inputValidationWarnings || []).forEach((warning) => alerts.push(warning));
+
+      if (data.highBleedingRisk) {
+        recommendations.push(`[Operational] In category ${cls.base} with high bleeding risk, favor non-lytic reperfusion strategies when efficacy is expected to be comparable.`);
+      }
+
+      if (data.recurrentOnTherapy) {
+        recommendations.push("[COR 1] Recurrent PE despite therapeutic anticoagulation should prompt evaluation for clinical and pharmacologic contributors, including adherence, therapeutic intensity, interactions, absorption, and other causes of treatment failure.");
+        recommendations.push("[COR 2a] If recurrence occurred while the patient was adherent to therapeutic-intensity anticoagulation, changing to an alternative anticoagulant drug class is reasonable rather than continuing the same class.");
+        recommendations.push("[COR 2a] If recurrence occurred while the patient was adherent to reduced-dose DOAC therapy, returning to full-dose DOAC within the same class is reasonable.");
+        if (["B", "C", "D", "E"].includes(cls.family)) {
+          recommendations.push("[COR 2b] In AHA/ACC categories B-E with recurrent PE despite optimal therapeutic anticoagulation, retrievable IVC filter placement may be considered to reduce the short-term incidence of additional recurrent PE.");
+        }
+        if (data.activeCancer) {
+          recommendations.push("[COR 2a] In active cancer with recurrent PE despite therapeutic LMWH, LMWH dose escalation by 20%-25% is reasonable to reduce future recurrence.");
+        }
+      }
+
+      if (["D1", "D2", "E1", "E2"].includes(cls.base)) {
+        recommendations.push("[Operational] Hemodynamic support should be individualized: inhaled pulmonary vasodilators may reduce RV afterload; vasopressors and/or inotropes are appropriate when cardiac output or systemic perfusion is inadequate.");
+      }
+
+      if (data.contraAnticoag) {
+        recommendations.push("[COR 1] If an IVC filter is placed, use a retrievable device and plan early retrieval once anticoagulation becomes feasible.");
+      }
+
+      if (pendingSeverityScore) {
+        alerts.push("Category B vs C is pending; enter PESI, sPESI, or Hestia to complete category assignment.");
+      }
+
+      (data.scoreWarnings || []).forEach((warning) => alerts.push(warning));
+
+      return { recommendations, rationale, alerts };
+    }
+
+    function buildMedicationMonitoringPlan(data, cls) {
+      const medication = [];
+      const monitoring = [];
+      const notes = [];
+
+      const canAnticoag = !data.contraAnticoag;
+      const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
+      const c2PlusProfile = ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const c3PlusProfile = ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const subsegmentalOnly = data.clotLocation === "subsegmental";
+      const clotInTransitAdvancedTherapy =
+        data.clotTransit &&
+        ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const subsegmentalDisproportionatePresentation =
+        subsegmentalOnly &&
+        ["D1", "D2", "E1", "E2"].includes(cls.base) &&
+        !clotInTransitAdvancedTherapy;
+      const cToE1Profile = ["C1", "C2", "C3", "D1", "D2", "E1"].includes(cls.base);
+      const extremeLmwhWeight = data.weightKg !== null && data.weightKg > 150;
+      const severeRenalExtremeWeightPregnancy = severeRenal && extremeLmwhWeight && data.pregnancy;
+      const severeRenalExtremeWeightBreastfeeding = severeRenal && extremeLmwhWeight && data.breastfeeding;
+      const severeRenalExtremeWeightC1 = severeRenal && extremeLmwhWeight && cls.base === "C1" && !data.pregnancy && !data.breastfeeding && !data.aps;
+      const severeRenalExtremeWeightC2ToE2 = severeRenal && extremeLmwhWeight && ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base);
+      const outpatientDispositionSupported = ["A", "B"].includes(cls.family) && (!cls.hasScore || cls.lowSeverity);
+      const lowRiskPregnancySevereRenal = outpatientDispositionSupported && data.pregnancy && severeRenal && !extremeLmwhWeight;
+      const lowRiskPregnancyRenalExtreme = outpatientDispositionSupported && data.pregnancy && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeeding = outpatientDispositionSupported && data.breastfeeding;
+      const lowRiskBreastfeedingSevereRenalExtreme = lowRiskBreastfeeding && severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingSevereRenal = lowRiskBreastfeeding && severeRenal && !extremeLmwhWeight;
+      const lowRiskBreastfeedingExtremeWeight = lowRiskBreastfeeding && !severeRenal && extremeLmwhWeight;
+      const lowRiskBreastfeedingStandard = lowRiskBreastfeeding && !severeRenal && !extremeLmwhWeight;
+      const lowRiskBreastfeedingLmwhPath =
+        lowRiskBreastfeedingSevereRenal ||
+        lowRiskBreastfeedingExtremeWeight ||
+        lowRiskBreastfeedingStandard;
+      const outpatientSevereRenalOption =
+        outpatientDispositionSupported &&
+        severeRenal &&
+        !data.pregnancy &&
+        !data.breastfeeding &&
+        !data.aps;
+      const lowRiskScoreThresholds = lowRiskScoreThresholdsMet(data);
+      const pendingSeverityScore = cls.pendingSeverityScore;
+      const ufhDose = "UFH 80 units/kg IV bolus then 18 units/kg/hour infusion";
+      const renalAdjustedLmwhDose = severeRenal ? "enoxaparin 1 mg/kg SC every 24 hours" : "enoxaparin 1 mg/kg SC every 12 hours";
+      const unstableProfile =
+        ["E1", "E2"].includes(cls.base) ||
+        data.persistentHypotension ||
+        data.cardiacArrest ||
+        data.vasopressors !== "0";
+      const parenteralLmwhPreferred = ["C1", "C2", "C3", "D1", "D2", "E1"].includes(cls.base);
+      const useUFHAlternative = cls.base === "E2" || severeRenal || data.cardiacArrest;
+      const likelyEndovascularProcedure = !subsegmentalDisproportionatePresentation && cls.base !== "E2" && !data.unableLieFlat && (
+        ["D1", "D2", "E1"].includes(cls.base) ||
+        (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
+      );
+      const doacAppropriate =
+        (["A", "B"].includes(cls.family) || cls.base === "C1" || cls.base === "C2" || pendingSeverityScore) &&
+        data.confirmedPe === "confirmed" &&
+        !data.pregnancy &&
+        !data.breastfeeding &&
+        !data.aps &&
+        !severeRenal;
+      const lysisEligible = !data.contraThrombolysis && !data.highBleedingRisk;
+      const reperfusionCandidate = !subsegmentalDisproportionatePresentation && (
+        ["D1", "D2", "E1", "E2"].includes(cls.base) ||
+        (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
+      );
+      const cdtCandidate = !subsegmentalDisproportionatePresentation && c3PlusProfile && !data.unableLieFlat;
+      const subsegmentalEndovascularConcern =
+        subsegmentalOnly &&
+        (likelyEndovascularProcedure || cdtCandidate) &&
+        !clotInTransitAdvancedTherapy;
+      const breakthroughPeFilterEligible =
+        data.recurrentOnTherapy &&
+        ["B", "C", "D", "E"].includes(cls.family);
+      const hiPeitho = hiPeithoAssessment(data, cls);
+      const lmwhLikely =
+        canAnticoag && (
+          data.pregnancy ||
+          data.breastfeeding ||
+          parenteralLmwhPreferred ||
+          data.activeCancer ||
+          data.aps ||
+          (data.confirmedPe === "suspected" && data.imagingDelayed && !data.highBleedingRisk && c2PlusProfile) ||
+          (reperfusionCandidate && lysisEligible) ||
+          (cdtCandidate && lysisEligible)
+        );
+
+      if (data.bleedAbsoluteActive) {
+        medication.push("Active bleeding: do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE.");
+        monitoring.push("Manage and stabilize the bleeding source, monitor hemoglobin/hemodynamics closely, and reassess when anticoagulation can be restarted.");
+      } else if (!canAnticoag) {
+        medication.push("Therapeutic anticoagulation is contraindicated now; defer anticoagulants and move to filter/mechanical strategy if clinically required.");
+        monitoring.push("Reassess anticoagulation contraindication at least daily and start anticoagulation as soon as bleeding risk permits.");
+      } else {
+        if (severeRenalExtremeWeightBreastfeeding) {
+          medication.push(`Breastfeeding with severe renal dysfunction and weight ${data.weightKg} kg: hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`);
+        } else if (lowRiskPregnancyRenalExtreme) {
+          medication.push(`Low-risk pregnancy pathway with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose} and bridge to warfarin.`);
+        } else if (lowRiskPregnancySevereRenal) {
+          medication.push(`Low-risk pregnancy pathway with severe renal dysfunction: start enoxaparin 1 mg/kg SC every 24 hours; use ${ufhDose} if rapid reversibility is needed.`);
+        } else if (lowRiskBreastfeedingSevereRenal) {
+          medication.push(`Low-risk breastfeeding pathway with severe renal dysfunction: use enoxaparin 1 mg/kg SC every 24 hours with outpatient/inpatient bridge to warfarin. Consider pharmacy consultation and peak anti-Xa monitoring.`);
+        } else if (lowRiskBreastfeedingExtremeWeight) {
+          medication.push(`Low-risk breastfeeding pathway at weight ${data.weightKg} kg: use enoxaparin 1 mg/kg SC every 12 hours with outpatient/inpatient bridge to warfarin. Consider pharmacy consultation regarding dose adjustment in extreme weight and peak anti-Xa monitoring.`);
+        } else if (lowRiskBreastfeedingStandard) {
+          medication.push("Low-risk breastfeeding pathway: use enoxaparin 1 mg/kg SC every 12 hours with outpatient bridge to warfarin. Avoid DOACs.");
+        } else if (data.breastfeeding) {
+          medication.push(`Breastfeeding anticoagulation: use ${ufhDose} and bridge to warfarin. Avoid DOACs and do not use LMWH in this tool pathway.`);
+        } else if (severeRenalExtremeWeightPregnancy) {
+          medication.push(`Pregnancy with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose} and bridge to warfarin.`);
+        } else if (severeRenalExtremeWeightC2ToE2) {
+          medication.push(`Severe renal dysfunction with weight ${data.weightKg} kg in category ${cls.base}: use ${ufhDose} given uncertainty regarding LMWH dosing in this setting.`);
+        } else if (severeRenalExtremeWeightC1) {
+          medication.push(`Severe renal dysfunction with weight ${data.weightKg} kg in category C1: initiating a DOAC may be reasonable. If parenteral anticoagulation is preferred, use ${ufhDose} given uncertainty regarding LMWH dosing in this setting.`);
+        } else if (cls.base === "E2") {
+          medication.push(`Category E2 anticoagulation: ${ufhDose}; use UFH rather than LMWH in E2 physiology.`);
+        } else if (severeRenal && cToE1Profile) {
+          medication.push(
+            likelyEndovascularProcedure
+              ? `Severe renal dysfunction anticoagulation for category ${cls.base}: either ${ufhDose} or ${renalAdjustedLmwhDose} is appropriate; if an endovascular PE procedure is likely, choose based on reversibility needs, procedural timing, and local protocol.`
+              : `Severe renal dysfunction anticoagulation for category ${cls.base}: either ${ufhDose} or ${renalAdjustedLmwhDose} is appropriate.`
+          );
+        } else if (data.pregnancy) {
+          medication.push(`Pregnancy anticoagulation: ${renalAdjustedLmwhDose} (first-line). If rapid reversibility is required, ${ufhDose} is a reasonable alternative.`);
+        } else if (outpatientSevereRenalOption) {
+          medication.push("Outpatient/early-discharge severe CKD or dialysis option: apixaban may be used with usual VTE dosing, with pharmacist review if needed.");
+          medication.push("Alternative severe CKD or dialysis option: warfarin may be used, but hospital admission is required; begin UFH infusion and start warfarin 2.5-5 mg PO daily.");
+        } else {
+          if (parenteralLmwhPreferred) {
+            medication.push(`Guideline-preferred initial parenteral anticoagulation for category ${cls.base}: ${renalAdjustedLmwhDose}.`);
+          }
+
+          if (useUFHAlternative) {
+            medication.push(`UFH alternative for E2 physiology, severe renal dysfunction, or arrest: ${ufhDose} (institution protocol).`);
+          }
+
+          if (doacAppropriate) {
+            medication.push("Oral-first option for stable lower-risk profiles: apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily.");
+            medication.push("Alternative oral-first option: rivaroxaban 15 mg PO twice daily for 21 days, then 20 mg PO daily with food.");
+            medication.push("Rivaroxaban note: compared with apixaban, rivaroxaban has been associated with a higher rate of clinically relevant bleeding (DOI: 10.1056/NEJMoa2510703).");
+          }
+        }
+
+        if (data.confirmedPe === "suspected" && data.imagingDelayed && !data.highBleedingRisk && c2PlusProfile) {
+          if (cls.base === "E2") {
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose}.`);
+          } else if (severeRenalExtremeWeightBreastfeeding) {
+            medication.push(`Suspected acute PE with breastfeeding, severe renal dysfunction, and body weight >150 kg: when imaging is delayed or not immediately accessible, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`);
+          } else if (data.breastfeeding) {
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk during breastfeeding: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose} and plan bridge to warfarin.`);
+          } else if (severeRenalExtremeWeightPregnancy) {
+            medication.push(`Suspected acute PE with pregnancy, severe renal dysfunction, and body weight >150 kg: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose} given uncertainty regarding LMWH dosing in this setting.`);
+          } else if (severeRenalExtremeWeightC2ToE2) {
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose} given uncertainty regarding LMWH dosing in severe renal dysfunction at body weight >150 kg.`);
+          } else if (severeRenal) {
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with either ${ufhDose} or ${renalAdjustedLmwhDose}.`);
+          } else {
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation (enoxaparin 1 mg/kg SC every 12 hours, or UFH infusion if the patient has E2 physiology or severe renal concerns).`);
+          }
+        }
+
+        if (data.recurrentOnTherapy) {
+          medication.push("Breakthrough PE on anticoagulation: evaluate adherence, dose intensity, interacting drugs, absorption/administration issues, renal function, and other clinical contributors before finalizing the next regimen.");
+          medication.push("If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class rather than continuing the same class.");
+          medication.push("If recurrence occurred while the patient was adherent to reduced-dose DOAC therapy, return to full-dose DOAC within the same class.");
+          if (breakthroughPeFilterEligible) {
+            medication.push("In AHA/ACC categories B-E with recurrent PE despite optimal therapeutic anticoagulation, consider retrievable IVC filter placement to reduce short-term recurrent PE.");
+          }
+          if (data.activeCancer) {
+            medication.push(severeRenal
+              ? "If active cancer and recurrence occurred despite therapeutic LMWH in severe renal dysfunction, involve hematology/pharmacy to plan renal-adjusted LMWH escalation or an alternative parenteral strategy."
+              : "If active cancer and recurrence occurred despite therapeutic LMWH, increase the LMWH dose by 20%-25% (for example, enoxaparin about 1.2-1.25 mg/kg SC every 12 hours) with bleeding review.");
+          }
+        }
+
+        if (subsegmentalDisproportionatePresentation) {
+          medication.push("Subsegmental-only PE with D/E physiology: severity of clinical presentation may be out of proportion to the extent of pulmonary embolism (subsegmental PE) and may be multifactorial; CDT, MT, surgical thrombectomy, and systemic thrombolysis are unlikely to provide benefit.");
+        }
+
+        if (clotInTransitAdvancedTherapy) {
+          medication.push("With free-floating right atrial and/or RV clot-in-transit, advanced therapies are reasonable over anticoagulation alone to reduce the risk of clinical deterioration.");
+        }
+
+        if (likelyEndovascularProcedure && !severeRenal && !data.breastfeeding) {
+          medication.push("If the patient is likely to undergo an endovascular PE procedure, favor LMWH (enoxaparin 1 mg/kg SC every 12 hours) over UFH to provide more effective anticoagulation.");
+        }
+
+        if (subsegmentalEndovascularConcern) {
+          medication.push("Subsegmental-only clot burden: catheter-directed thrombectomy is unlikely to be suitable based on clot burden; confirm whether a non-thrombectomy reperfusion strategy is more appropriate if escalation is required.");
+        }
+
+        if (data.aps) {
+          medication.push(`Established thrombotic APS: bridge to warfarin (target INR 2.0-3.0) using therapeutic parenteral anticoagulation (eg, ${data.breastfeeding || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC2ToE2 ? ufhDose : severeRenal ? `either ${ufhDose} or ${renalAdjustedLmwhDose}` : "enoxaparin 1 mg/kg SC every 12 hours"}).`);
+        }
+
+        if (severeRenal && !data.breastfeeding && !outpatientSevereRenalOption && !(severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC1 || severeRenalExtremeWeightC2ToE2)) {
+          medication.push("If LMWH is used with CrCl <30 mL/min: adjust to enoxaparin 1 mg/kg SC every 24 hours and monitor peak anti-Xa.");
+        }
+
+        if (data.activeCancer && !data.pregnancy && !data.breastfeeding && !(severeRenalExtremeWeightC1 || severeRenalExtremeWeightC2ToE2)) {
+          medication.push(`Cancer-associated PE option when LMWH is chosen: ${renalAdjustedLmwhDose}.`);
+        }
+
+        if (unstableProfile) {
+          medication.push("Hemodynamic instability: avoid DOAC initiation until stabilized; use parenteral anticoagulation-first strategy.");
+        }
+      }
+
+      if (hiPeitho.absoluteEligible) {
+        medication.push("HI-PEITHO catheter-directed thrombolysis option: alteplase 2 mg bolus per catheter, then 1 mg/hour per catheter for 7 hours (total 9 mg for unilateral treatment or 18 mg for bilateral treatment) (HI-PEITHO, NEJM 2026; DOI: 10.1056/NEJMoa2516567).");
+        medication.push("If CDL is not readily available, reduced-dose systemic thrombolysis option: alteplase 4 mg IV bolus followed by 2 mg/hour IV infusion for 7 hours.");
+      }
+
+      if (reperfusionCandidate && lysisEligible) {
+        medication.push("Systemic thrombolysis option for high-risk PE: alteplase 100 mg IV over 2 hours.");
+        medication.push("If bleeding risk is a major concern and systemic thrombolysis is still pursued, lower-dose systemic thrombolysis may be considered per local protocol.");
+        if (data.cardiacArrest || cls.base === "E2") {
+          medication.push("PE-related arrest or impending arrest option: alteplase 50 mg IV bolus over 2 minutes; may repeat once after 15 minutes if no ROSC/hemodynamic response.");
+        }
+        const tenecteplaseDose = tenecteplaseDoseMg(data.weightKg);
+        if (tenecteplaseDose !== null) {
+          medication.push(`Alternative single-bolus thrombolytic where used locally: tenecteplase ${tenecteplaseDose} mg IV once (weight ${data.weightKg} kg).`);
+        } else {
+          medication.push("Alternative single-bolus thrombolytic where used locally: tenecteplase 30-50 mg IV once (30 mg <=60 kg, 35 mg 61-69 kg, 40 mg 70-79 kg, 45 mg 80-89 kg, 50 mg >=90 kg).");
+        }
+
+        if (canAnticoag) {
+          medication.push(severeRenalExtremeWeightBreastfeeding
+            ? `After thrombolytic therapy or an endovascular procedure during breastfeeding with severe renal dysfunction and body weight >150 kg, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`
+            : data.breastfeeding
+            ? `After thrombolytic therapy or an endovascular procedure during breastfeeding, continue ${ufhDose} and bridge to warfarin when clinically appropriate.`
+            : severeRenalExtremeWeightPregnancy
+            ? `After thrombolytic therapy or an endovascular procedure in pregnancy with severe renal dysfunction and body weight >150 kg, initiate ${ufhDose} and bridge to warfarin when clinically appropriate.`
+            : severeRenalExtremeWeightC2ToE2
+            ? `After thrombolytic therapy or an endovascular procedure in severe renal dysfunction and morbid obesity, initiate ${ufhDose}.`
+            : severeRenal
+            ? `After thrombolytic therapy or an endovascular procedure in severe renal dysfunction, use either ${ufhDose} or ${renalAdjustedLmwhDose}, based on reversibility needs and renal function.`
+            : "After thrombolytic therapy or an endovascular procedure, initial parenteral anticoagulation should preferentially be LMWH (enoxaparin 1 mg/kg SC every 12 hours) over UFH to provide more reliable therapeutic anticoagulation and reduce recurrent VTE risk.");
+        }
+      }
+
+      if (cdtCandidate) {
+        if (lysisEligible) {
+          medication.push(data.breastfeeding || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC2ToE2
+            ? "During CDL, continue concurrent anticoagulation rather than no anticoagulation: in this setting therapeutic UFH, or subtherapeutic UFH may be used based on operator and bleeding-risk context."
+            : `During CDL, continue concurrent anticoagulation rather than no anticoagulation: therapeutic LMWH (${renalAdjustedLmwhDose}), therapeutic UFH, or subtherapeutic UFH may be used based on operator and bleeding-risk context.`);
+        } else {
+          medication.push(subsegmentalOnly
+            ? "With high bleeding risk or thrombolysis contraindication and subsegmental-only clot burden, catheter-directed thrombectomy is unlikely to be suitable; prioritize a non-thrombectomy rescue strategy based on hemodynamics and local capability."
+            : "With high bleeding risk or thrombolysis contraindication, prefer mechanical/suction thrombectomy over catheter-delivered lytic infusion.");
+        }
+      }
+
+      if (!data.unableLieFlat && c3PlusProfile && !subsegmentalOnly) {
+        medication.push("If rapid reperfusion is required and available, suction/mechanical thrombectomy is generally preferred over catheter-directed lytic infusion when expertise exists.");
+      } else if (!data.unableLieFlat && c3PlusProfile && subsegmentalOnly && !subsegmentalDisproportionatePresentation) {
+        medication.push("With subsegmental-only PE, suction/mechanical thrombectomy is unlikely to be suitable based on clot burden even if escalation is otherwise being considered.");
+      }
+
+      if (data.unableLieFlat && c3PlusProfile && !subsegmentalDisproportionatePresentation) {
+        medication.push(`Inability to lie flat limits IR-based pathways; if reperfusion is required, favor ${data.absoluteBleedingRisk ? "urgent surgical embolectomy or another non-lytic reperfusion pathway" : "systemic thrombolysis (if eligible) or urgent surgical embolectomy pathway"}.`);
+      }
+
+      if (pendingSeverityScore) {
+        monitoring.push("Pending B versus C classification: complete PESI, sPESI, or Hestia now before labeling the patient low risk or choosing an outpatient pathway.");
+        monitoring.push("Reassess oxygenation, hemodynamics, and anticoagulation access while disposition is being finalized.");
+      } else if (lowRiskPregnancyRenalExtreme) {
+        monitoring.push("Hospitalization pathway: confirm hemodynamic and oxygen stability, initiate UFH with baseline CBC, platelets, creatinine/eGFR, PT/INR, and aPTT, and coordinate inpatient warfarin bridging.");
+        monitoring.push("Follow serial CBC, creatinine/eGFR, aPTT, and INR during UFH initiation and warfarin bridging.");
+      } else if (lowRiskPregnancySevereRenal) {
+        monitoring.push("Outpatient/early-discharge pregnancy pathway in severe renal dysfunction: confirm hemodynamic stability, oxygen stability, anticoagulation access, renal-adjusted LMWH planning, and explicit return precautions before discharge.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt follow-up for renal function and bleeding reassessment.");
+      } else if (lowRiskBreastfeedingSevereRenalExtreme) {
+        monitoring.push("Hospitalization pathway: confirm hemodynamic and oxygen stability while pharmacist-guided LMWH dosing versus UFH is selected; obtain baseline CBC, hemoglobin, platelets, creatinine/eGFR, PT/INR, and aPTT.");
+        monitoring.push("If LMWH is selected, plan peak anti-Xa monitoring 3-5 hours after dose once steady state is reached; if UFH is selected, use standard infusion monitoring.");
+      } else if (lowRiskBreastfeedingSevereRenal) {
+        monitoring.push("Outpatient/early-discharge breastfeeding pathway in severe renal dysfunction: confirm hemodynamic stability, oxygen stability, LMWH access, anti-Xa monitoring plan, pharmacy consultation, and warfarin bridge follow-up before discharge.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, INR monitoring, and bleeding reassessment.");
+      } else if (lowRiskBreastfeedingExtremeWeight) {
+        monitoring.push(`Outpatient/early-discharge breastfeeding pathway at weight ${data.weightKg} kg: confirm hemodynamic stability, oxygen stability, LMWH access, pharmacy input on dose adjustment, peak anti-Xa monitoring plan, and warfarin bridge follow-up before discharge.`);
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, INR monitoring, and bleeding reassessment.");
+      } else if (lowRiskBreastfeedingStandard) {
+        monitoring.push("Outpatient/early-discharge breastfeeding pathway: confirm hemodynamic stability, oxygen stability, LMWH access, warfarin bridge planning, and explicit return precautions before discharge.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt INR follow-up during the warfarin bridge.");
+      } else if (["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity) {
+        const scoreText = lowRiskScoreThresholds.length
+          ? ` (${lowRiskScoreThresholds.join(", ")})`
+          : "";
+        monitoring.push(`Outpatient/early-discharge pathway${scoreText}: confirm hemodynamic stability, oxygen stability, anticoagulation access, and explicit return precautions before discharge.`);
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge; repeat labs only as clinically indicated by anticoagulant choice, renal function, or bleeding risk.");
+      } else if (["A", "B"].includes(cls.family) && !cls.hasScore) {
+        monitoring.push("Before disposition is finalized, confirm short-term clinical stability and complete a validated disposition tool plus home-treatment criteria if outpatient or early discharge is being considered.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR while finalizing disposition and anticoagulation choice.");
+      } else {
+        monitoring.push("Continuous telemetry and pulse oximetry; trend HR, BP/MAP, oxygen need, mental status, and urine output at frequent intervals.");
+        monitoring.push("Check baseline and serial CBC, hemoglobin, platelets, creatinine/eGFR, PT/INR, and aPTT during acute therapy.");
+
+        if (c3PlusProfile) {
+          monitoring.push("Use ICU or high-acuity monitored setting with reassessment of perfusion markers at least every 4-6 hours.");
+        } else {
+          monitoring.push("Monitor for early deterioration in oxygenation or hemodynamics during the first 24 hours.");
+        }
+      }
+
+      if (!canAnticoag) {
+        monitoring.push("If anticoagulation is withheld, monitor closely for recurrent embolization and revisit filter retrieval/anticoagulation restart plan daily.");
+      } else if (lowRiskPregnancyRenalExtreme) {
+        monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments; monitor INR daily during warfarin initiation until therapeutic.");
+      } else if (lowRiskPregnancySevereRenal) {
+        monitoring.push("Renal-adjusted pregnancy LMWH pathway: consider peak anti-Xa monitoring 3-5 hours after dose once steady state is reached, and monitor renal function and bleeding signs closely.");
+      } else if (severeRenalExtremeWeightBreastfeeding) {
+        monitoring.push("If LMWH is selected, use pharmacy-guided dosing and obtain peak anti-Xa 3-5 hours after dose once steady state is reached; if UFH is selected, check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments.");
+      } else if (lowRiskBreastfeedingSevereRenalExtreme) {
+        monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments.");
+      } else if (lowRiskBreastfeedingSevereRenal) {
+        monitoring.push("LMWH/warfarin bridge pathway in severe renal dysfunction: involve pharmacy, obtain peak anti-Xa 3-5 hours after dose once steady state is reached, and monitor renal function and bleeding signs closely.");
+      } else if (lowRiskBreastfeedingExtremeWeight) {
+        monitoring.push(`LMWH/warfarin bridge pathway at weight ${data.weightKg} kg: involve pharmacy regarding dose adjustment in extreme weight, consider peak anti-Xa monitoring 3-5 hours after dose at steady state, and monitor bleeding signs closely.`);
+      } else if (lowRiskBreastfeedingStandard) {
+        monitoring.push("LMWH/warfarin bridge pathway: routine coagulation labs are not required for LMWH; monitor renal function, interacting medications, and bleeding signs during the bridge.");
+      } else if (severeRenalExtremeWeightC1) {
+        monitoring.push("If UFH is selected, check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments. If a DOAC is selected, review renal-specific dosing and monitor closely for bleeding.");
+      } else if (useUFHAlternative || data.aps || (data.breastfeeding && !lowRiskBreastfeedingLmwhPath && !severeRenalExtremeWeightBreastfeeding) || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC2ToE2) {
+        monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments.");
+      } else if (!(lmwhLikely && extremeLmwhWeight)) {
+        monitoring.push("LMWH/DOAC pathway: routine coagulation labs are not required; monitor renal function, body weight change, interacting medications, and bleeding signs.");
+      }
+
+      if (data.recurrentOnTherapy) {
+        monitoring.push("After a breakthrough-PE regimen change, reassess bleeding risk, drug exposure, renal function, and adherence early; if an IVC filter is placed, document a retrieval plan.");
+      }
+
+      if (data.aps) {
+        monitoring.push("If transitioning to warfarin, monitor INR daily during initiation and maintain target INR 2.0-3.0 unless specialist-directed alternative target is selected.");
+      }
+
+      if (data.breastfeeding) {
+        if (lowRiskBreastfeedingStandard || lowRiskBreastfeedingSevereRenal || lowRiskBreastfeedingExtremeWeight) {
+          monitoring.push("If bridging to warfarin during an outpatient/early-discharge breastfeeding pathway, ensure immediate anticoagulation-clinic or equivalent INR follow-up; if inpatient, monitor INR daily during initiation until therapeutic.");
+        } else {
+          monitoring.push("If bridging to warfarin during breastfeeding, monitor INR daily during initiation until therapeutic.");
+        }
+      }
+
+      if (outpatientSevereRenalOption) {
+        monitoring.push("If the warfarin pathway is selected for severe CKD/dialysis, admit for UFH bridging and monitor INR daily during initiation.");
+      }
+
+      if (lmwhLikely && severeRenal && !(data.breastfeeding || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC1 || severeRenalExtremeWeightC2ToE2)) {
+        monitoring.push("If LMWH is selected and CrCl <30 mL/min, monitor peak anti-Xa 3-5 hours after dose once steady state is reached (>=3 doses) to guide dose adjustment.");
+      }
+
+      if (lmwhLikely && extremeLmwhWeight && !(data.breastfeeding || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC1 || severeRenalExtremeWeightC2ToE2)) {
+        monitoring.push(`If LMWH is selected at weight ${data.weightKg} kg, consider peak anti-Xa monitoring (3-5 hours after dose at steady state) with pharmacy-guided dose review.`);
+      }
+
+      if (hiPeitho.absoluteEligible) {
+        monitoring.push("If a HI-PEITHO-style catheter-directed lysis strategy or reduced-dose systemic alteplase is used, maintain ICU/high-acuity monitoring with frequent neurologic checks, bleeding assessment, oxygen reassessment, and perfusion trending during infusion and early after completion.");
+      }
+
+      if (reperfusionCandidate && lysisEligible) {
+        monitoring.push("During thrombolysis, perform frequent neurologic and bleeding checks (eg, every 15-30 minutes during infusion, then every 30-60 minutes early post-infusion per ICU protocol).");
+        monitoring.push("If major bleeding, hemoglobin drop, or new neurologic deficit occurs, stop thrombolytic infusion immediately and activate hemorrhage/reversal protocol.");
+      }
+
+      if (cdtCandidate && lysisEligible) {
+        monitoring.push("Catheter-directed lytic infusion requires ICU-level monitoring throughout infusion plus access-site and sheath surveillance.");
+      }
+
+      if (c3PlusProfile && !reperfusionCandidate) {
+        monitoring.push("Reassess for escalation triggers at least every 4-6 hours: worsening MAP, rising lactate, increasing oxygen requirement, or new end-organ dysfunction.");
+      }
+
+      if (pendingSeverityScore) {
+        monitoring.push("If the patient is discharged after formal risk stratification is completed, arrange rapid follow-up to confirm anticoagulation access/adherence and reassess for clinical worsening.");
+      } else if (["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity) {
+        monitoring.push("Arrange rapid follow-up after discharge to confirm anticoagulation access/adherence and review for early bleeding or clinical worsening.");
+      } else {
+        monitoring.push("Plan clinical follow-up within 1 week of discharge to confirm anticoagulation access/adherence and screen for early bleeding complications.");
+      }
+
+      return { medication, monitoring, notes };
+    }
+
+    function buildPlanText(data, cls, pert, guidelineRecs, rationale, medicationPlan) {
+      const timestamp = data.discussionTime || "[enter date/time]";
+      const bleeding = bleedingRiskSummary(data);
+      const lines = [];
+      lines.push("Guideline anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI 10.1161/CIR.0000000000001415)");
+      lines.push("");
+      lines.push(`Date/Time: ${timestamp}`);
+      lines.push(`Calculated AHA/ACC PE Category: ${cls.category}`);
+      lines.push(`Profile: ${categoryDescriptor(cls.base)}`);
+      lines.push("");
+      lines.push("Key Inputs");
+      lines.push(`- Symptomatic acute PE: ${data.symptomatic}`);
+      lines.push(`- Diagnosis status: ${data.confirmedPe}`);
+      lines.push(`- Incidental finding: ${data.incidental ? "yes" : "no"}`);
+      lines.push(`- Clot location: ${data.clotLocation}`);
+      lines.push(`- Chosen severity method: ${data.chosenScoreName} (${data.chosenScoreValue})`);
+      lines.push(`- PESI / sPESI / Hestia+ / Bova: ${data.pesi ?? "n/a"} / ${data.spesi ?? "n/a"} / ${data.hestia ?? "n/a"} / ${data.bova ?? "n/a"}`);
+      lines.push(`- Age: ${data.patientAge ?? "n/a"}`);
+      lines.push(`- Weight: ${data.weightKg ?? "n/a"} kg, Estimated CrCl: ${data.crcl ?? "n/a"} mL/min`);
+      lines.push(`- RV dysfunction: ${data.rvDysfunction}, Troponin: ${data.troponin}, BNP: ${data.bnp}`);
+      lines.push(`- MAP: ${data.map ?? "n/a"}, Lactate: ${data.lactate ?? "n/a"}`);
+      lines.push(`- Hypotension profile: persistent=${data.persistentHypotension ? "yes" : "no"}, transient=${data.transientHypotension ? "yes" : "no"}`);
+      lines.push(`- Unable to lie flat: ${data.unableLieFlat ? "yes" : "no"} (inability may preclude IR-based procedures)`);
+      lines.push(`- Oxygen/ventilation: O2 sat=${data.oxygenSat ?? "n/a"}%, support=${data.oxygenSupport}, RR=${data.rr ?? "n/a"}`);
+      lines.push(`- Anticoagulation contraindication: ${data.contraAnticoag ? "yes" : "no"}`);
+      lines.push(`- Absolute bleeding contraindication: ${data.absoluteBleedingRisk ? "yes" : "no"}${bleeding.absolute.length ? ` (${bleeding.absolute.join(", ")})` : ""}`);
+      lines.push(`- Relative bleeding risk: ${data.relativeBleedingRisk ? "yes" : "no"}${bleeding.relative.length ? ` (${bleeding.relative.join(", ")})` : ""}`);
+      lines.push("");
+      lines.push("PERT Discussion Summary");
+      rationale.forEach((item) => lines.push(`- ${item}`));
+      lines.push("");
+      if (data.caseNarrative.trim().length) {
+        lines.push("De-identified Case Narrative");
+        lines.push("- Narrative captured and reviewed in-app (raw narrative text omitted from exported draft to reduce identifier leakage risk).");
+        lines.push("");
+      }
+      lines.push("PERT Consensus Strategy");
+      pert.summary.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("PERT Action Bundle (Next 6 Hours)");
+      pert.actions.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("Medication Recommendations (Dose + Route)");
+      medicationPlan.medication.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("Monitoring Recommendations");
+      medicationPlan.monitoring.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("Escalation / Backup Pathway");
+      pert.backup.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("Immediate Guideline-Based Considerations");
+      guidelineRecs.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+      lines.push("");
+      lines.push("Escalation Triggers to Reassess Immediately");
+      lines.push("- Worsening hypotension, MAP decline, rising lactate, or new end-organ hypoperfusion.");
+      lines.push("- Increasing oxygen/ventilatory requirement or signs of RV failure.");
+      lines.push("- Clinical deterioration despite anticoagulation.");
+      lines.push("");
+      lines.push("Note");
+      medicationPlan.notes.forEach((item) => lines.push(`- ${item}`));
+      lines.push("- This draft supports chart documentation and should be edited by the treating team to reflect the final multidisciplinary clinical plan.");
+      return lines.join("\n");
+    }
+
+    function gatherData() {
+      const raw = {
+        discussionTime: value("discussion-time"),
+        symptomatic: value("symptomatic"),
+        confirmedPe: value("confirmed-pe"),
+        clotLocation: value("clot-location"),
+        provokingFactor: value("provoking-factor"),
+        weightKg: numberValue("weight-kg"),
+        crcl: numberValue("crcl"),
+        incidental: checked("incidental"),
+        imagingDelayed: checked("imaging-delayed"),
+        clotTransit: checked("clot-transit"),
+        recurrentOnTherapy: checked("recurrent-on-therapy"),
+        scoreMode: value("score-mode"),
+        manualPesi: numberValue("pesi"),
+        manualSpesi: numberValue("spesi"),
+        manualHestia: numberValue("hestia"),
+        manualBova: numberValue("bova"),
+        manualScoreHr: numberValue("manual-score-hr"),
+        manualScoreRr: numberValue("manual-score-rr"),
+        calcSpesiAge: numberValue("calc-spesi-age"),
+        calcSpesiHr: numberValue("calc-spesi-hr"),
+        calcSpesiSbp: numberValue("calc-spesi-sbp"),
+        calcSpesiSao2: numberValue("calc-spesi-sao2"),
+        calcSpesiCancer: checked("calc-spesi-cancer"),
+        calcSpesiCardiopulm: checked("calc-spesi-cardiopulm"),
+        calcPesiAge: numberValue("calc-pesi-age"),
+        calcPesiSex: value("calc-pesi-sex"),
+        calcPesiHr: numberValue("calc-pesi-hr"),
+        calcPesiSbp: numberValue("calc-pesi-sbp"),
+        calcPesiRr: numberValue("calc-pesi-rr"),
+        calcPesiTemp: numberValue("calc-pesi-temp"),
+        calcPesiSao2: numberValue("calc-pesi-sao2"),
+        calcPesiCancer: checked("calc-pesi-cancer"),
+        calcPesiHeartFailure: checked("calc-pesi-heart-failure"),
+        calcPesiLungDisease: checked("calc-pesi-lung-disease"),
+        calcPesiAms: checked("calc-pesi-ams"),
+        calcHestiaHemodynamicUnstable: checked("calc-hestia-hemodynamic-unstable"),
+        calcHestiaThrombolysisNeeded: checked("calc-hestia-thrombolysis-needed"),
+        calcHestiaActiveBleeding: checked("calc-hestia-active-bleeding"),
+        calcHestiaOxygenNeed: checked("calc-hestia-oxygen-need"),
+        calcHestiaPeOnAnticoag: checked("calc-hestia-pe-on-anticoag"),
+        calcHestiaSeverePain: checked("calc-hestia-severe-pain"),
+        calcHestiaMedSocialAdmit: checked("calc-hestia-med-social-admit"),
+        calcHestiaCrclLow: checked("calc-hestia-crcl-low"),
+        calcHestiaLiverImpairment: checked("calc-hestia-liver-impairment"),
+        calcHestiaPregnant: checked("calc-hestia-pregnant"),
+        calcHestiaHit: checked("calc-hestia-hit"),
+        calcBovaHr: numberValue("calc-bova-hr"),
+        calcBovaSbp: numberValue("calc-bova-sbp"),
+        calcBovaTroponin: checked("calc-bova-troponin"),
+        calcBovaRv: checked("calc-bova-rv"),
+        map: numberValue("map"),
+        lactate: numberValue("lactate"),
+        vasopressors: value("vasopressors"),
+        persistentHypotension: checked("persistent-hypotension") || value("vasopressors") !== "0",
+        transientHypotension: checked("transient-hypotension"),
+        cardiacArrest: checked("cardiac-arrest"),
+        renalHypoperfusion: checked("renal-hypoperfusion"),
+        mentalStatus: checked("mental-status"),
+        lowCardiacIndex: checked("low-cardiac-index"),
+        shockScore: checked("shock-score"),
+        unableLieFlat: checked("unable-lie-flat"),
+        rvDysfunction: value("rv-dysfunction"),
+        troponin: value("troponin"),
+        bnp: value("bnp"),
+        oxygenSat: numberValue("oxygen-sat"),
+        rr: numberValue("rr"),
+        oxygenSupport: value("oxygen-support"),
+        contraAnticoag: checked("contra-anticoag"),
+        bleedAbsoluteActive: checked("bleed-absolute-active"),
+        bleedAbsoluteICh: checked("bleed-absolute-ich"),
+        bleedAbsoluteDissection: checked("bleed-absolute-dissection"),
+        bleedAbsoluteNeuroSurgery: checked("bleed-absolute-neuro-surgery"),
+        bleedAbsoluteIntracranial: checked("bleed-absolute-intracranial"),
+        bleedRelativeCoagulopathy: checked("bleed-relative-coagulopathy"),
+        bleedRelativeHypertension: checked("bleed-relative-htn"),
+        bleedRelativeRecentSurgery: checked("bleed-relative-recent-surgery"),
+        bleedRelativeSeriousTrauma: checked("bleed-relative-serious-trauma"),
+        bleedRelativePregnancy: checked("bleed-relative-pregnancy") || checked("pregnancy"),
+        bleedRelativeRecentGiBleed: checked("bleed-relative-gi-bleed"),
+        pregnancy: checked("pregnancy") || checked("bleed-relative-pregnancy"),
+        breastfeeding: checked("breastfeeding"),
+        activeCancer: checked("active-cancer"),
+        aps: checked("aps"),
+        severeCKD: checked("severe-ckd"),
+        caseNarrative: value("case-narrative")
+      };
+
+      const scoreBundle = computeSelectedScore(raw);
+      const patientAge = derivePatientAge(raw);
+      const absoluteBleedingRisk = ABSOLUTE_BLEEDING_RISK_FIELDS.some((item) => raw[item.key]);
+      const relativeBleedingRisk = RELATIVE_BLEEDING_RISK_FIELDS.some((item) => raw[item.key]);
+      return {
+        ...raw,
+        ...scoreBundle,
+        patientAge,
+        aki: raw.renalHypoperfusion,
+        oliguria: raw.renalHypoperfusion,
+        contraAnticoag: raw.contraAnticoag || raw.bleedAbsoluteActive,
+        absoluteBleedingRisk,
+        relativeBleedingRisk,
+        highBleedingRisk: absoluteBleedingRisk || relativeBleedingRisk,
+        contraThrombolysis: absoluteBleedingRisk
+      };
+    }
+
+    function updateOutput() {
+      updateScoreModeFields();
+      syncHemodynamicDependencies();
+      syncPregnancyEligibility();
+      syncPregnancyBreastfeedingExclusivity();
+      syncRespiratoryInputsFromScoreInputs();
+      const data = gatherData();
+      data.inputValidationWarnings = applyInputValidationFlags(data);
+      const hasCriteriaInput = hasClinicalCriteriaInput();
+      const cls = hasCriteriaInput ? classify(data) : initialPendingClassification();
+
+      scoreSummaryEl.textContent = data.scoreSummary;
+
+      riskBadge.className = `risk-badge ${severityClass(cls.family)}`;
+      riskBadge.textContent = cls.category;
+      if (!hasCriteriaInput) {
+        overallEl.textContent = "Calculated PE category pending until clinical criteria are entered.";
+        renderList(recommendationsEl, [], "Overall recommendation pending until clinical criteria are entered.");
+        renderList(actionListEl, [], "Action bundle will populate after input.");
+        renderList(medicationListEl, [], "Medication recommendations will populate after input.");
+        renderList(monitoringListEl, [], "Monitoring recommendations will populate after input.");
+        renderList(backupListEl, [], "Escalation pathway will populate after input.");
+        renderList(rationaleEl, [], "Rationale will populate after input.");
+        renderPendingAlerts();
+        narrativeTextEl.value = buildPendingExternalNarrative(data);
+        planTextEl.value = "Enter clinical data to generate the PERT documentation draft.";
+        return;
+      }
+
+      const pert = buildPertConsensus(data, cls);
+      const bundle = buildRecommendations(data, cls);
+      const medicationPlan = buildMedicationMonitoringPlan(data, cls);
+      const summaryWithStrength = annotateStrength(pert.summary, "Operational");
+      const actionsWithStrength = annotateStrength(pert.actions, "Operational");
+      const backupWithStrength = annotateStrength(pert.backup, "Operational");
+      const recommendationsWithStrength = annotateStrength(bundle.recommendations, "Operational");
+      const medicationWithStrength = annotateStrength(medicationPlan.medication, "Operational");
+      const monitoringWithStrength = annotateStrength(medicationPlan.monitoring, "Operational");
+      const notesWithStrength = annotateStrength(medicationPlan.notes, "Operational");
+      const overallRecommendations = [...summaryWithStrength];
+      const pertForPlan = {
+        summary: summaryWithStrength,
+        actions: actionsWithStrength,
+        backup: backupWithStrength
+      };
+      const medicationPlanForPlan = {
+        ...medicationPlan,
+        medication: medicationWithStrength,
+        monitoring: monitoringWithStrength,
+        notes: notesWithStrength
+      };
+
+      overallEl.textContent = `${categoryDescriptor(cls.base)}. Recommendations below should be interpreted with bedside judgment and final treating-team consensus.`;
+
+      renderList(recommendationsEl, overallRecommendations, "Enter clinical data to generate recommendations.");
+      renderList(actionListEl, actionsWithStrength, "Action bundle will populate after input.");
+      renderList(medicationListEl, medicationWithStrength, "Medication recommendations will populate after input.");
+      renderList(monitoringListEl, monitoringWithStrength, "Monitoring recommendations will populate after input.");
+      renderList(backupListEl, backupWithStrength, "Escalation pathway will populate after input.");
+      renderList(rationaleEl, bundle.rationale, "Rationale will populate after input.");
+      renderAlerts(bundle.alerts);
+      narrativeTextEl.value = buildExternalNarrative(data, cls);
+
+      const plan = buildPlanText(data, cls, pertForPlan, recommendationsWithStrength, bundle.rationale, medicationPlanForPlan);
+      planTextEl.value = plan;
+    }
+
+    document.querySelectorAll("#pe-form input, #pe-form select, #pe-form textarea").forEach((el) => {
+      el.addEventListener("input", () => {
+        copyStatusEl.textContent = "";
+        narrativeCopyStatusEl.textContent = "";
+        if (el.id === "case-narrative") {
+          updatePhiStatus(caseNarrativeEl.value, []);
+        }
+        updateOutput();
+      });
+      el.addEventListener("change", () => {
+        copyStatusEl.textContent = "";
+        narrativeCopyStatusEl.textContent = "";
+        if (el.id === "case-narrative") {
+          updatePhiStatus(caseNarrativeEl.value, []);
+        }
+        updateOutput();
+      });
+    });
+
+    const pregnancyEl = document.getElementById("pregnancy");
+    const bleedPregnancyEl = document.getElementById("bleed-relative-pregnancy");
+    const calcHestiaPregnantEl = document.getElementById("calc-hestia-pregnant");
+    const breastfeedingEl = document.getElementById("breastfeeding");
+    const crclEl = document.getElementById("crcl");
+    if (pregnancyEl && bleedPregnancyEl) {
+      pregnancyEl.addEventListener("change", () => {
+        syncPregnancyDependencies("pregnancy");
+        syncPregnancyBreastfeedingExclusivity("pregnancy");
+        updateOutput();
+      });
+      bleedPregnancyEl.addEventListener("change", () => {
+        syncPregnancyDependencies("bleed-relative-pregnancy");
+        syncPregnancyBreastfeedingExclusivity("bleed-relative-pregnancy");
+        updateOutput();
+      });
+    }
+    if (calcHestiaPregnantEl) {
+      calcHestiaPregnantEl.addEventListener("change", () => {
+        syncPregnancyDependencies("calc-hestia-pregnant");
+        syncPregnancyBreastfeedingExclusivity("calc-hestia-pregnant");
+        updateOutput();
+      });
+    }
+    if (breastfeedingEl) {
+      breastfeedingEl.addEventListener("change", () => {
+        syncPregnancyBreastfeedingExclusivity("breastfeeding");
+        syncPregnancyDependencies();
+        updateOutput();
+      });
+    }
+    if (crclEl) {
+      crclEl.addEventListener("change", () => {
+        syncRenalDependencies();
+        updateOutput();
+      });
+    }
+
+    startListeningEl.addEventListener("click", () => {
+      if (!aiState.recognition || aiState.listening) return;
+      try {
+        listeningStatusEl.className = "status";
+        listeningStatusEl.textContent = isMobileDevice
+          ? "Listening... avoid patient identifiers. On phones, speak in short phrases for best capture."
+          : "Listening... avoid patient identifiers in case discussion.";
+        aiState.manualStop = false;
+        aiState.listening = true;
+        startListeningEl.disabled = true;
+        stopListeningEl.disabled = false;
+        aiState.recognition.start();
+      } catch (err) {
+        aiState.manualStop = true;
+        aiState.listening = false;
+        startListeningEl.disabled = false;
+        stopListeningEl.disabled = true;
+        listeningStatusEl.className = "status status-warn";
+        listeningStatusEl.textContent = `Unable to start microphone transcription: ${err.message}`;
+      }
+    });
+
+    stopListeningEl.addEventListener("click", () => {
+      if (!aiState.recognition || !aiState.listening) return;
+      aiState.manualStop = true;
+      aiState.recognition.stop();
+      listeningStatusEl.className = "status";
+      listeningStatusEl.textContent = "Microphone stopped.";
+      aiState.listening = false;
+      startListeningEl.disabled = false;
+      stopListeningEl.disabled = true;
+    });
+
+    scrubTranscriptEl.addEventListener("click", () => {
+      const { residual } = scrubCurrentNarrative();
+      phiStatusEl.className = residual.length ? "status status-warn" : "status status-ok";
+      phiStatusEl.textContent = residual.length
+        ? `Narrative scrubbed, but residual identifier risk remains (${residual.join(", ")}).`
+        : "Narrative scrubbed and ready for copy/sharing.";
+      updateOutput();
+    });
+
+    clearTranscriptEl.addEventListener("click", () => {
+      caseNarrativeEl.value = "";
+      aiState.latestScrubFindings = [];
+      phiStatusEl.className = "status";
+      phiStatusEl.textContent = "No narrative entered.";
+      updateOutput();
+    });
+
+    document.getElementById("copy-plan").addEventListener("click", async () => {
+      const text = planTextEl.value;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyStatusEl.textContent = "Plan copied to clipboard.";
+      } catch (err) {
+        planTextEl.select();
+        document.execCommand("copy");
+        copyStatusEl.textContent = "Plan copied using fallback copy method.";
+      }
+    });
+
+    copyNarrativeEl.addEventListener("click", async () => {
+      const text = narrativeTextEl.value;
+      try {
+        await navigator.clipboard.writeText(text);
+        narrativeCopyStatusEl.textContent = "Narrative copied to clipboard.";
+      } catch (err) {
+        narrativeTextEl.select();
+        document.execCommand("copy");
+        narrativeCopyStatusEl.textContent = "Narrative copied using fallback copy method.";
+      }
+    });
+
+    document.getElementById("reset-form").addEventListener("click", () => {
+      form.reset();
+      document.getElementById("symptomatic").value = "yes";
+      document.getElementById("confirmed-pe").value = "confirmed";
+      document.getElementById("clot-location").value = "segmental";
+      document.getElementById("provoking-factor").value = "unknown";
+      document.getElementById("score-mode").value = "manual";
+      document.getElementById("vasopressors").value = "0";
+      document.getElementById("rv-dysfunction").value = "unknown";
+      document.getElementById("troponin").value = "unknown";
+      document.getElementById("bnp").value = "unknown";
+      document.getElementById("oxygen-support").value = "room-air";
+      document.getElementById("calc-pesi-sex").value = "female";
+      caseNarrativeEl.value = "";
+      aiState.latestScrubFindings = [];
+      phiStatusEl.className = "status";
+      phiStatusEl.textContent = "No narrative entered.";
+      copyStatusEl.textContent = "Inputs reset.";
+      narrativeCopyStatusEl.textContent = "";
+      updateOutput();
+    });
+
+    setupCollapsibles();
+    setupSpeechRecognition();
+    updatePhiStatus(caseNarrativeEl.value, []);
+    updateOutput();
+  </script>
+</body>
+</html>
