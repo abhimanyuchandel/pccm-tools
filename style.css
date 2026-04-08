@@ -43,6 +43,14 @@ a {
   margin: 0 auto;
 }
 
+.homeHero,
+.homeGrid,
+.homeFooter {
+  width: min(100%, 1220px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .siteBar {
   display: flex;
   align-items: center;
@@ -86,7 +94,7 @@ a {
 }
 
 .homeHero {
-  padding: 38px 28px;
+  padding: 38px 32px;
   background:
     linear-gradient(135deg, rgba(0, 26, 54, 0.13), rgba(255, 255, 255, 0.99) 55%),
     var(--card);
@@ -177,7 +185,7 @@ a {
 }
 
 .panel {
-  padding: 28px;
+  padding: 28px 24px;
   text-align: center;
 }
 
@@ -194,7 +202,7 @@ a {
 
 .categoryGroup {
   margin-top: 10px;
-  padding: 20px 20px 18px;
+  padding: 18px 18px 16px;
   border: 1px solid #d6e0eb;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);
@@ -237,7 +245,7 @@ a {
 .toolLink {
   color: var(--accent);
   display: inline;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.4;
   text-decoration-thickness: 1px;
@@ -247,8 +255,8 @@ a {
 .toolSummary {
   margin: 0;
   color: #27405f;
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
   text-align: left;
   white-space: nowrap;
 }
@@ -308,6 +316,32 @@ a {
   padding: 24px 18px 0;
   border-top: 1px solid #c9d6e5;
   text-align: center;
+}
+
+.homeFooterContent {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.homeFooterText {
+  min-width: 0;
+  flex: 1;
+}
+
+.homeFooterLogo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.footerLogoMark {
+  display: block;
+  width: 126px;
+  max-width: 100%;
+  height: auto;
 }
 
 .footerCopyright {
@@ -648,6 +682,20 @@ button:disabled {
 
   .feedbackNote {
     white-space: normal;
+  }
+
+  .homeFooterContent {
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .homeFooterLogo {
+    justify-content: center;
+  }
+
+  .footerLogoMark {
+    width: 108px;
   }
 
   .categoryGroup {
