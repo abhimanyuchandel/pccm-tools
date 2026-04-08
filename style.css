@@ -111,7 +111,7 @@ a {
 }
 
 .heroBrandMarkWrap {
-  width: min(100%, 260px);
+  width: min(100%, 230px);
   margin: 0 auto;
 }
 
@@ -690,7 +690,7 @@ button:disabled {
   }
 
   .heroBrandMarkWrap {
-    width: min(100%, 220px);
+    width: min(100%, 200px);
   }
 
   .site-logo {
