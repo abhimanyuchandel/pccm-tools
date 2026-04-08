@@ -107,26 +107,18 @@ a {
 }
 
 .heroBrand {
-  margin: 0 0 -6px;
+  margin: 0 0 6px;
 }
 
 .heroBrandMarkWrap {
-  position: relative;
-  width: min(100%, 210px);
-  height: 190px;
+  width: min(100%, 260px);
   margin: 0 auto;
-  overflow: hidden;
 }
 
 .heroBrandMark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  display: block;
   width: 100%;
   height: auto;
-  max-width: none;
-  transform: translate(-50%, -39%) scale(3.05);
-  transform-origin: center center;
 }
 
 .eyebrow {
@@ -679,8 +671,7 @@ button:disabled {
   }
 
   .heroBrandMarkWrap {
-    width: min(100%, 180px);
-    height: 162px;
+    width: min(100%, 220px);
   }
 
   .toolSummary {
