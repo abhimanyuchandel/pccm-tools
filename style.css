@@ -1,5 +1,5 @@
 :root {
-  --homeShell: 1180px;
+  --homeShell: 1120px;
   --pageBg: #e6eef7;
   --pageGlow: rgba(0, 33, 71, 0.14);
   --card: #ffffff;
@@ -44,15 +44,6 @@ a {
   margin: 0 auto;
 }
 
-.homeHero,
-.homeGrid,
-.homeFooter {
-  width: 100%;
-  max-width: var(--homeShell);
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .siteBar {
   display: flex;
   align-items: center;
@@ -88,6 +79,7 @@ a {
 
 .homeHero,
 .panel,
+.homeFooter,
 .card {
   background: var(--card);
   border: 1px solid #99aec9;
@@ -96,6 +88,10 @@ a {
 }
 
 .homeHero {
+  width: 100%;
+  max-width: var(--homeShell);
+  margin-left: auto;
+  margin-right: auto;
   padding: 38px 32px;
   background:
     linear-gradient(135deg, rgba(0, 26, 54, 0.13), rgba(255, 255, 255, 0.99) 55%),
@@ -181,12 +177,17 @@ a {
 
 .homeGrid {
   display: grid;
+  width: 100%;
   grid-template-columns: 1fr;
   gap: 18px;
   margin-top: 18px;
 }
 
 .panel {
+  width: 100%;
+  max-width: var(--homeShell);
+  margin-left: auto;
+  margin-right: auto;
   padding: 28px 24px;
   text-align: center;
 }
@@ -314,6 +315,10 @@ a {
 }
 
 .homeFooter {
+  width: 100%;
+  max-width: var(--homeShell);
+  margin-left: auto;
+  margin-right: auto;
   margin-top: 28px;
   padding: 24px 18px 0;
   border-top: 1px solid #c9d6e5;
@@ -344,8 +349,10 @@ a {
 .footerLogoMark {
   display: block;
   width: 94px;
+  aspect-ratio: 9 / 8;
   max-width: 100%;
   height: auto;
+  object-fit: contain;
 }
 
 .footerCopyright {
