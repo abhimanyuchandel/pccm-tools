@@ -24,6 +24,10 @@
           <span class="statusNote">More tools, references, and manuscript links will be added over time.</span>
         </div>
         <p class="managedBy">Managed by Abhimanyu Chandel, MD MAS</p>
+        <p class="feedbackNote">
+          We welcome feedback to improve these tools. Please send suggestions, questions, or comments to
+          <a id="feedbackLink" class="inlineMail" href="#" rel="nofollow">feedback [at] pccmtools [dot] org</a>.
+        </p>
       </section>
 
       <section class="homeGrid" aria-label="Site overview">
@@ -38,5 +42,19 @@
         </article>
       </section>
     </main>
+    <script>
+      (() => {
+        const link = document.getElementById("feedbackLink");
+        if (!link) return;
+
+        const user = ["feedback"].join("");
+        const domain = ["pccmtools", "org"].join(".");
+        const address = `${user}@${domain}`;
+
+        link.href = `mailto:${address}`;
+        link.textContent = address;
+        link.setAttribute("aria-label", `Email ${address}`);
+      })();
+    </script>
   </body>
 </html>
