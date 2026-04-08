@@ -365,26 +365,43 @@ a {
 .card {
   max-width: 980px;
   margin: 0 auto;
-  padding: 28px;
+  padding: clamp(18px, 3vw, 28px);
 }
 
 .hdr {
   text-align: center;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+
+.brand {
+  width: min(100%, 420px);
+}
+
+.site-logo {
+  display: block;
+  width: clamp(220px, 40vw, 360px);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .hdr h1 {
   margin: 0;
   color: var(--accent);
-  font-size: 28px;
+  font-size: clamp(20px, 1rem + 1vw, 28px);
   line-height: 1.2;
   letter-spacing: 0.2px;
 }
 
 .sub {
-  margin: 8px auto 20px;
+  margin: 0 auto 20px;
   max-width: 860px;
   color: #27405f;
-  font-size: 16px;
+  font-size: clamp(13px, 0.78rem + 0.25vw, 16px);
   line-height: 1.55;
 }
 
@@ -672,6 +689,10 @@ button:disabled {
 
   .heroBrandMarkWrap {
     width: min(100%, 220px);
+  }
+
+  .site-logo {
+    width: min(100%, 300px);
   }
 
   .toolSummary {
