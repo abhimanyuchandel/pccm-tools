@@ -107,11 +107,11 @@ a {
 }
 
 .heroBrand {
-  margin: 0 0 6px;
+  margin: 0 0 14px;
 }
 
 .heroBrandMarkWrap {
-  width: min(100%, 230px);
+  width: min(100%, 210px);
   margin: 0 auto;
 }
 
@@ -131,7 +131,7 @@ a {
 }
 
 .homeHero h1 {
-  margin: -8px 0 0;
+  margin: 0;
   max-width: none;
   margin-left: auto;
   margin-right: auto;
@@ -685,12 +685,13 @@ button:disabled {
   }
 
   .homeHero h1 {
+    margin-top: 4px;
     font-size: clamp(30px, 7vw, 40px);
     white-space: normal;
   }
 
   .heroBrandMarkWrap {
-    width: min(100%, 200px);
+    width: min(100%, 176px);
   }
 
   .site-logo {
