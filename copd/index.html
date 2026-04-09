@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PCCM Tools | COPD Management</title>
+  <link rel="stylesheet" href="/copd/styles.css?v=20260409-1">
+  <script src="/copd/app.js?v=20260409-1" defer></script>
+</head>
+<body class="copd-page">
+  <main class="siteShell">
+    <header class="siteBar">
+      <a class="siteBrand" href="/">Home</a>
+      <p class="siteTagline">COPD management decision support</p>
+    </header>
+
+    <div class="app-shell">
+      <header class="hero">
+        <p class="eyebrow">Pulmonary Medicine</p>
+        <h1>COPD Management</h1>
+        <p class="heroLead">
+          Guideline-mapped workflow for patients with COPD based on the 2026 Global Initiative for Chronic
+          Obstructive Lung Disease guidance.
+        </p>
+        <p class="heroNote">
+          Use this tool to structure diagnosis confirmation, symptom scoring, pharmacologic recommendations,
+          preventive care review, and note generation.
+        </p>
+      </header>
+
+      <form id="copd-form" class="form-panels">
+        <section class="panel">
+          <h2>1) COPD Confirmation Context</h2>
+          <div class="grid">
+            <label>
+              Management phase
+              <select id="management-phase">
+                <option value="initial">Initial pharmacologic management</option>
+                <option value="followup">Follow-up pharmacologic management</option>
+              </select>
+            </label>
+            <label>
+              Age
+              <input id="age" type="number" min="18" max="120" step="1" placeholder="67">
+            </label>
+          </div>
+          <div class="grid spirometry-grid">
+            <label>
+              Post-BD FEV1/FVC ratio
+              <input id="fev1fvc" type="number" min="0" max="90" step="any" placeholder="0.62">
+            </label>
+            <label>
+              FEV1 % predicted
+              <input id="fev1-predicted" type="number" min="0" max="150" step="1" placeholder="48">
+            </label>
+            <label>
+              Resting SpO2 %
+              <input id="resting-spo2" type="number" min="50" max="100" step="1" placeholder="92">
+            </label>
+            <label class="checkbox-row inline-confirmation">
+              <input type="checkbox" id="spirometry-confirmed">
+              Post-bronchodilator spirometry confirms COPD (FEV1/FVC &lt; 0.70)
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>2) Symptom Burden</h2>
+          <div class="grid">
+            <label>
+              CAT or CAAT score (0-40)
+              <input id="cat-score" type="number" min="0" max="40" step="1" placeholder="14">
+            </label>
+            <label>
+              mMRC dyspnea score (0-4)
+              <input id="mmrc-score" type="number" min="0" max="4" step="1" placeholder="2">
+            </label>
+          </div>
+          <p class="hint">Enter scores manually, or use the calculators below.</p>
+
+          <div class="calculator">
+            <h3 class="calc-title">CAT Calculator (8 items, each 0-5)</h3>
+            <p class="hint">Higher CAT totals correlate with worse symptom burden.</p>
+            <div class="score-grid">
+              <label class="score-row">
+                Cough
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Phlegm
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Chest tightness
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Breathless on hill/stairs
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Limited in home activities
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Confidence leaving home
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Sleep quality
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+              <label class="score-row">
+                Energy
+                <select data-cat-item>
+                  <option value="">Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+            </div>
+            <div class="calc-actions">
+              <button type="button" id="calc-cat-btn" class="secondary-btn">Apply CAT Total</button>
+              <button type="button" id="clear-cat-btn" class="ghost-btn">Clear CAT Items</button>
+              <span id="cat-total-display" class="score-chip">CAT total: --/40</span>
+            </div>
+            <p id="cat-calc-note" class="hint"></p>
+          </div>
+
+          <div class="calculator">
+            <h3 class="calc-title">mMRC Calculator (0-4)</h3>
+            <fieldset class="mmrc-fieldset">
+              <legend class="sr-only">mMRC dyspnea scale options</legend>
+              <label class="mmrc-row">
+                <input type="radio" name="mmrc-choice" value="0">
+                0: Breathless only with strenuous exercise.
+              </label>
+              <label class="mmrc-row">
+                <input type="radio" name="mmrc-choice" value="1">
+                1: Short of breath when hurrying on level ground or walking up a slight hill.
+              </label>
+              <label class="mmrc-row">
+                <input type="radio" name="mmrc-choice" value="2">
+                2: Walks slower than peers on level ground, or stops for breath at own pace.
+              </label>
+              <label class="mmrc-row">
+                <input type="radio" name="mmrc-choice" value="3">
+                3: Stops for breath after about 100 meters or a few minutes on level ground.
+              </label>
+              <label class="mmrc-row">
+                <input type="radio" name="mmrc-choice" value="4">
+                4: Too breathless to leave house, or breathless with dressing/undressing.
+              </label>
+            </fieldset>
+            <div class="calc-actions">
+              <button type="button" id="apply-mmrc-btn" class="secondary-btn">Apply mMRC Score</button>
+              <button type="button" id="clear-mmrc-btn" class="ghost-btn">Clear mMRC Choice</button>
+              <span id="mmrc-display" class="score-chip">mMRC selected: --/4</span>
+            </div>
+            <p id="mmrc-note" class="hint"></p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>3) Exacerbation History (Previous 12 Months)</h2>
+          <div class="grid">
+            <label>
+              Moderate exacerbations
+              <span class="hint">Required oral steroids and/or antibiotics</span>
+              <input id="moderate-exac" type="number" min="0" max="20" step="1" value="0">
+            </label>
+            <label>
+              Severe exacerbations
+              <span class="hint">Required hospitalization</span>
+              <input id="severe-exac" type="number" min="0" max="20" step="1" value="0">
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>4) Biomarkers, Smoking, and Phenotype</h2>
+          <div class="grid">
+            <label>
+              Blood eosinophils (cells/uL)
+              <input id="eosinophils" type="number" min="0" max="5000" step="1" placeholder="320">
+            </label>
+            <label>
+              Smoking status
+              <select id="smoking-status">
+                <option value="current">Current smoker</option>
+                <option value="former">Former smoker</option>
+                <option value="never">Never smoker</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid">
+            <label>
+              Pack-year history
+              <input id="pack-years" type="number" min="0" max="200" step="0.5" placeholder="35">
+            </label>
+            <label>
+              Cigarettes per day (if currently smoking)
+              <input id="cigarettes-per-day" type="number" min="0" max="100" step="1" placeholder="15">
+            </label>
+          </div>
+          <div class="grid checkbox-grid">
+            <label class="checkbox-row">
+              <input type="checkbox" id="first-cigarette-30">
+              First cigarette within 30 minutes of waking
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="chronic-bronchitis">
+              Chronic bronchitis phenotype present (chronic productive cough for 3 months in the year)
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="concomitant-asthma">
+              Concomitant asthma suspected/confirmed
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>5) Preventive Care Status</h2>
+          <div class="grid">
+            <label>
+              Alpha-1 antitrypsin deficiency screening
+              <select id="aatd-status">
+                <option value="unknown">Unknown / not documented</option>
+                <option value="not-done">Not done</option>
+                <option value="completed">Completed and negative</option>
+                <option value="known-aatd">Known alpha-1 antitrypsin deficiency</option>
+              </select>
+            </label>
+            <label>
+              Pneumococcal vaccine status
+              <select id="pneumococcal-status">
+                <option value="unknown">Unknown</option>
+                <option value="unvaccinated">Unvaccinated</option>
+                <option value="complete">PCV20/PCV21 already received / series complete</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid">
+            <label>
+              RSV vaccine status
+              <select id="rsv-status">
+                <option value="unknown">Unknown</option>
+                <option value="unvaccinated">Unvaccinated</option>
+                <option value="complete">Already received RSV vaccine</option>
+              </select>
+            </label>
+            <label>
+              Zoster vaccine status
+              <select id="zoster-status">
+                <option value="unknown">Unknown</option>
+                <option value="unvaccinated">Unvaccinated / incomplete</option>
+                <option value="complete">Completed recombinant zoster vaccine series</option>
+              </select>
+            </label>
+            <label>
+              Tdap or tetanus booster within the last 10 years
+              <select id="tdap-status">
+                <option value="unknown">Unknown / not documented</option>
+                <option value="not-up-to-date">No</option>
+                <option value="up-to-date">Yes</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>6) Current Maintenance Status</h2>
+          <label>
+            Current COPD maintenance regimen
+            <select id="current-regimen">
+              <option value="naive">No maintenance inhaler (treatment-naive)</option>
+              <option value="mono">Single long-acting bronchodilator (LABA or LAMA)</option>
+              <option value="laba-lama">LABA + LAMA</option>
+              <option value="triple">LABA + LAMA + ICS</option>
+              <option value="other">Other / unclear regimen</option>
+            </select>
+          </label>
+          <div class="grid checkbox-grid">
+            <label class="checkbox-row">
+              <input type="checkbox" id="persistent-dyspnea">
+              Persistent dyspnea or activity limitation despite therapy
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="ics-side-effects">
+              Significant ICS side effects, severe/recurrent pneumonia, or no clear ICS response
+            </label>
+          </div>
+        </section>
+
+        <button type="submit" class="primary-btn">Generate Management Recommendation</button>
+      </form>
+
+      <section id="results" class="results hidden">
+        <article class="result-card">
+          <h2>Assessment Summary</h2>
+          <p id="group-output"></p>
+          <p id="symptom-output"></p>
+          <p id="risk-output"></p>
+        </article>
+
+        <article class="result-card">
+          <h2>Recommended Management Steps</h2>
+          <ul id="plan-list"></ul>
+        </article>
+
+        <article class="result-card">
+          <h2>Medication Details</h2>
+          <ul id="medication-list"></ul>
+        </article>
+
+        <article class="result-card">
+          <h2>Preventive Care and Screening</h2>
+          <ul id="prevention-list"></ul>
+        </article>
+
+        <article class="result-card">
+          <h2>Rationale Trace</h2>
+          <ul id="rationale-list"></ul>
+        </article>
+
+        <article class="result-card caution">
+          <h2>Safety Checks</h2>
+          <ul id="caution-list"></ul>
+        </article>
+
+        <article class="result-card">
+          <h2>Non-Pharmacologic Core Bundle</h2>
+          <ul id="nonpharm-list"></ul>
+        </article>
+
+        <article class="result-card">
+          <div class="calc-actions">
+            <h2 class="note-title">Copy/Paste Clinical Note</h2>
+            <button type="button" id="copy-note-btn" class="secondary-btn">Copy Note</button>
+            <span id="copy-note-status" class="hint"></span>
+          </div>
+          <textarea id="note-output" class="note-output" readonly></textarea>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <p>
+          <strong>Evidence base:</strong> GOLD 2026 Report v1.3 (December 8, 2025), plus current Centers for
+          Disease Control and Prevention, American Cancer Society, and official prescribing-information sources
+          for prevention and dosing details.
+        </p>
+        <p><strong>Application last updated:</strong> April 9, 2026.</p>
+        <p>
+          <a href="https://goldcopd.org/2026-gold-report-and-pocket-guide/" target="_blank" rel="noopener noreferrer">
+            Open GOLD 2026 report and pocket guide page
+          </a>
+        </p>
+        <p class="warning">
+          For clinician support only. This tool does not replace clinical judgment, full patient assessment,
+          or local/national policy.
+        </p>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
