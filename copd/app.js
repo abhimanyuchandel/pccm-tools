@@ -697,6 +697,7 @@ function fillList(elementId, items, emptyText) {
 
 function buildNoteText(data, rec) {
   const lines = [];
+  const defaultNoRiskIssue = "No additional high-risk data issues were detected from the entered fields.";
   const aatdLabel = {
     unknown: "Unknown / not documented",
     "not-done": "Not done",
@@ -753,6 +754,7 @@ function buildNoteText(data, rec) {
   rec.plan.forEach((item, index) => {
     lines.push(`${index + 1}. ${item}`);
   });
+  lines.push(`${rec.plan.length + 1}. Follow up: Consider clinical follow-up in 3-6 months and yearly spirometry.`);
 
   if (rec.medicationDetails.length > 0) {
     lines.push("");
@@ -778,10 +780,12 @@ function buildNoteText(data, rec) {
     });
   }
 
-  if (rec.cautions.length > 0) {
+  const noteCautions = rec.cautions.filter((item) => item !== defaultNoRiskIssue);
+
+  if (noteCautions.length > 0) {
     lines.push("");
     lines.push("Clinical cautions:");
-    rec.cautions.forEach((item) => {
+    noteCautions.forEach((item) => {
       lines.push(`- ${item}`);
     });
   }
