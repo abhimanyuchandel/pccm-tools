@@ -786,9 +786,6 @@ function buildNoteText(data, rec) {
     });
   }
 
-  lines.push("");
-  lines.push("This note was generated from a GOLD 2026-based COPD decision-support tool and should be reconciled with clinician judgment, contraindications, and local formulary or vaccination policy.");
-
   return lines.join("\n");
 }
 
