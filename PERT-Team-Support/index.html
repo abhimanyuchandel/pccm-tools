@@ -632,10 +632,11 @@
             <div class="field">
               <label for="clot-location">Most proximal clot location</label>
               <select id="clot-location">
-                <option value="subsegmental">Subsegmental only</option>
-                <option value="segmental" selected>Segmental/lobar/proximal</option>
-                <option value="saddle">Main PA or saddle</option>
-                <option value="unknown">Unknown</option>
+                <option value="unknown" selected>Unknown / not yet defined</option>
+                <option value="subsegmental_only">Subsegmental only</option>
+                <option value="segmental_only">Segmental only</option>
+                <option value="lobar_or_more_proximal">Lobar or more proximal</option>
+                <option value="main_or_saddle">Main PA or saddle</option>
               </select>
             </div>
             <div class="field">
@@ -1130,6 +1131,7 @@
     </div>
   </div>
 
+  <script src="./logic.js"></script>
   <script>
     const form = document.getElementById("pe-form");
     const riskBadge = document.getElementById("risk-badge");
@@ -1158,17 +1160,17 @@
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "") ||
       (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
-    const PHI_SCRUB_PATTERNS = [
-      { label: "MRN/long numeric identifier", regex: /\b\d{6,}\b/g },
-      { label: "MRN label/value", regex: /\b(?:mrn|medical record number|patient id)\s*[:#=-]?\s*[A-Z0-9-]{4,}\b/gi },
-      { label: "DOB/date", regex: /\b(?:\d{1,2}[\/-]\d{1,2}[\/-](?:\d{2}|\d{4})|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,\s*\d{2,4})?)\b/gi },
-      { label: "phone number", regex: /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g },
-      { label: "email", regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
-      { label: "SSN", regex: /\b\d{3}-\d{2}-\d{4}\b/g },
-      { label: "street address", regex: /\b\d{1,5}\s+[A-Za-z0-9'.-]+(?:\s+[A-Za-z0-9'.-]+){0,4}\s(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd|court|ct|way|parkway|pkwy)\b/gi },
-      { label: "name cue", regex: /\b(?:name is|patient is|patient name is|mr\.?|mrs\.?|ms\.?|miss|dr\.?)\s+[A-Za-z]+(?:\s+[A-Za-z]+)?\b/gi },
-      { label: "name field", regex: /\b(?:name|patient name|pt name)\s*[:=-]\s*[A-Za-z]+(?:\s+[A-Za-z]+){0,2}\b/gi }
-    ];
+    const {
+      normalizeWhitespace: normalizeWhitespaceCore,
+      scrubPotentialIdentifiers: scrubPotentialIdentifiersCore,
+      clotLocationLabel,
+      isSubsegmentalOnly,
+      isSegmentalOnly,
+      hasLobarOrMoreProximalClot,
+      hasCatheterAccessibleClotBurden,
+      classify: classifyCore,
+      hiPeithoAssessment: hiPeithoAssessmentCore
+    } = window.pertLogic;
     const PHI_FLAG_PATTERNS = [
       { label: "MRN keyword", regex: /\b(?:mrn|medical record number|patient id)\b/gi },
       { label: "DOB keyword", regex: /\b(?:dob|date of birth|born on)\b/gi },
@@ -1357,27 +1359,11 @@
     }
 
     function normalizeWhitespace(text) {
-      return (text || "")
-        .replace(/[ \t]+\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .replace(/[ \t]{2,}/g, " ")
-        .trim();
+      return normalizeWhitespaceCore(text);
     }
 
     function scrubPotentialIdentifiers(text) {
-      let cleaned = text || "";
-      const findings = [];
-      PHI_SCRUB_PATTERNS.forEach((pattern) => {
-        cleaned = cleaned.replace(pattern.regex, (match) => {
-          findings.push(pattern.label);
-          return "****";
-        });
-      });
-      cleaned = normalizeWhitespace(cleaned);
-      return {
-        cleaned,
-        findings: Array.from(new Set(findings))
-      };
+      return scrubPotentialIdentifiersCore(text);
     }
 
     function detectPotentialIdentifiers(text) {
@@ -1449,21 +1435,40 @@
       });
     }
 
+    function syncAutosetCheckbox(el, shouldBeChecked) {
+      if (!el) return;
+
+      if (shouldBeChecked) {
+        if (!el.checked) {
+          el.checked = true;
+          el.dataset.autoset = "1";
+        }
+        return;
+      }
+
+      if (el.dataset.autoset === "1") {
+        el.checked = false;
+        delete el.dataset.autoset;
+      }
+    }
+
+    function clearAutosetMarker(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      delete el.dataset.autoset;
+    }
+
     function syncHemodynamicDependencies() {
       const vasopressorValue = value("vasopressors");
       const persistentHypotensionEl = document.getElementById("persistent-hypotension");
-      if (vasopressorValue !== "0" && persistentHypotensionEl && !persistentHypotensionEl.checked) {
-        persistentHypotensionEl.checked = true;
-      }
+      syncAutosetCheckbox(persistentHypotensionEl, vasopressorValue !== "0");
     }
 
     function syncRenalDependencies() {
       const crcl = numberValue("crcl");
       const severeCkdEl = document.getElementById("severe-ckd");
       if (!severeCkdEl) return;
-      if (crcl !== null && crcl < 30) {
-        severeCkdEl.checked = true;
-      }
+      syncAutosetCheckbox(severeCkdEl, crcl !== null && crcl < 30);
     }
 
     function syncPregnancyDependencies(changedSource) {
@@ -1988,7 +1993,7 @@
       lines.push(`- Diagnosis status: ${data.confirmedPe}`);
       lines.push(`- Symptomatic acute PE: ${data.symptomatic}`);
       lines.push(`- Incidental finding: ${data.incidental ? "yes" : "no"}`);
-      lines.push(`- Most proximal clot location: ${data.clotLocation}`);
+      lines.push(`- Most proximal clot location: ${clotLocationLabel(data.clotLocation)}`);
       lines.push(`- Severity method: ${data.chosenScoreName} (${data.chosenScoreValue})`);
       lines.push(`- PESI / sPESI / Hestia+ / Bova: ${data.pesi ?? "n/a"} / ${data.spesi ?? "n/a"} / ${data.hestia ?? "n/a"} / ${data.bova ?? "n/a"}`);
       lines.push(`- Age: ${data.patientAge ?? "n/a"}`);
@@ -2018,82 +2023,7 @@
     }
 
     function classify(data) {
-      const hasScore = data.pesi !== null || data.spesi !== null || data.hestia !== null;
-      const lowByPesi = data.pesi !== null && data.pesi <= 85;
-      const lowBySpesi = data.spesi !== null && data.spesi === 0;
-      const lowByHestia = data.hestia !== null && data.hestia === 0;
-      const lowSeverity = lowByPesi || lowBySpesi || lowByHestia;
-
-      const elevatedByPesi = data.pesi !== null && data.pesi > 85;
-      const elevatedBySpesi = data.spesi !== null && data.spesi >= 1;
-      const elevatedByHestia = data.hestia !== null && data.hestia >= 1;
-      const elevatedSeverity = elevatedByPesi || elevatedBySpesi || elevatedByHestia;
-
-      const rvPositive = data.rvDysfunction === "yes";
-      const troponinPositive = data.troponin === "yes";
-      const bnpPositive = data.bnp === "yes";
-      const biomarkerPositive = troponinPositive || bnpPositive;
-
-      const hypoperfusionMarkers =
-        data.aki ||
-        data.oliguria ||
-        data.mentalStatus ||
-        data.lowCardiacIndex ||
-        data.shockScore ||
-        (data.lactate !== null && data.lactate > 2) ||
-        (data.map !== null && data.map < 60);
-
-      const respiratoryFailure = ["niv", "imv"].includes(data.oxygenSupport);
-      const needsAnySupplementalO2 = data.oxygenSupport !== "room-air";
-      const needsHighSupportO2 = ["o2-high", "hfnc", "niv", "imv"].includes(data.oxygenSupport);
-      const lowOxygenSaturation = data.oxygenSat !== null && data.oxygenSat < 90;
-
-      const normotensiveShock = hypoperfusionMarkers && !data.persistentHypotension && !data.cardiacArrest;
-
-      let base = "BC-pending";
-      if ((data.symptomatic === "no" && data.incidental) || (data.symptomatic === "no" && data.confirmedPe === "confirmed")) {
-        base = data.clotLocation === "subsegmental" ? "A1" : "A2";
-      } else if (data.cardiacArrest || data.persistentHypotension || data.vasopressors === "2plus") {
-        base = (data.cardiacArrest || data.vasopressors === "2plus" || respiratoryFailure) ? "E2" : "E1";
-      } else if (normotensiveShock || (data.transientHypotension && hypoperfusionMarkers)) {
-        base = "D2";
-      } else if (data.transientHypotension) {
-        base = "D1";
-      } else if (elevatedSeverity) {
-        if (rvPositive && biomarkerPositive) {
-          base = "C3";
-        } else if (rvPositive || biomarkerPositive) {
-          base = "C2";
-        } else {
-          base = "C1";
-        }
-      } else if (lowSeverity) {
-        base = data.clotLocation === "subsegmental" ? "B1" : "B2";
-      }
-
-      let significantResp = false;
-      if (base.charAt(0) === "C") {
-        significantResp = lowOxygenSaturation || (data.rr !== null && data.rr >= 30) || needsAnySupplementalO2;
-      } else if (["D", "E"].includes(base.charAt(0))) {
-        significantResp = needsHighSupportO2;
-      }
-
-      const category = base === "BC-pending" ? "B/C pending" : base + (significantResp ? "R" : "");
-      const family = base === "BC-pending" ? "U" : base.charAt(0);
-      return {
-        category,
-        base,
-        family,
-        hasScore,
-        lowSeverity,
-        elevatedSeverity,
-        rvPositive,
-        biomarkerPositive,
-        hypoperfusionMarkers,
-        significantResp,
-        respiratoryFailure,
-        pendingSeverityScore: base === "BC-pending"
-      };
+      return classifyCore(data);
     }
 
     function categoryDescriptor(base) {
@@ -2121,7 +2051,6 @@
       if (data.hestia !== null && data.hestia === 0) thresholds.push("Hestia 0");
       if (data.pesi !== null && data.pesi < 86) thresholds.push("PESI <86");
       if (data.spesi !== null && data.spesi === 0) thresholds.push("sPESI 0");
-      if (data.bova !== null && data.bova <= 4) thresholds.push("Bova <=4");
       return thresholds;
     }
 
@@ -2133,42 +2062,7 @@
     }
 
     function hiPeithoAssessment(data, cls) {
-      const scoreSbp = deriveScoreSbp(data);
-      const hrCriterion = data.scoreHr !== null && data.scoreHr > 100;
-      const sbpCriterion =
-        (scoreSbp !== null && scoreSbp < 110) ||
-        data.transientHypotension ||
-        data.persistentHypotension;
-      const rrCriterion = data.rr !== null && data.rr > 20;
-      const highSupportCriterion = ["o2-high", "hfnc", "niv", "imv"].includes(data.oxygenSupport);
-      const confirmedDiagnosis = data.confirmedPe === "confirmed";
-      const noThrombolysisContraindication = !data.highBleedingRisk && !data.contraThrombolysis;
-      const metLabels = [];
-      if (hrCriterion) metLabels.push("HR >100 bpm");
-      if (sbpCriterion) metLabels.push("SBP <110 mm Hg");
-      if (rrCriterion) metLabels.push("RR >20/min");
-      if (highSupportCriterion) metLabels.push(">6 L/min oxygen, HFNC, NIV, or IMV");
-      const eligibleCategory = ["C2", "C3", "D1", "D2"].includes(cls.base);
-      const proximalClotBurden = ["segmental", "saddle"].includes(data.clotLocation);
-      return {
-        confirmedDiagnosis,
-        noThrombolysisContraindication,
-        eligibleCategory,
-        proximalClotBurden,
-        featureCount: metLabels.length,
-        metLabels,
-        absoluteEligible:
-          confirmedDiagnosis &&
-          eligibleCategory &&
-          proximalClotBurden &&
-          metLabels.length >= 2 &&
-          noThrombolysisContraindication,
-        relativeEligible:
-          confirmedDiagnosis &&
-          eligibleCategory &&
-          proximalClotBurden &&
-          metLabels.length >= 2
-      };
+      return hiPeithoAssessmentCore(data, cls);
     }
 
     function buildPertConsensus(data, cls) {
@@ -2202,7 +2096,7 @@
         data.recurrentOnTherapy &&
         ["B", "C", "D", "E"].includes(cls.family);
       const subsegmentalDisproportionatePresentation =
-        data.clotLocation === "subsegmental" &&
+        isSubsegmentalOnly(data.clotLocation) &&
         ["D1", "D2", "E1", "E2"].includes(cls.base) &&
         !clotInTransitAdvancedTherapy;
       const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
@@ -2284,7 +2178,7 @@
         summary.push("Risk stratification: consider transthoracic echocardiography for further risk stratification if not already performed.");
       }
 
-      if (cls.family === "C" && data.lactate === null) {
+      if (["C", "D", "E"].includes(cls.family) && data.lactate === null) {
         summary.push("Risk stratification: measuring lactate is reasonable to help further stratify clinical severity.");
       }
 
@@ -2316,11 +2210,11 @@
       } else if (lowRiskBreastfeedingStandard) {
         summary.push("Anticoagulation: breastfeeding is present; use enoxaparin 1 mg/kg SC every 12 hours with outpatient bridge to warfarin.");
       } else if (data.breastfeeding) {
-        summary.push("Anticoagulation: breastfeeding is present; start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+        summary.push("Anticoagulation: breastfeeding is present; UFH, LMWH, and warfarin are breastfeeding-compatible options. Favor UFH when rapid reversibility or procedures are anticipated; avoid DOACs.");
       } else if (lowRiskPregnancyRenalExtreme) {
-        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulant selection and postpartum transition planning.");
       } else if (severeRenalExtremeWeightPregnancy) {
-        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+        summary.push("Anticoagulation: pregnancy with severe renal dysfunction and body weight >150 kg is present; recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulant selection and postpartum transition planning.");
       } else if (lowRiskPregnancySevereRenal) {
         summary.push("Anticoagulation: start enoxaparin 1 mg/kg SC every 24 hours (pregnancy-preferred); use UFH infusion if rapid reversibility is needed.");
       } else if (severeRenalExtremeWeightC2ToE2) {
@@ -2388,8 +2282,8 @@
         actions.push("[COR 1] Start therapeutic anticoagulation now.");
         actions.push("Disposition support: symptomatic stable PE remains unclassified between category B and C until PESI, sPESI, or Hestia is documented; complete one of these now before labeling the patient low risk or selecting an outpatient pathway.");
       } else if (lowRiskPregnancyRenalExtreme && canAnticoag) {
-        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH with bridge to warfarin).");
-        actions.push(lowRiskHospitalOverride("pregnancy with severe renal dysfunction and body weight >150 kg favors inpatient UFH initiation and warfarin bridge."));
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH).");
+        actions.push(lowRiskHospitalOverride("pregnancy with severe renal dysfunction and body weight >150 kg favors inpatient UFH initiation and multidisciplinary anticoagulant planning."));
       } else if (lowRiskBreastfeedingSevereRenalExtreme && canAnticoag) {
         actions.push("[COR 1] Start therapeutic anticoagulation now (pharmacist-guided LMWH vs. UFH).");
         actions.push(lowRiskHospitalOverride("breastfeeding with severe renal dysfunction and body weight >150 kg favors hospitalization for anticoagulant selection and dosing."));
@@ -2419,7 +2313,7 @@
         }
 
         if (!cls.hasScore) {
-          actions.push("Disposition support: if disposition is being considered for outpatient or early discharge, use a validated decision tool such as Hestia, sPESI, PESI, or Bova to help identify patients suitable for home treatment.");
+          actions.push("Disposition support: if disposition is being considered for outpatient or early discharge, use a validated decision tool such as Hestia, sPESI, or PESI to help identify patients suitable for home treatment.");
         } else if (cls.lowSeverity) {
           const scoreText = lowRiskScoreThresholds.length
             ? ` (${lowRiskScoreThresholds.join(", ")})`
@@ -2429,7 +2323,7 @@
           actions.push("Disposition support: the incorporated clinical severity score does not support a low-risk outpatient pathway; use observation or hospital admission for initial treatment.");
         }
       } else if (data.breastfeeding && canAnticoag) {
-        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH with bridge to warfarin).");
+        actions.push("[COR 1] Start therapeutic anticoagulation now (UFH or LMWH based on reversibility, renal function, and procedural needs).");
       } else if (canAnticoag) {
         actions.push("[COR 1] Start therapeutic anticoagulation now; if parenteral therapy is used, LMWH dosing is provided in the medication section.");
       } else {
@@ -2547,11 +2441,11 @@
         data.clotTransit &&
         ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
       const subsegmentalDisproportionatePresentation =
-        data.clotLocation === "subsegmental" &&
+        isSubsegmentalOnly(data.clotLocation) &&
         ["D1", "D2", "E1", "E2"].includes(cls.base) &&
         !clotInTransitAdvancedTherapy;
-      const subsegmentalEndovascularConcern =
-        data.clotLocation === "subsegmental" &&
+      const limitedClotBurdenEndovascularConcern =
+        (isSubsegmentalOnly(data.clotLocation) || isSegmentalOnly(data.clotLocation)) &&
         (["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit) &&
         !clotInTransitAdvancedTherapy;
       const normotensiveIntermediateHigh =
@@ -2566,7 +2460,7 @@
 
       rationale.push(`Computed AHA/ACC category: ${cls.category} (${categoryDescriptor(cls.base)}).`);
       rationale.push(`Symptoms: ${data.symptomatic === "yes" ? "present" : "not reported"}; incidental discovery: ${data.incidental ? "yes" : "no"}.`);
-      rationale.push(`Clot location input: ${data.clotLocation}.`);
+      rationale.push(`Clot location input: ${clotLocationLabel(data.clotLocation)}.`);
       rationale.push(`Chosen severity method: ${data.chosenScoreName} (${data.chosenScoreValue}).`);
 
       if (data.pesi !== null || data.spesi !== null || data.hestia !== null || data.bova !== null) {
@@ -2627,8 +2521,8 @@
 
       if (subsegmentalDisproportionatePresentation) {
         alerts.push("Subsegmental-only PE with D/E physiology: advanced PE reperfusion therapy is unlikely to provide benefit.");
-      } else if (subsegmentalEndovascularConcern) {
-        alerts.push("Subsegmental-only clot burden: catheter-directed thrombectomy is unlikely to be suitable.");
+      } else if (limitedClotBurdenEndovascularConcern) {
+        alerts.push("Segmental-only or subsegmental-only clot burden: catheter-directed thrombectomy may be less suitable.");
       }
 
       if (data.bleedAbsoluteActive) {
@@ -2640,7 +2534,7 @@
       } else if (lowRiskPregnancySevereRenal) {
         recommendations.push("[COR 1] In a low-risk pregnancy profile with severe renal dysfunction, start enoxaparin 1 mg/kg SC every 24 hours; use UFH if rapid reversibility is needed.");
       } else if (lowRiskPregnancyRenalExtreme) {
-        recommendations.push("[COR 1] In a low-risk pregnancy profile with severe renal dysfunction and body weight >150 kg, recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+        recommendations.push("[COR 1] In a low-risk pregnancy profile with severe renal dysfunction and body weight >150 kg, recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulant selection and postpartum transition planning.");
       } else if (lowRiskBreastfeedingSevereRenalExtreme) {
         recommendations.push("[COR 1] In a low-risk breastfeeding profile with severe renal dysfunction and body weight >150 kg, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
       } else if (lowRiskBreastfeedingSevereRenal) {
@@ -2650,13 +2544,13 @@
       } else if (lowRiskBreastfeedingStandard) {
         recommendations.push("[COR 1] In a low-risk breastfeeding profile without severe renal dysfunction or extreme weight, use LMWH with outpatient bridge to warfarin; avoid DOACs.");
       } else if (severeRenalExtremeWeightPregnancy) {
-        recommendations.push("[COR 1] Pregnancy with severe renal dysfunction and body weight >150 kg: recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin.");
+        recommendations.push("[COR 1] Pregnancy with severe renal dysfunction and body weight >150 kg: recommend inpatient admission for UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulant selection and postpartum transition planning.");
       } else if (severeRenalExtremeWeightBreastfeeding) {
         recommendations.push("[COR 1] Breastfeeding with severe renal dysfunction and body weight >150 kg: hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion.");
       } else if (data.pregnancy) {
         recommendations.push("[COR 1] Pregnancy: use LMWH (eg, enoxaparin 1 mg/kg SC every 12 hours) or UFH; avoid DOACs and warfarin.");
       } else if (data.breastfeeding) {
-        recommendations.push("[COR 1] Breastfeeding: use UFH with bridge to warfarin; avoid DOACs and do not use LMWH in this tool pathway.");
+        recommendations.push("[COR 1] Breastfeeding: avoid DOACs. UFH, LMWH, and warfarin are breastfeeding-compatible options; select based on renal function, bleeding risk, and need for rapid reversibility or procedures.");
       } else if (data.aps) {
         recommendations.push("[COR 1] Established thrombotic APS: VKA is preferred over DOAC.");
       }
@@ -2712,6 +2606,10 @@
         recommendations.push("[Operational] Hemodynamic support should be individualized: inhaled pulmonary vasodilators may reduce RV afterload; vasopressors and/or inotropes are appropriate when cardiac output or systemic perfusion is inadequate.");
       }
 
+      if (["C", "D", "E"].includes(cls.family)) {
+        recommendations.push("[Operational] Avoid deep sedation and mechanical ventilation if possible; if they are required, optimize preload, vasoactive support, and RV afterload to reduce decompensation risk.");
+      }
+
       if (data.contraAnticoag) {
         recommendations.push("[COR 1] If an IVC filter is placed, use a retrievable device and plan early retrieval once anticoagulation becomes feasible.");
       }
@@ -2734,7 +2632,8 @@
       const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
       const c2PlusProfile = ["C2", "C3", "D1", "D2", "E1", "E2"].includes(cls.base);
       const c3PlusProfile = ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
-      const subsegmentalOnly = data.clotLocation === "subsegmental";
+      const subsegmentalOnly = isSubsegmentalOnly(data.clotLocation);
+      const segmentalOnly = isSegmentalOnly(data.clotLocation);
       const clotInTransitAdvancedTherapy =
         data.clotTransit &&
         ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
@@ -2777,7 +2676,7 @@
         data.vasopressors !== "0";
       const parenteralLmwhPreferred = ["C1", "C2", "C3", "D1", "D2", "E1"].includes(cls.base);
       const useUFHAlternative = cls.base === "E2" || severeRenal || data.cardiacArrest;
-      const likelyEndovascularProcedure = !subsegmentalDisproportionatePresentation && cls.base !== "E2" && !data.unableLieFlat && (
+      const likelyEndovascularProcedure = !subsegmentalDisproportionatePresentation && hasCatheterAccessibleClotBurden(data.clotLocation) && cls.base !== "E2" && !data.unableLieFlat && (
         ["D1", "D2", "E1"].includes(cls.base) ||
         (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
       );
@@ -2793,10 +2692,10 @@
         ["D1", "D2", "E1", "E2"].includes(cls.base) ||
         (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
       );
-      const cdtCandidate = !subsegmentalDisproportionatePresentation && c3PlusProfile && !data.unableLieFlat;
-      const subsegmentalEndovascularConcern =
-        subsegmentalOnly &&
-        (likelyEndovascularProcedure || cdtCandidate) &&
+      const cdtCandidate = !subsegmentalDisproportionatePresentation && hasCatheterAccessibleClotBurden(data.clotLocation) && c3PlusProfile && !data.unableLieFlat;
+      const limitedClotBurdenEndovascularConcern =
+        (subsegmentalOnly || segmentalOnly) &&
+        (["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit) &&
         !clotInTransitAdvancedTherapy;
       const breakthroughPeFilterEligible =
         data.recurrentOnTherapy &&
@@ -2824,7 +2723,7 @@
         if (severeRenalExtremeWeightBreastfeeding) {
           medication.push(`Breastfeeding with severe renal dysfunction and weight ${data.weightKg} kg: hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`);
         } else if (lowRiskPregnancyRenalExtreme) {
-          medication.push(`Low-risk pregnancy pathway with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose} and bridge to warfarin.`);
+          medication.push(`Low-risk pregnancy pathway with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose}. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulation planning and postpartum transition.`);
         } else if (lowRiskPregnancySevereRenal) {
           medication.push(`Low-risk pregnancy pathway with severe renal dysfunction: start enoxaparin 1 mg/kg SC every 24 hours; use ${ufhDose} if rapid reversibility is needed.`);
         } else if (lowRiskBreastfeedingSevereRenal) {
@@ -2834,9 +2733,9 @@
         } else if (lowRiskBreastfeedingStandard) {
           medication.push("Low-risk breastfeeding pathway: use enoxaparin 1 mg/kg SC every 12 hours with outpatient bridge to warfarin. Avoid DOACs.");
         } else if (data.breastfeeding) {
-          medication.push(`Breastfeeding anticoagulation: use ${ufhDose} and bridge to warfarin. Avoid DOACs and do not use LMWH in this tool pathway.`);
+          medication.push(`Breastfeeding anticoagulation: avoid DOACs. UFH, LMWH, and warfarin are breastfeeding-compatible options; favor ${ufhDose} when rapid reversibility or procedures are anticipated.`);
         } else if (severeRenalExtremeWeightPregnancy) {
-          medication.push(`Pregnancy with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose} and bridge to warfarin.`);
+          medication.push(`Pregnancy with severe renal dysfunction and weight ${data.weightKg} kg: recommend inpatient admission for ${ufhDose}. Avoid warfarin during pregnancy; involve MFM/hematology for ongoing anticoagulation planning and postpartum transition.`);
         } else if (severeRenalExtremeWeightC2ToE2) {
           medication.push(`Severe renal dysfunction with weight ${data.weightKg} kg in category ${cls.base}: use ${ufhDose} given uncertainty regarding LMWH dosing in this setting.`);
         } else if (severeRenalExtremeWeightC1) {
@@ -2876,7 +2775,7 @@
           } else if (severeRenalExtremeWeightBreastfeeding) {
             medication.push(`Suspected acute PE with breastfeeding, severe renal dysfunction, and body weight >150 kg: when imaging is delayed or not immediately accessible, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`);
           } else if (data.breastfeeding) {
-            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk during breastfeeding: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose} and plan bridge to warfarin.`);
+            medication.push(`Suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk during breastfeeding: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose}; LMWH is also breastfeeding-compatible when procedural reversibility is less urgent.`);
           } else if (severeRenalExtremeWeightPregnancy) {
             medication.push(`Suspected acute PE with pregnancy, severe renal dysfunction, and body weight >150 kg: when imaging is delayed or not immediately accessible, start therapeutic anticoagulation with ${ufhDose} given uncertainty regarding LMWH dosing in this setting.`);
           } else if (severeRenalExtremeWeightC2ToE2) {
@@ -2914,12 +2813,14 @@
           medication.push("If the patient is likely to undergo an endovascular PE procedure, favor LMWH (enoxaparin 1 mg/kg SC every 12 hours) over UFH to provide more effective anticoagulation.");
         }
 
-        if (subsegmentalEndovascularConcern) {
-          medication.push("Subsegmental-only clot burden: catheter-directed thrombectomy is unlikely to be suitable based on clot burden; confirm whether a non-thrombectomy reperfusion strategy is more appropriate if escalation is required.");
+        if (limitedClotBurdenEndovascularConcern) {
+          medication.push("Segmental-only or subsegmental-only clot burden: catheter-directed thrombectomy may be less suitable based on clot burden; confirm whether a non-thrombectomy reperfusion strategy is more appropriate if escalation is required.");
         }
 
         if (data.aps) {
-          medication.push(`Established thrombotic APS: bridge to warfarin (target INR 2.0-3.0) using therapeutic parenteral anticoagulation (eg, ${data.breastfeeding || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC2ToE2 ? ufhDose : severeRenal ? `either ${ufhDose} or ${renalAdjustedLmwhDose}` : "enoxaparin 1 mg/kg SC every 12 hours"}).`);
+          medication.push(data.pregnancy
+            ? `Pregnancy plus thrombotic APS: use therapeutic pregnancy-compatible LMWH or ${ufhDose}; avoid warfarin during pregnancy and involve MFM/hematology for ongoing management and postpartum transition planning.`
+            : `Established thrombotic APS: bridge to warfarin (target INR 2.0-3.0) using therapeutic parenteral anticoagulation (eg, ${data.breastfeeding || severeRenalExtremeWeightC2ToE2 ? ufhDose : severeRenal ? `either ${ufhDose} or ${renalAdjustedLmwhDose}` : "enoxaparin 1 mg/kg SC every 12 hours"}).`);
         }
 
         if (severeRenal && !data.breastfeeding && !outpatientSevereRenalOption && !(severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC1 || severeRenalExtremeWeightC2ToE2)) {
@@ -2957,9 +2858,9 @@
           medication.push(severeRenalExtremeWeightBreastfeeding
             ? `After thrombolytic therapy or an endovascular procedure during breastfeeding with severe renal dysfunction and body weight >150 kg, hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`
             : data.breastfeeding
-            ? `After thrombolytic therapy or an endovascular procedure during breastfeeding, continue ${ufhDose} and bridge to warfarin when clinically appropriate.`
+            ? `After thrombolytic therapy or an endovascular procedure during breastfeeding, continue breastfeeding-compatible anticoagulation with UFH or LMWH based on reversibility needs; warfarin is compatible with breastfeeding if an oral agent is later required.`
             : severeRenalExtremeWeightPregnancy
-            ? `After thrombolytic therapy or an endovascular procedure in pregnancy with severe renal dysfunction and body weight >150 kg, initiate ${ufhDose} and bridge to warfarin when clinically appropriate.`
+            ? `After thrombolytic therapy or an endovascular procedure in pregnancy with severe renal dysfunction and body weight >150 kg, initiate ${ufhDose}. Avoid warfarin during pregnancy and involve MFM/hematology for ongoing anticoagulation planning and postpartum transition.`
             : severeRenalExtremeWeightC2ToE2
             ? `After thrombolytic therapy or an endovascular procedure in severe renal dysfunction and morbid obesity, initiate ${ufhDose}.`
             : severeRenal
@@ -2980,8 +2881,10 @@
         }
       }
 
-      if (!data.unableLieFlat && c3PlusProfile && !subsegmentalOnly) {
+      if (!data.unableLieFlat && c3PlusProfile && hasCatheterAccessibleClotBurden(data.clotLocation)) {
         medication.push("If rapid reperfusion is required and available, suction/mechanical thrombectomy is generally preferred over catheter-directed lytic infusion when expertise exists.");
+      } else if (!data.unableLieFlat && c3PlusProfile && segmentalOnly) {
+        medication.push("With segmental-only PE, suction/mechanical thrombectomy may be less suitable based on clot burden; confirm whether a non-thrombectomy reperfusion strategy is more appropriate if escalation is required.");
       } else if (!data.unableLieFlat && c3PlusProfile && subsegmentalOnly && !subsegmentalDisproportionatePresentation) {
         medication.push("With subsegmental-only PE, suction/mechanical thrombectomy is unlikely to be suitable based on clot burden even if escalation is otherwise being considered.");
       }
@@ -2994,8 +2897,8 @@
         monitoring.push("Pending B versus C classification: complete PESI, sPESI, or Hestia now before labeling the patient low risk or choosing an outpatient pathway.");
         monitoring.push("Reassess oxygenation, hemodynamics, and anticoagulation access while disposition is being finalized.");
       } else if (lowRiskPregnancyRenalExtreme) {
-        monitoring.push("Hospitalization pathway: confirm hemodynamic and oxygen stability, initiate UFH with baseline CBC, platelets, creatinine/eGFR, PT/INR, and aPTT, and coordinate inpatient warfarin bridging.");
-        monitoring.push("Follow serial CBC, creatinine/eGFR, aPTT, and INR during UFH initiation and warfarin bridging.");
+        monitoring.push("Hospitalization pathway: confirm hemodynamic and oxygen stability, initiate UFH with baseline CBC, platelets, creatinine/eGFR, PT/INR, and aPTT, and coordinate inpatient pregnancy-compatible anticoagulation planning.");
+        monitoring.push("Follow serial CBC, creatinine/eGFR, and aPTT during UFH initiation, and reassess with MFM/hematology for ongoing anticoagulation strategy and postpartum transition.");
       } else if (lowRiskPregnancySevereRenal) {
         monitoring.push("Outpatient/early-discharge pregnancy pathway in severe renal dysfunction: confirm hemodynamic stability, oxygen stability, anticoagulation access, renal-adjusted LMWH planning, and explicit return precautions before discharge.");
         monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt follow-up for renal function and bleeding reassessment.");
@@ -3003,14 +2906,14 @@
         monitoring.push("Hospitalization pathway: confirm hemodynamic and oxygen stability while pharmacist-guided LMWH dosing versus UFH is selected; obtain baseline CBC, hemoglobin, platelets, creatinine/eGFR, PT/INR, and aPTT.");
         monitoring.push("If LMWH is selected, plan peak anti-Xa monitoring 3-5 hours after dose once steady state is reached; if UFH is selected, use standard infusion monitoring.");
       } else if (lowRiskBreastfeedingSevereRenal) {
-        monitoring.push("Outpatient/early-discharge breastfeeding pathway in severe renal dysfunction: confirm hemodynamic stability, oxygen stability, LMWH access, anti-Xa monitoring plan, pharmacy consultation, and warfarin bridge follow-up before discharge.");
-        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, INR monitoring, and bleeding reassessment.");
+        monitoring.push("Outpatient/early-discharge breastfeeding pathway in severe renal dysfunction: confirm hemodynamic stability, oxygen stability, LMWH access, anti-Xa monitoring plan, pharmacy consultation, and follow-up for the selected breastfeeding-compatible anticoagulant strategy before discharge.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, optional INR monitoring if warfarin is selected, and bleeding reassessment.");
       } else if (lowRiskBreastfeedingExtremeWeight) {
-        monitoring.push(`Outpatient/early-discharge breastfeeding pathway at weight ${data.weightKg} kg: confirm hemodynamic stability, oxygen stability, LMWH access, pharmacy input on dose adjustment, peak anti-Xa monitoring plan, and warfarin bridge follow-up before discharge.`);
-        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, INR monitoring, and bleeding reassessment.");
+        monitoring.push(`Outpatient/early-discharge breastfeeding pathway at weight ${data.weightKg} kg: confirm hemodynamic stability, oxygen stability, LMWH access, pharmacy input on dose adjustment, peak anti-Xa monitoring plan, and follow-up for the selected breastfeeding-compatible anticoagulant strategy before discharge.`);
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and ensure prompt follow-up for anti-Xa review, optional INR monitoring if warfarin is selected, and bleeding reassessment.");
       } else if (lowRiskBreastfeedingStandard) {
-        monitoring.push("Outpatient/early-discharge breastfeeding pathway: confirm hemodynamic stability, oxygen stability, LMWH access, warfarin bridge planning, and explicit return precautions before discharge.");
-        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt INR follow-up during the warfarin bridge.");
+        monitoring.push("Outpatient/early-discharge breastfeeding pathway: confirm hemodynamic stability, oxygen stability, LMWH access, follow-up for the selected breastfeeding-compatible anticoagulant strategy, and explicit return precautions before discharge.");
+        monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt INR follow-up if warfarin is selected.");
       } else if (["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity) {
         const scoreText = lowRiskScoreThresholds.length
           ? ` (${lowRiskScoreThresholds.join(", ")})`
@@ -3031,10 +2934,14 @@
         }
       }
 
+      if (["C", "D", "E"].includes(cls.family)) {
+        monitoring.push("Avoid deep sedation and mechanical ventilation if possible; if they are required, optimize preload, vasoactive support, and RV afterload to reduce hemodynamic collapse risk.");
+      }
+
       if (!canAnticoag) {
         monitoring.push("If anticoagulation is withheld, monitor closely for recurrent embolization and revisit filter retrieval/anticoagulation restart plan daily.");
       } else if (lowRiskPregnancyRenalExtreme) {
-        monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments; monitor INR daily during warfarin initiation until therapeutic.");
+        monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments.");
       } else if (lowRiskPregnancySevereRenal) {
         monitoring.push("Renal-adjusted pregnancy LMWH pathway: consider peak anti-Xa monitoring 3-5 hours after dose once steady state is reached, and monitor renal function and bleeding signs closely.");
       } else if (severeRenalExtremeWeightBreastfeeding) {
@@ -3060,14 +2967,18 @@
       }
 
       if (data.aps) {
-        monitoring.push("If transitioning to warfarin, monitor INR daily during initiation and maintain target INR 2.0-3.0 unless specialist-directed alternative target is selected.");
+        if (data.pregnancy) {
+          monitoring.push("Pregnancy plus APS: maintain close specialist follow-up for LMWH/UFH dosing, anti-Xa consideration when appropriate, and postpartum anticoagulation transition planning.");
+        } else {
+          monitoring.push("If transitioning to warfarin, monitor INR daily during initiation and maintain target INR 2.0-3.0 unless specialist-directed alternative target is selected.");
+        }
       }
 
       if (data.breastfeeding) {
         if (lowRiskBreastfeedingStandard || lowRiskBreastfeedingSevereRenal || lowRiskBreastfeedingExtremeWeight) {
-          monitoring.push("If bridging to warfarin during an outpatient/early-discharge breastfeeding pathway, ensure immediate anticoagulation-clinic or equivalent INR follow-up; if inpatient, monitor INR daily during initiation until therapeutic.");
+          monitoring.push("If warfarin is selected during an outpatient/early-discharge breastfeeding pathway, ensure immediate anticoagulation-clinic or equivalent INR follow-up; if inpatient, monitor INR daily during initiation until therapeutic.");
         } else {
-          monitoring.push("If bridging to warfarin during breastfeeding, monitor INR daily during initiation until therapeutic.");
+          monitoring.push("If warfarin is selected during breastfeeding, monitor INR daily during initiation until therapeutic.");
         }
       }
 
@@ -3125,7 +3036,7 @@
       lines.push(`- Symptomatic acute PE: ${data.symptomatic}`);
       lines.push(`- Diagnosis status: ${data.confirmedPe}`);
       lines.push(`- Incidental finding: ${data.incidental ? "yes" : "no"}`);
-      lines.push(`- Clot location: ${data.clotLocation}`);
+      lines.push(`- Clot location: ${clotLocationLabel(data.clotLocation)}`);
       lines.push(`- Chosen severity method: ${data.chosenScoreName} (${data.chosenScoreValue})`);
       lines.push(`- PESI / sPESI / Hestia+ / Bova: ${data.pesi ?? "n/a"} / ${data.spesi ?? "n/a"} / ${data.hestia ?? "n/a"} / ${data.bova ?? "n/a"}`);
       lines.push(`- Age: ${data.patientAge ?? "n/a"}`);
@@ -3322,7 +3233,7 @@
       const medicationWithStrength = annotateStrength(medicationPlan.medication, "Operational");
       const monitoringWithStrength = annotateStrength(medicationPlan.monitoring, "Operational");
       const notesWithStrength = annotateStrength(medicationPlan.notes, "Operational");
-      const overallRecommendations = [...summaryWithStrength];
+      const overallRecommendations = [...summaryWithStrength, ...recommendationsWithStrength];
       const pertForPlan = {
         summary: summaryWithStrength,
         actions: actionsWithStrength,
@@ -3406,6 +3317,15 @@
         updateOutput();
       });
     }
+    ["persistent-hypotension", "severe-ckd"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const clearAutosetThenRefresh = () => {
+        clearAutosetMarker(id);
+      };
+      el.addEventListener("input", clearAutosetThenRefresh, { capture: true });
+      el.addEventListener("change", clearAutosetThenRefresh, { capture: true });
+    });
 
     startListeningEl.addEventListener("click", () => {
       if (!aiState.recognition || aiState.listening) return;
@@ -3485,7 +3405,7 @@
       form.reset();
       document.getElementById("symptomatic").value = "yes";
       document.getElementById("confirmed-pe").value = "confirmed";
-      document.getElementById("clot-location").value = "segmental";
+      document.getElementById("clot-location").value = "unknown";
       document.getElementById("provoking-factor").value = "unknown";
       document.getElementById("score-mode").value = "manual";
       document.getElementById("vasopressors").value = "0";
