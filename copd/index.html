@@ -11,8 +11,9 @@
     gtag("js", new Date());
     gtag("config", "G-ND4PN2RZTR");
   </script>
-  <link rel="stylesheet" href="/copd/styles.css?v=20260409-1">
-  <script src="/copd/app.js?v=20260409-1" defer></script>
+  <link rel="stylesheet" href="/copd/styles.css?v=20260411-1">
+  <script src="/copd/logic.js?v=20260411-1" defer></script>
+  <script src="/copd/app.js?v=20260411-1" defer></script>
 </head>
 <body class="copd-page">
   <main class="siteShell">
@@ -53,8 +54,10 @@
           </div>
           <div class="grid spirometry-grid">
             <label>
-              Post-BD FEV1/FVC ratio
-              <input id="fev1fvc" type="number" min="0" max="90" step="any">
+              Post-BD FEV1/FVC (enter 0.65 or 65)
+              <input id="fev1fvc" type="number" min="0" max="100" step="any" inputmode="decimal">
+              <span class="hint">Enter either a ratio (0.65) or percent (65). The tool uses the exact normalized ratio without rounding across the 0.70 diagnostic threshold.</span>
+              <span id="fev1fvc-normalized" class="score-chip helper-chip">Normalized ratio: --</span>
             </label>
             <label>
               FEV1 % predicted
@@ -242,6 +245,10 @@
               <input id="severe-exac" type="number" min="0" max="20" step="1">
             </label>
           </div>
+          <div class="calc-actions helper-actions">
+            <button type="button" id="set-no-exac-btn" class="ghost-btn">Set Both Counts to 0</button>
+            <span class="hint helper-inline">Leave counts blank only if the prior-year exacerbation history is truly unavailable. Enter explicit 0 when no exacerbations occurred.</span>
+          </div>
         </section>
 
         <section class="panel">
@@ -268,6 +275,10 @@
             <label>
               Cigarettes per day (if currently smoking)
               <input id="cigarettes-per-day" type="number" min="0" max="100" step="1">
+            </label>
+            <label id="years-since-quit-wrap" class="hidden">
+              Years since quit smoking
+              <input id="years-since-quit" type="number" min="0" max="80" step="0.5">
             </label>
           </div>
           <div class="grid checkbox-grid">
@@ -416,7 +427,7 @@
           Disease Control and Prevention, American Cancer Society, and official prescribing-information sources
           for prevention and dosing details.
         </p>
-        <p><strong>Application last updated:</strong> April 9, 2026.</p>
+        <p><strong>Application last updated:</strong> April 11, 2026.</p>
         <p>
           <a href="https://goldcopd.org/2026-gold-report-and-pocket-guide/" target="_blank" rel="noopener noreferrer">
             Open GOLD 2026 report and pocket guide page

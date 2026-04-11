@@ -1,3 +1,14 @@
+const {
+  DEFAULT_NO_RISK_ISSUE,
+  describeFev1FvcEntry,
+  classifySymptoms,
+  classifyExacerbationRisk,
+  assignGoldGroup,
+  isRoflumilastCandidate,
+  isLungCancerScreenEligible,
+  getLungCancerScreeningCaveat
+} = window.copdLogic;
+
 function getNumberValue(id) {
   const raw = document.getElementById(id).value.trim();
   if (raw === "") {
@@ -16,58 +27,55 @@ function getSelectValue(id) {
   return document.getElementById(id).value;
 }
 
-function normalizeFev1FvcValue(value) {
-  if (!Number.isFinite(value)) {
-    return { value: null, convertedFromPercent: false };
-  }
-
-  if (value >= 30 && value <= 90) {
-    return { value: value / 100, convertedFromPercent: true };
-  }
-
-  return { value, convertedFromPercent: false };
+function formatRatio(value) {
+  return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-function getNormalizedFev1FvcFromDom() {
-  const ratioInput = document.getElementById("fev1fvc");
-  const raw = ratioInput.value.trim();
+function getFev1FvcStateFromDom() {
+  const input = document.getElementById("fev1fvc");
+  const raw = input.value.trim();
 
   if (raw === "") {
-    return null;
+    return {
+      hasEntry: false,
+      rawValue: null,
+      ratio: null,
+      entryMode: null
+    };
   }
 
   const parsed = Number(raw);
-  const normalized = normalizeFev1FvcValue(parsed);
+  const normalized = describeFev1FvcEntry(parsed);
 
-  if (normalized.value === null) {
-    return null;
-  }
-
-  if (normalized.convertedFromPercent) {
-    ratioInput.value = normalized.value.toFixed(2);
-  }
-
-  return normalized.value;
+  return {
+    hasEntry: true,
+    rawValue: Number.isFinite(parsed) ? parsed : null,
+    ratio: normalized.ratio,
+    entryMode: normalized.entryMode
+  };
 }
 
 function getInputState() {
-  const normalizedFev1Fvc = getNormalizedFev1FvcFromDom();
+  const fev1fvcState = getFev1FvcStateFromDom();
 
   return {
     managementPhase: getSelectValue("management-phase"),
     age: getNumberValue("age"),
     spirometryConfirmed: getCheckboxValue("spirometry-confirmed"),
-    fev1fvc: normalizedFev1Fvc,
+    fev1fvc: fev1fvcState.ratio,
+    fev1fvcEntryMode: fev1fvcState.entryMode,
+    fev1fvcRawValue: fev1fvcState.rawValue,
     fev1Predicted: getNumberValue("fev1-predicted"),
     restingSpo2: getNumberValue("resting-spo2"),
     catScore: getNumberValue("cat-score"),
     mmrcScore: getNumberValue("mmrc-score"),
-    moderateExac: getNumberValue("moderate-exac") === null ? 0 : getNumberValue("moderate-exac"),
-    severeExac: getNumberValue("severe-exac") === null ? 0 : getNumberValue("severe-exac"),
+    moderateExac: getNumberValue("moderate-exac"),
+    severeExac: getNumberValue("severe-exac"),
     eosinophils: getNumberValue("eosinophils"),
     smokingStatus: getSelectValue("smoking-status"),
     packYears: getNumberValue("pack-years"),
     cigarettesPerDay: getNumberValue("cigarettes-per-day"),
+    yearsSinceQuit: getNumberValue("years-since-quit"),
     firstCigarette30: getCheckboxValue("first-cigarette-30"),
     chronicBronchitis: getCheckboxValue("chronic-bronchitis"),
     concomitantAsthma: getCheckboxValue("concomitant-asthma"),
@@ -198,15 +206,38 @@ function initSymptomCalculators() {
   updateMmrcDisplay();
 }
 
+function updateFev1FvcHelperChip() {
+  const display = document.getElementById("fev1fvc-normalized");
+  const state = getFev1FvcStateFromDom();
+
+  if (!state.hasEntry) {
+    display.textContent = "Normalized ratio: --";
+    return state;
+  }
+
+  if (state.ratio === null) {
+    display.textContent = "Normalized ratio: unable to interpret entry";
+    return state;
+  }
+
+  if (state.entryMode === "percent") {
+    display.textContent = `Normalized ratio: ${formatRatio(state.ratio)} (interpreted from ${state.rawValue})`;
+  } else {
+    display.textContent = `Normalized ratio: ${formatRatio(state.ratio)} (entered as ratio)`;
+  }
+
+  return state;
+}
+
 function syncSpirometryConfirmationFromRatio() {
   const confirmationInput = document.getElementById("spirometry-confirmed");
-  const normalizedValue = getNormalizedFev1FvcFromDom();
+  const state = updateFev1FvcHelperChip();
 
-  if (normalizedValue === null) {
+  if (state.ratio === null) {
     return;
   }
 
-  confirmationInput.checked = normalizedValue < 0.7;
+  confirmationInput.checked = state.ratio < 0.7;
 }
 
 function initSpirometryHelpers() {
@@ -217,72 +248,34 @@ function initSpirometryHelpers() {
   syncSpirometryConfirmationFromRatio();
 }
 
-function getCatImpact(score) {
-  if (score === null) {
-    return null;
+function syncSmokingFields() {
+  const smokingStatus = getSelectValue("smoking-status");
+  const yearsSinceQuitWrap = document.getElementById("years-since-quit-wrap");
+  const yearsSinceQuitInput = document.getElementById("years-since-quit");
+
+  if (smokingStatus === "former") {
+    yearsSinceQuitWrap.classList.remove("hidden");
+    yearsSinceQuitInput.disabled = false;
+    return;
   }
-  if (score <= 9) {
-    return "low impact";
-  }
-  if (score <= 20) {
-    return "medium impact";
-  }
-  if (score <= 30) {
-    return "high impact";
-  }
-  return "very high impact";
+
+  yearsSinceQuitWrap.classList.add("hidden");
+  yearsSinceQuitInput.disabled = true;
+  yearsSinceQuitInput.value = "";
 }
 
-function classifySymptoms(data) {
-  const hasCat = data.catScore !== null;
-  const hasMmrc = data.mmrcScore !== null;
-  const highByCat = hasCat && data.catScore >= 10;
-  const highByMmrc = hasMmrc && data.mmrcScore >= 2;
-
-  if (!hasCat && !hasMmrc) {
-    return {
-      high: null,
-      summary: "Symptom burden cannot be fully classified because CAT/CAAT and mMRC are both missing.",
-      noteLine: "Symptom scoring is incomplete because both CAT/CAAT and mMRC are missing."
-    };
-  }
-
-  const catText = hasCat
-    ? `CAT ${data.catScore}/40 (${getCatImpact(data.catScore)}; higher CAT scores correlate with worse symptom burden).`
-    : "CAT/CAAT not entered.";
-  const mmrcText = hasMmrc
-    ? `mMRC ${data.mmrcScore}/4.`
-    : "mMRC not entered.";
-  const high = highByCat || highByMmrc;
-
-  return {
-    high,
-    summary: `${catText} ${mmrcText} ${high ? "Overall symptom burden is higher." : "Overall symptom burden is lower based on available scores."}`,
-    noteLine: `${catText} ${mmrcText}`
-  };
+function initSmokingFieldHelpers() {
+  document.getElementById("smoking-status").addEventListener("change", syncSmokingFields);
+  syncSmokingFields();
 }
 
-function classifyExacerbationRisk(data) {
-  const totalModerateOrSevere = data.moderateExac + data.severeExac;
-  const high = totalModerateOrSevere >= 1 || data.severeExac >= 1;
-
-  return {
-    high,
-    summary: high
-      ? "Exacerbation-priority profile: at least one moderate or severe exacerbation in the previous year."
-      : "No recorded moderate or severe exacerbation in the previous year.",
-    noteLine: `${data.moderateExac} moderate and ${data.severeExac} severe exacerbations in the previous 12 months.`
-  };
+function setNoExacerbationCounts() {
+  document.getElementById("moderate-exac").value = "0";
+  document.getElementById("severe-exac").value = "0";
 }
 
-function assignGoldGroup(symptoms, exacRisk) {
-  if (exacRisk.high) {
-    return "E";
-  }
-  if (symptoms.high === null) {
-    return "A/B (symptom score required to distinguish)";
-  }
-  return symptoms.high ? "B" : "A";
+function initExacerbationHelpers() {
+  document.getElementById("set-no-exac-btn").addEventListener("click", setNoExacerbationCounts);
 }
 
 function getPhaseLabel(phase) {
@@ -345,6 +338,7 @@ function getSmokingCessationDetails(data) {
   }
 
   if (data.firstCigarette30) {
+    details.push("High nicotine-dependence marker present: first cigarette is within 30 minutes of waking.");
     details.push("Nicotine gum or lozenge: use the 4 mg strength if the first cigarette is within 30 minutes of waking. Gum: 1 piece every 1-2 hours for weeks 1-6, at least 9 pieces/day, maximum 24/day. Lozenge: 1 lozenge every 1-2 hours for weeks 1-6, maximum 20/day.");
   } else {
     details.push("Nicotine gum or lozenge: use the 2 mg strength if the first cigarette is more than 30 minutes after waking. Gum: 1 piece every 1-2 hours for weeks 1-6, at least 9 pieces/day, maximum 24/day. Lozenge: 1 lozenge every 1-2 hours for weeks 1-6, maximum 20/day.");
@@ -353,38 +347,18 @@ function getSmokingCessationDetails(data) {
   return details;
 }
 
-function isRoflumilastCandidate(data) {
-  return (
-    data.fev1Predicted !== null &&
-    data.fev1Predicted < 50 &&
-    data.chronicBronchitis &&
-    data.severeExac >= 1
-  );
-}
-
-function isLungCancerScreenEligible(data) {
-  return (
-    data.age !== null &&
-    data.age >= 50 &&
-    data.age <= 80 &&
-    (data.smokingStatus === "current" || data.smokingStatus === "former") &&
-    data.packYears !== null &&
-    data.packYears >= 20
-  );
-}
-
 function hasAdvancedCopdFeatures(data) {
   const severeAirflowObstruction = data.fev1Predicted !== null && data.fev1Predicted < 50;
   const severeSymptomBurden =
     (data.catScore !== null && data.catScore >= 20) ||
     (data.mmrcScore !== null && data.mmrcScore >= 3);
-  const severeEventHistory = data.severeExac >= 1;
+  const severeEventHistory = data.severeExac !== null && data.severeExac >= 1;
   const hypoxemiaSignal = data.restingSpo2 !== null && data.restingSpo2 <= 92;
 
   return severeAirflowObstruction || (severeSymptomBurden && severeEventHistory) || hypoxemiaSignal;
 }
 
-function buildInitialRecommendations(group, data) {
+function buildInitialRecommendations(group, data, symptoms) {
   const plan = [];
   const rationale = [];
   const medicationDetails = [];
@@ -408,8 +382,13 @@ function buildInitialRecommendations(group, data) {
     plan.push("Avoid LABA + ICS alone when COPD is the only diagnosis. If an ICS is indicated, prefer triple therapy.");
   }
 
-  if (group === "A/B (symptom score required to distinguish)") {
-    plan.push("Complete CAT/CAAT or mMRC scoring to distinguish Group A from Group B before finalizing initial inhaled therapy.");
+  if (group === "A/B/E (exacerbation history required to classify)") {
+    plan.push("Confirm prior-year moderate and severe exacerbation counts before finalizing GOLD A/B/E classification and initial inhaled therapy.");
+    rationale.push("GOLD A/B/E grouping cannot be assigned definitively when exacerbation history is missing.");
+  }
+
+  if (group === "A/B (symptom score required to distinguish)" || symptoms.high === null) {
+    plan.push("Complete CAT/CAAT or mMRC scoring before finalizing symptom-driven inhaled therapy intensity.");
   }
 
   if (data.concomitantAsthma) {
@@ -426,13 +405,14 @@ function buildInitialRecommendations(group, data) {
   return { plan, rationale, medicationDetails, followUpRecommendation };
 }
 
-function buildFollowUpRecommendations(data) {
+function buildFollowUpRecommendations(data, exacRisk) {
   const plan = [];
   const rationale = [];
   const medicationDetails = [];
+  const hasExacerbation = exacRisk.high === true;
+  const exacHistoryMissing = exacRisk.high === null;
   let managementChangeRecommended = false;
   let followUpRecommendation = "Follow up: Consider clinical follow-up in 6-12 months and annual spirometry.";
-  const hasExacerbation = data.moderateExac + data.severeExac >= 1;
 
   if (data.currentRegimen === "naive") {
     managementChangeRecommended = true;
@@ -441,9 +421,7 @@ function buildFollowUpRecommendations(data) {
       plan.push("Because concomitant asthma is suspected or confirmed, the next maintenance regimen should include ICS rather than bronchodilator monotherapy alone.");
     }
     rationale.push("Follow-up algorithms in GOLD 2026 are intended for patients already receiving maintenance treatment.");
-    if (managementChangeRecommended) {
-      followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
-    }
+    followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
     return { plan, rationale, medicationDetails, followUpRecommendation };
   }
 
@@ -466,7 +444,7 @@ function buildFollowUpRecommendations(data) {
           medicationDetails.push(getAzithromycinDetail());
         }
         if (isRoflumilastCandidate(data)) {
-          plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of severe exacerbation or hospitalization.");
+          plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of exacerbations despite maintenance therapy.");
           medicationDetails.push(getRoflumilastDetail());
         }
       }
@@ -484,7 +462,7 @@ function buildFollowUpRecommendations(data) {
         medicationDetails.push(getAzithromycinDetail());
       }
       if (isRoflumilastCandidate(data)) {
-        plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of severe exacerbation.");
+        plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of exacerbations despite optimized inhaled therapy.");
         medicationDetails.push(getRoflumilastDetail());
       }
       if (data.icsSideEffects) {
@@ -516,12 +494,15 @@ function buildFollowUpRecommendations(data) {
     }
 
     plan.push("Investigate non-COPD causes of dyspnea, including cardiac disease, deconditioning, anemia, anxiety, or other comorbidity.");
+  } else if (exacHistoryMissing) {
+    plan.push("Exacerbation history was not entered, so confirm prior-year moderate and severe exacerbation counts before concluding that no escalation is needed.");
+    rationale.push("Follow-up maintenance recommendations should not assume zero exacerbations when history is missing.");
+    followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
   } else {
     plan.push("Given symptom stability and the lack of recent exacerbations, continue current maintenance therapy.");
     rationale.push("Follow-up reassessment did not identify a dominant dyspnea or exacerbation target.");
   }
 
-  // GOLD states COPD with concomitant asthma should be treated like asthma, so ICS should not be omitted.
   if (data.concomitantAsthma) {
     rationale.push("Asthma overlap changes the follow-up pathway because GOLD states COPD with concomitant asthma should be treated like asthma and requires ICS.");
 
@@ -560,6 +541,10 @@ function buildPreventiveCare(data) {
 
   if (isLungCancerScreenEligible(data)) {
     prevention.push("Meets American Cancer Society lung cancer screening criteria: recommend annual low-dose thoracic CT.");
+    const screeningCaveat = getLungCancerScreeningCaveat(data);
+    if (screeningCaveat) {
+      prevention.push(screeningCaveat);
+    }
   }
 
   if (data.pneumococcalStatus === "unknown" || data.pneumococcalStatus === "unvaccinated") {
@@ -622,17 +607,33 @@ function getSmokingSummary(data) {
     parts.push(`${data.packYears} pack-years`);
   }
 
+  if (data.smokingStatus === "current" && data.cigarettesPerDay !== null) {
+    parts.push(`${data.cigarettesPerDay} cigarettes/day`);
+  }
+
+  if (data.smokingStatus === "former" && data.yearsSinceQuit !== null) {
+    parts.push(`quit ${data.yearsSinceQuit} years ago`);
+  }
+
   return parts.join(", ");
 }
 
-function buildCautions(data) {
+function buildCautions(data, exacRisk) {
   const cautions = [];
 
+  if (data.fev1fvcRawValue !== null && data.fev1fvc === null) {
+    cautions.push("Entered FEV1/FVC could not be interpreted. Use either a ratio (for example 0.65) or a percent (for example 65).");
+  }
   if (!data.spirometryConfirmed) {
     cautions.push("Confirm airflow obstruction with post-bronchodilator spirometry before making long-term treatment decisions.");
   }
   if (data.fev1fvc !== null && data.fev1fvc >= 0.7) {
     cautions.push("Entered FEV1/FVC is 0.70 or greater; re-check the diagnosis and differential before applying the COPD algorithm.");
+  }
+  if (exacRisk.high === null) {
+    cautions.push("Exacerbation history is missing, so GOLD A/B/E classification and follow-up escalation logic are provisional until the prior-year moderate and severe counts are confirmed.");
+  } else if (exacRisk.missing) {
+    cautions.push(`The ${exacRisk.missing} exacerbation count was not entered and was provisionally treated as 0. Confirm the full prior-year exacerbation history.`);
   }
   if (data.concomitantAsthma) {
     cautions.push("Asthma overlap is suspected or confirmed, so include asthma treatment principles and an ICS-containing regimen. Avoid LABA without ICS and be cautious about ICS withdrawal.");
@@ -651,7 +652,7 @@ function buildCautions(data) {
   }
 
   if (cautions.length === 0) {
-    cautions.push("No additional high-risk data issues were detected from the entered fields.");
+    cautions.push(DEFAULT_NO_RISK_ISSUE);
   }
 
   return cautions;
@@ -663,13 +664,13 @@ function buildRecommendation(data) {
   const group = assignGoldGroup(symptoms, exacRisk);
   const prevention = buildPreventiveCare(data);
   const nonPharm = buildNonPharmacologicBundle(data);
-  const cautions = buildCautions(data);
+  const cautions = buildCautions(data, exacRisk);
 
   let therapy;
   if (data.managementPhase === "followup") {
-    therapy = buildFollowUpRecommendations(data);
+    therapy = buildFollowUpRecommendations(data, exacRisk);
   } else {
-    therapy = buildInitialRecommendations(group, data);
+    therapy = buildInitialRecommendations(group, data, symptoms);
   }
 
   const medicationDetails = [...therapy.medicationDetails];
@@ -714,12 +715,26 @@ function fillList(elementId, items, emptyText) {
 
 function buildNoteText(data, rec) {
   const lines = [];
-  const defaultNoRiskIssue = "No additional high-risk data issues were detected from the entered fields.";
   const aatdLabel = {
     unknown: "Unknown / not documented",
     "not-done": "Not done",
     completed: "Completed and negative",
     "known-aatd": "Known alpha-1 antitrypsin deficiency"
+  };
+  const pneumococcalLabel = {
+    unknown: "Unknown",
+    unvaccinated: "Unvaccinated / incomplete",
+    complete: "Complete (PCV20/PCV21 or equivalent)"
+  };
+  const rsvLabel = {
+    unknown: "Unknown",
+    unvaccinated: "Unvaccinated",
+    complete: "Complete"
+  };
+  const zosterLabel = {
+    unknown: "Unknown",
+    unvaccinated: "Unvaccinated / incomplete",
+    complete: "Complete"
   };
   const tdapLabel = {
     unknown: "Unknown / not documented within the last 10 years",
@@ -739,7 +754,7 @@ function buildNoteText(data, rec) {
   if (data.fev1fvc !== null || data.fev1Predicted !== null) {
     const spirometryParts = [];
     if (data.fev1fvc !== null) {
-      spirometryParts.push(`FEV1/FVC ${data.fev1fvc.toFixed(2)}`);
+      spirometryParts.push(`FEV1/FVC ${formatRatio(data.fev1fvc)}`);
     }
     if (data.fev1Predicted !== null) {
       spirometryParts.push(`FEV1 ${data.fev1Predicted}% predicted`);
@@ -765,6 +780,9 @@ function buildNoteText(data, rec) {
   lines.push(`- Chronic bronchitis phenotype: ${data.chronicBronchitis ? "Present (chronic productive cough for 3 months in the year)" : "Not documented"}.`);
   lines.push(`- Concomitant asthma: ${data.concomitantAsthma ? "Suspected / confirmed" : "Not documented"}.`);
   lines.push(`- AATD screening status: ${aatdLabel[data.aatdStatus] || "Unknown"}.`);
+  lines.push(`- Pneumococcal vaccine status: ${pneumococcalLabel[data.pneumococcalStatus] || "Unknown"}.`);
+  lines.push(`- RSV vaccine status: ${rsvLabel[data.rsvStatus] || "Unknown"}.`);
+  lines.push(`- Zoster vaccine status: ${zosterLabel[data.zosterStatus] || "Unknown"}.`);
   lines.push(`- Tdap / tetanus booster status: ${tdapLabel[data.tdapStatus] || "Unknown"}.`);
   lines.push("");
   lines.push("Plan:");
@@ -797,7 +815,7 @@ function buildNoteText(data, rec) {
     });
   }
 
-  const noteCautions = rec.cautions.filter((item) => item !== defaultNoRiskIssue);
+  const noteCautions = rec.cautions.filter((item) => item !== DEFAULT_NO_RISK_ISSUE);
 
   if (noteCautions.length > 0) {
     lines.push("");
@@ -859,3 +877,5 @@ document.getElementById("copy-note-btn").addEventListener("click", copyNoteOutpu
 
 initSymptomCalculators();
 initSpirometryHelpers();
+initSmokingFieldHelpers();
+initExacerbationHelpers();
