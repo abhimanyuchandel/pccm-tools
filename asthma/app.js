@@ -137,6 +137,10 @@ function uniqueItems(items) {
   return Array.from(new Set(items));
 }
 
+function addSpacerRecommendation(plan) {
+  plan.push("If a pressurized metered-dose inhaler is used, prescribe or continue a spacer or valved holding chamber and review technique.");
+}
+
 function getBronchodilatorAssessment(data) {
   return getBronchodilatorAssessmentLogic(data);
 }
@@ -782,6 +786,7 @@ function buildBiologicGuidance(data, severeState, control, exacRisk) {
 function addSevereAsthmaPlan(plan, rationale, medicationDetails, data, severeState, biologicGuidance) {
   plan.push("Promptly refer for expert assessment, severe-asthma phenotyping, and add-on therapy consideration.");
   plan.push("Given persistent symptoms despite escalated therapy re-examine inhaler technique, adherence, smoking and irritant exposure, obesity, chronic rhinosinusitis with or without nasal polyps, GERD, OSA, inducible laryngeal obstruction, and medication adverse effects as contributing factors for persistent poor symptom control.");
+  addSpacerRecommendation(plan);
 
   if (severeState.state === "difficult-to-treat-possible") {
     plan.push("Severe asthma evaluation is indicated, but apply a formal severe-asthma label only after optimized high-dose ICS-LABA or equivalent therapy and modifiable factors have been addressed.");
@@ -859,18 +864,21 @@ function buildInitialRecommendations(data, diagnosticStatus, control, exacRisk, 
     plan.push("Start medium-dose budesonide-formoterol MART because the entered starting scenario fits a GINA Track 1 Step 4 starting point.");
     plan.push("Prescribe budesonide-formoterol 200/6 mcg metered dose, 2 inhalations twice daily for maintenance plus 1 inhalation as needed for symptom relief.");
     plan.push("Use the same inhaler before exercise or expected allergen exposure if needed.");
+    addSpacerRecommendation(plan);
     medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
     rationale.push(initialStep.reason);
   } else if (initialStep.regimen === "mart-low") {
     plan.push("Start low-dose budesonide-formoterol MART because the entered starting scenario fits a GINA Track 1 Step 3 starting point.");
     plan.push("Prescribe budesonide-formoterol 200/6 mcg metered dose, 1 inhalation twice daily for maintenance plus 1 inhalation as needed for symptom relief.");
     plan.push("Use the same inhaler before exercise or expected allergen exposure if needed.");
+    addSpacerRecommendation(plan);
     medicationDetails.push(getBudesonideFormoterolLowMartDetail());
     rationale.push(initialStep.reason);
   } else {
     plan.push("Start as-needed low-dose budesonide-formoterol as both reliever and anti-inflammatory treatment.");
     plan.push("Use budesonide-formoterol 200/6 mcg metered dose, 1 inhalation as needed for symptoms.");
     plan.push("Use the same inhaler before exercise or expected allergen exposure if needed.");
+    addSpacerRecommendation(plan);
     medicationDetails.push(getBudesonideFormoterolAirDetail());
     rationale.push(initialStep.reason);
   }
@@ -939,6 +947,7 @@ function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk,
   if (!uncontrolled) {
     trackStep = "Continue current step";
     plan.push("Current control appears acceptable, so continue the present ICS-containing regimen if benefit is clear and the regimen is tolerated.");
+    addSpacerRecommendation(plan);
     if (["mart-low", "mart-medium"].includes(data.currentRegimen)) {
       plan.push("If control remains stable for at least 3 months, consider supervised step-down with a written action plan.");
     }
@@ -950,12 +959,14 @@ function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk,
     trackStep = "GINA Track 1 Step 3";
     plan.push("Step up from AIR-only therapy to low-dose budesonide-formoterol MART.");
     plan.push("Prescribe budesonide-formoterol 200/6 mcg metered dose, 1 inhalation twice daily for maintenance plus 1 inhalation as needed for symptom relief.");
+    addSpacerRecommendation(plan);
     medicationDetails.push(getBudesonideFormoterolLowMartDetail());
     rationale.push("Symptoms or exacerbations are persisting on AIR-only therapy, so GINA Track 1 MART escalation is appropriate.");
   } else if (data.currentRegimen === "mart-low") {
     trackStep = "GINA Track 1 Step 4";
     plan.push("Step up from low-dose MART to medium-dose budesonide-formoterol MART.");
     plan.push("Prescribe budesonide-formoterol 200/6 mcg metered dose, 2 inhalations twice daily for maintenance plus 1 inhalation as needed for symptom relief.");
+    addSpacerRecommendation(plan);
     medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
     rationale.push("Persistent symptoms or exacerbations on low-dose MART support Step 4 escalation.");
   } else if (data.currentRegimen === "ics-laba-saba") {
@@ -963,9 +974,11 @@ function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk,
     if (control.classification === "uncontrolled" || exacRisk.anyExacerbation === true) {
       plan.push("Switch from a Track 2-style maintenance ICS-LABA plus SABA reliever regimen to preferred Track 1 budesonide-formoterol MART.");
       plan.push("A practical follow-up option is medium-dose budesonide-formoterol MART: 200/6 mcg metered dose, 2 inhalations twice daily plus 1 inhalation as needed.");
+      addSpacerRecommendation(plan);
       medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
     } else {
       plan.push("If simplification is desired and formulary access allows, consider switching to low-dose budesonide-formoterol MART.");
+      addSpacerRecommendation(plan);
       medicationDetails.push(getBudesonideFormoterolLowMartDetail());
     }
     rationale.push("GINA Track 1 is preferred over SABA-reliever strategies because it lowers exacerbation risk and simplifies treatment.");
@@ -1258,7 +1271,7 @@ function buildNoteText(data, rec) {
     lines.push(`- Red-flag acute symptoms today: ${data.urgentRedFlags ? "Yes" : "No"}.`);
     lines.push(`- Daytime symptom frequency for initial step selection: ${symptomDaysLabels[data.symptomDaysCategory] || "Not entered"}.`);
     lines.push(`- Night waking frequency for initial step selection: ${nightWakingLabels[data.nightWakingCategory] || "Not entered"}.`);
-    lines.push(`- Starting or restarting therapy during an acute exacerbation: ${data.acuteExacerbationToday ? "Yes" : "No"}.`);
+    lines.push(`- Starting or restarting treatment during an acute exacerbation or shortly after urgent clinical worsening: ${data.acuteExacerbationToday ? "Yes" : "No"}.`);
   } else {
     lines.push(`- Prior asthma diagnosis basis: ${diagnosticEvidenceSummary}`);
   }
