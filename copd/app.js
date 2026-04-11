@@ -451,10 +451,11 @@ function buildFollowUpRecommendations(data, exacRisk) {
     } else if (data.currentRegimen === "triple") {
       if (data.eosinophils !== null && data.eosinophils >= 300) {
         if (data.chronicBronchitis) {
-          plan.push("Consider dupilumab as add-on biologic therapy because eosinophils are at least 300 cells/uL and chronic bronchitis is present.");
+          plan.push("Consider add-on biologic therapy with dupilumab or mepolizumab because eosinophils are at least 300 cells/uL and chronic bronchitis is present. Select one biologic rather than prescribing both together.");
           medicationDetails.push(getDupilumabDetail());
+        } else {
+          plan.push("Consider mepolizumab as add-on biologic therapy because eosinophils are at least 300 cells/uL.");
         }
-        plan.push("Consider mepolizumab as add-on biologic therapy because eosinophils are at least 300 cells/uL.");
         medicationDetails.push(getMepolizumabDetail());
       }
       if (data.smokingStatus !== "current") {
