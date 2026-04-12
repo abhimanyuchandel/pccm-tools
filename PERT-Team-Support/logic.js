@@ -179,7 +179,7 @@
     if (rrCriterion) metLabels.push("RR >20/min");
     if (hypoxemiaCriterion) metLabels.push("resting hypoxemia/high oxygen support");
 
-    const eligibleCategory = cls.base === "C3";
+    const eligibleCategory = ["C3", "D1", "D2"].includes(cls.base);
     const proximalClotBurden = hasLobarOrMoreProximalClot(data.clotLocation);
     const nonShockProfile = !data.persistentHypotension && !data.cardiacArrest && data.vasopressors === "0";
     const phenotypeEligible =

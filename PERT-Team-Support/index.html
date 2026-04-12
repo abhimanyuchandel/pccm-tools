@@ -1125,7 +1125,7 @@
         </section>
 
         <p class="footnote">
-          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 8, 2026.
+          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 12, 2026.
         </p>
       </aside>
     </div>
@@ -2593,7 +2593,7 @@
         recommendations.push(`[COR 3: Harm] In category ${cls.base}, systemic thrombolysis should not be used over anticoagulation alone.`);
       }
 
-      if (cls.base === "C3") {
+      if (cls.base === "C3" && !hiPeitho.recommendationEligible) {
         recommendations.push("[COR 2b] In category C3, the benefit of systemic thrombolysis over anticoagulation alone is uncertain.");
       }
 

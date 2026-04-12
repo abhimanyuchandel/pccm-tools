@@ -180,6 +180,36 @@ test("HI-PEITHO logic uses inclusive thresholds and requires C3, positive tropon
   assert.equal(shockPhysiology.absoluteEligible, false);
 });
 
+test("HI-PEITHO candidate output can also apply to qualifying D1 and D2 non-shock profiles", () => {
+  const d1Data = makeBaseData({
+    transientHypotension: true,
+    patientAge: 66,
+    scoreHr: 105,
+    calcPesiSbp: 108,
+    rr: 24,
+    oxygenSat: 92
+  });
+  const d1Cls = classify(d1Data);
+  assert.equal(d1Cls.base, "D1");
+  const d1HiPeitho = hiPeithoAssessment(d1Data, d1Cls);
+  assert.equal(d1HiPeitho.recommendationEligible, true);
+  assert.equal(d1HiPeitho.absoluteEligible, true);
+
+  const d2Data = makeBaseData({
+    shockScore: true,
+    patientAge: 58,
+    scoreHr: 112,
+    calcPesiSbp: 108,
+    rr: 24,
+    oxygenSat: 89
+  });
+  const d2Cls = classify(d2Data);
+  assert.equal(d2Cls.base, "D2");
+  const d2HiPeitho = hiPeithoAssessment(d2Data, d2Cls);
+  assert.equal(d2HiPeitho.recommendationEligible, true);
+  assert.equal(d2HiPeitho.absoluteEligible, true);
+});
+
 test("Bova stage III no longer leaves symptomatic stable PE stuck in B/C pending", () => {
   const data = makeBaseData({
     pesi: null,
@@ -204,6 +234,8 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("off-trial extrapolation"));
   assert.ok(html.includes("Confirm age 18-80 before applying the trial data"));
   assert.ok(html.includes("does not by itself establish a low-risk outpatient threshold"));
+  assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
+  assert.ok(html.includes("Last updated April 12, 2026."));
   assert.ok(!html.includes("do not use LMWH in this tool pathway"));
   assert.ok(!html.includes("UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin."));
 });
