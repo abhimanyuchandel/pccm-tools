@@ -58,7 +58,9 @@ Then visit `http://localhost:8000`.
 
 ## Clinical disclaimer
 
-These tools are intended for clinician support and educational purposes only. They do not replace clinical judgment, full patient assessment, or local and national policy.
+This platform encodes clinical practice guidelines into structured decision-support tools to promote consistency and transparency. However, these outputs are simplifications of complex clinical recommendations and may not capture all relevant patient-specific factors.
+
+Clinical decisions must always be made in the context of individual patient circumstances, clinician expertise, and institutional protocols. Users are responsible for independently verifying results and should not rely solely on this tool for patient care decisions.
 
 ## License
 
