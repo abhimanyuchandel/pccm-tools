@@ -1910,7 +1910,9 @@
           if (score > 4) stage = "III";
           else if (score > 2) stage = "II";
           chosenScoreValue = `${score} (Stage ${stage})`;
-          scoreSummary = `Calculated Bova: ${score} (Stage ${stage}; ${score <= 4 ? "low" : "elevated"} severity threshold by guideline cutpoint).`;
+          scoreSummary = score > 4
+            ? `Calculated Bova: ${score} (Stage ${stage}; elevated severity threshold by guideline cutpoint).`
+            : `Calculated Bova: ${score} (Stage ${stage}; does not by itself establish a low-risk outpatient threshold).`;
           if (raw.calcBovaSbp < 90) {
             scoreWarnings.push("Bova is primarily validated in normotensive PE; SBP <90 suggests a higher-risk physiology.");
           }
@@ -2080,6 +2082,13 @@
 
     function hiPeithoSystemicFallbackText() {
       return "If catheter-directed thrombolysis is unavailable, any reduced-dose systemic alteplase strategy should be treated as an off-trial extrapolation rather than as the randomized HI-PEITHO intervention.";
+    }
+
+    function hiPeithoLeadText(hiPeitho, cls) {
+      if (hiPeitho.absoluteEligible) {
+        return `this confirmed category ${cls.base} profile matches the narrow randomized phenotype (${hiPeitho.metLabels.join(", ")}).`;
+      }
+      return `this confirmed category ${cls.base} profile matches the clinical HI-PEITHO phenotype (${hiPeitho.metLabels.join(", ")}), but patient age is not entered in the tool. Confirm age 18-80 before applying the trial data.`;
     }
 
     function buildPertConsensus(data, cls) {
@@ -2259,8 +2268,8 @@
         pushLmwhHighWeightSummary();
       }
 
-      if (hiPeitho.absoluteEligible) {
-        summary.push(`Advanced therapy (HI-PEITHO): this confirmed category ${cls.base} profile matches the narrow randomized phenotype (${hiPeitho.metLabels.join(", ")}). ${hiPeithoTrialBenefitText()} ${hiPeithoApplicabilityText()} ${hiPeithoManualConfirmationText(hiPeitho)}`);
+      if (hiPeitho.recommendationEligible) {
+        summary.push(`Advanced therapy (HI-PEITHO): ${hiPeithoLeadText(hiPeitho, cls)} ${hiPeithoTrialBenefitText()} ${hiPeithoApplicabilityText()} ${hiPeithoManualConfirmationText(hiPeitho)}`);
       }
 
       if (data.recurrentOnTherapy) {
@@ -2351,7 +2360,7 @@
         actions.push("[COR 2a] With suspected acute PE, an AHA/ACC category C2 or higher profile, and low bleeding risk, initiate therapeutic anticoagulation while imaging is delayed or not immediately accessible.");
       }
 
-      if (hiPeitho.absoluteEligible) {
+      if (hiPeitho.recommendationEligible) {
         actions.push(`[Operational] HI-PEITHO-style escalation is reasonable to evaluate now: if catheter-directed thrombolysis is available, discuss the trial-style low-dose catheter regimen. ${hiPeithoSystemicFallbackText()}`);
       }
 
@@ -2592,8 +2601,8 @@
         recommendations.push("[COR 2a] With free-floating right atrial and/or RV clot-in-transit, advanced therapies are reasonable over anticoagulation alone to reduce the risk of clinical deterioration.");
       }
 
-      if (hiPeitho.absoluteEligible) {
-        recommendations.push(`[Operational] This confirmed category ${cls.base} PE profile matches the app's HI-PEITHO gate (${hiPeitho.metLabels.join(", ")}). ${hiPeithoTrialBenefitText()} If local expertise and an interventional suite are available, evaluate catheter-directed thrombolysis now. ${hiPeithoSystemicFallbackText()}`);
+      if (hiPeitho.recommendationEligible) {
+        recommendations.push(`[Operational] ${hiPeithoLeadText(hiPeitho, cls)} ${hiPeithoTrialBenefitText()} If local expertise and an interventional suite are available, evaluate catheter-directed thrombolysis now. ${hiPeithoSystemicFallbackText()}`);
       }
 
       if (data.contraThrombolysis) {
@@ -2857,7 +2866,7 @@
         }
       }
 
-      if (hiPeitho.absoluteEligible) {
+      if (hiPeitho.recommendationEligible) {
         medication.push(`HI-PEITHO catheter-directed thrombolysis option: alteplase 2 mg bolus per catheter, then 1 mg/hour per catheter for 7 hours (total 9 mg for unilateral treatment or 18 mg for bilateral treatment) (${HI_PEITHO_CITATION}).`);
         medication.push("Off-trial extrapolation if catheter-directed thrombolysis is unavailable and multidisciplinary expert review supports it: alteplase 4 mg IV bolus followed by about 2 mg/hour IV infusion for 7 hours (total about 18 mg), intended to approximate the trial's total alteplase exposure rather than reproduce the randomized intervention.");
       }
@@ -3015,7 +3024,7 @@
         monitoring.push(`If LMWH is selected at weight ${data.weightKg} kg, consider peak anti-Xa monitoring (3-5 hours after dose at steady state) with pharmacy-guided dose review.`);
       }
 
-      if (hiPeitho.absoluteEligible) {
+      if (hiPeitho.recommendationEligible) {
         monitoring.push("If a HI-PEITHO-style catheter-directed lysis strategy or any off-trial reduced-dose systemic alteplase strategy is used, maintain ICU/high-acuity monitoring with frequent neurologic checks, bleeding assessment, oxygen reassessment, and perfusion trending during infusion and early after completion.");
       }
 

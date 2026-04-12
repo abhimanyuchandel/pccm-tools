@@ -86,7 +86,8 @@
     const elevatedByPesi = data.pesi !== null && data.pesi > 85;
     const elevatedBySpesi = data.spesi !== null && data.spesi >= 1;
     const elevatedByHestia = data.hestia !== null && data.hestia >= 1;
-    const elevatedSeverity = elevatedByPesi || elevatedBySpesi || elevatedByHestia;
+    const elevatedByBova = data.bova !== null && data.bova > 4;
+    const elevatedSeverity = elevatedByPesi || elevatedBySpesi || elevatedByHestia || elevatedByBova;
 
     const rvPositive = data.rvDysfunction === "yes";
     const troponinPositive = data.troponin === "yes";
@@ -217,6 +218,7 @@
       metLabels,
       trialMismatchNotes,
       manualConfirmationNotes,
+      recommendationEligible: phenotypeEligible && noThrombolysisContraindication && (!ageKnown || trialAgeEligible),
       absoluteEligible: phenotypeEligible && trialAgeEligible && noThrombolysisContraindication,
       relativeEligible: phenotypeEligible
     };
