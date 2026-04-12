@@ -257,9 +257,11 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("Anticoagulation: history of HIT is present. Avoid UFH and LMWH. In this stable confirmed PE profile, apixaban or rivaroxaban at usual VTE treatment doses are reasonable options."));
   assert.ok(html.includes("History of HIT anticoagulation in a stable confirmed PE profile: apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily; alternative rivaroxaban 15 mg PO twice daily for 21 days, then 20 mg PO daily with food."));
   assert.ok(html.includes("anticoagulation may not be suitable, but if pursued, short-acting reversible agents may be preferred"));
+  assert.ok(html.includes("active bleeding is present; do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE."));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of an absolute contraindication to thrombolysis may indicate higher hemorrhagic risk; consider observation or hospital admission."));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission."));
   assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
+  assert.ok(html.includes('if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
   assert.ok(html.includes("Last updated April 12, 2026."));
   assert.ok(html.includes("history of HIT"));
   assert.ok(!html.includes("Advanced therapy (HI-PEITHO)"));
@@ -268,7 +270,9 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(!html.includes("If a HI-PEITHO-style catheter-directed lysis strategy or any off-trial reduced-dose systemic alteplase strategy is used"));
   assert.ok(!html.includes("do not use LMWH in this tool pathway"));
   assert.ok(!html.includes("UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion and bridge to warfarin."));
-  assert.ok(!html.includes("Active bleeding is present: do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE."));
+  assert.ok(!html.includes('actions.push(`[Operational] ${absoluteThrombolysisContraAnticoagulationText(bleeding.absolute)}`);'));
+  assert.ok(!html.includes("If systemic thrombolysis is contraindicated, prioritize MT or surgical pathways based on fastest local capability."));
+  assert.ok(!html.includes('if (data.highBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
   assert.ok(!html.includes('recommendations.push(`[COR 2a] ${absoluteThrombolysisContraAnticoagulationText(bleeding.absolute)}`);'));
   assert.ok(!html.includes("<h2>Clinical Severity Score</h2>"));
   assert.ok(!html.includes("Hestia positive items"));

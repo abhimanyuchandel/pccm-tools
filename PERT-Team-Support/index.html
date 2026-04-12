@@ -1814,6 +1814,9 @@
     }
 
     function absoluteThrombolysisContraAnticoagulationText(labels) {
+      if ((labels || []).includes("active bleeding")) {
+        return "active bleeding is present; do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE.";
+      }
       return `${thrombolysisContraindicationClause(labels)}; anticoagulation may not be suitable, but if pursued, short-acting reversible agents may be preferred. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE.`;
     }
 
@@ -2117,17 +2120,8 @@
       }
 
       if (absoluteThrombolysisContra && canAnticoag) {
-        actions.push(`[Operational] ${absoluteThrombolysisContraAnticoagulationText(bleeding.absolute)}`);
-        if (["A", "B"].includes(cls.family)) {
-          actions.push("Disposition support: although this profile might otherwise qualify for outpatient or early-discharge care, the presence of an absolute contraindication to thrombolysis may indicate higher hemorrhagic risk; consider observation or hospital admission.");
-        } else if (pendingSeverityScore) {
+        if (pendingSeverityScore) {
           actions.push("Disposition support: complete the remaining severity inputs, but do not rely on a low-risk disposition pathway while hemorrhage risk and anticoagulation suitability remain uncertain.");
-        }
-      } else if (data.relativeBleedingRisk && ["A", "B"].includes(cls.family) && canAnticoag) {
-        if (cls.hasScore && cls.lowSeverity) {
-          actions.push("Disposition support: although the incorporated low-risk severity data might otherwise support outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission.");
-        } else {
-          actions.push("Disposition support: although this profile might otherwise qualify for outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission.");
         }
       } else if (pendingSeverityScore && canAnticoag) {
         actions.push("[COR 1] Start therapeutic anticoagulation now.");
@@ -2243,10 +2237,6 @@
 
       if (data.unableLieFlat) {
         backup.push(`If IR access is not feasible due to positioning intolerance, pivot to ${data.absoluteBleedingRisk ? "a surgical or other non-lytic reperfusion approach" : "systemic thrombolysis (if eligible) or surgical approach"}.`);
-      }
-
-      if (advancedCandidate && data.contraThrombolysis) {
-        backup.push("If systemic thrombolysis is contraindicated, prioritize MT or surgical pathways based on fastest local capability.");
       }
 
       if (data.contraAnticoag) {
@@ -2450,7 +2440,7 @@
 
       (data.inputValidationWarnings || []).forEach((warning) => alerts.push(warning));
 
-      if (data.highBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory) {
+      if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory) {
         recommendations.push(`[Operational] In category ${cls.base} with high bleeding risk, favor non-lytic reperfusion strategies when efficacy is expected to be comparable.`);
       }
 
