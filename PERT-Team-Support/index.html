@@ -1021,6 +1021,7 @@
       isSegmentalOnly,
       hasLobarOrMoreProximalClot,
       hasCatheterAccessibleClotBurden,
+      subsegmentalSurveillanceAssessment: subsegmentalSurveillanceAssessmentCore,
       classify: classifyCore,
       hiPeithoAssessment: hiPeithoAssessmentCore
     } = window.pertLogic;
@@ -1114,6 +1115,7 @@
       { id: "rr", key: "rr", label: "respiratory rate", min: 6, max: 70, unit: "/min" }
     ];
     const HI_PEITHO_CITATION = "HI-PEITHO, N Engl J Med 2026; DOI: 10.1056/NEJMoa2516567";
+    const CHEST_SUBSEGMENTAL_SURVEILLANCE_CITATION = "Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055";
     const CHEST_APS_RECURRENCE_CITATION = "Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055";
 
     const aiState = {
@@ -1777,6 +1779,10 @@
       return hiPeithoAssessmentCore(data, cls);
     }
 
+    function subsegmentalSurveillanceAssessment(data, cls) {
+      return subsegmentalSurveillanceAssessmentCore(data, cls);
+    }
+
     function hiPeithoAgeAlertText() {
       return "HI-PEITHO enrolled adults aged 18-80 years; age is not entered in the current score path, so confirm age eligibility manually.";
     }
@@ -1806,6 +1812,32 @@
 
     function hiPeithoMechanicalThrombectomyText() {
       return "If rapid reperfusion is required and available, suction/mechanical thrombectomy may be considered over catheter-directed lytic infusion when expertise exists.";
+    }
+
+    function subsegmentalSurveillancePresentationText(data) {
+      return data.incidental
+        ? "an incidentally noted subsegmental pulmonary embolism"
+        : "a subsegmental pulmonary embolism";
+    }
+
+    function subsegmentalSurveillanceRecommendationText(data) {
+      return `Based on the 2021 CHEST VTE guideline, if ambulatory status is confirmed clinically, the entered absence of active cancer, entered absence of cardiopulmonary comorbidity, and absence of marked symptoms make clinical surveillance over anticoagulation reasonable in the setting of ${subsegmentalSurveillancePresentationText(data)}. As a next step, obtain bilateral lower-extremity ultrasound to confirm the absence of proximal DVT. If no DVT is found, proceed with clinical surveillance. If proximal DVT is present, start a DOAC unless contraindicated (${CHEST_SUBSEGMENTAL_SURVEILLANCE_CITATION}).`;
+    }
+
+    function subsegmentalSurveillanceActionText() {
+      return "Obtain bilateral lower-extremity ultrasound now to exclude proximal DVT before finalizing surveillance; if proximal DVT is absent, proceed with clinical surveillance, and if proximal DVT is present, start a DOAC unless contraindicated.";
+    }
+
+    function subsegmentalSurveillanceMedicationText() {
+      return "Clinical surveillance pathway: do not start routine anticoagulation unless bilateral lower-extremity ultrasound identifies proximal DVT or the clinical picture changes.";
+    }
+
+    function subsegmentalSurveillanceDoacText() {
+      return "If proximal DVT is found and anticoagulation is not contraindicated, start apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily; alternative rivaroxaban 15 mg PO twice daily for 21 days, then 20 mg PO daily with food.";
+    }
+
+    function subsegmentalSurveillanceMonitoringText() {
+      return "Clinical surveillance pathway: confirm bilateral lower-extremity ultrasound, provide explicit return precautions, and arrange prompt follow-up to reassess symptoms and any need for anticoagulation.";
     }
 
     function thrombolysisContraindicationClause(labels) {
@@ -1989,6 +2021,7 @@
       const scoreHrTachy = data.scoreHr !== null && data.scoreHr > 110;
       const relativeThrombolysisConcern = data.relativeBleedingRisk && !data.contraThrombolysis;
       const hiPeitho = hiPeithoAssessment(data, cls);
+      const subsegmentalSurveillance = subsegmentalSurveillanceAssessment(data, cls);
       const bleeding = bleedingRiskSummary(data);
       const absoluteThrombolysisContra = data.contraThrombolysis;
       const advancedAbsoluteThrombolysisContra = advancedCandidate && absoluteThrombolysisContra && !subsegmentalDisproportionatePresentation;
@@ -2003,6 +2036,8 @@
           summary.push(lowRiskHemorrhageDispositionText(cls.hasScore && cls.lowSeverity));
         } else if (data.relativeBleedingRisk) {
           summary.push(lowRiskRelativeBleedingDispositionText(cls.hasScore && cls.lowSeverity));
+        } else if (subsegmentalSurveillance.eligible) {
+          summary.push("Disposition: if bilateral lower-extremity ultrasound confirms no proximal DVT, outpatient clinical surveillance is reasonable with prompt follow-up and explicit return precautions.");
         } else if (lowRiskPregnancyRenalExtreme) {
           summary.push("Disposition: hospital admission is recommended because pregnancy with severe renal dysfunction and body weight >150 kg makes outpatient anticoagulant selection and dosing less certain.");
         } else if (lowRiskBreastfeedingSevereRenalExtreme) {
@@ -2092,6 +2127,7 @@
         summary.push("Anticoagulation: for outpatient/early-discharge severe CKD or dialysis, apixaban or warfarin may be used. If apixaban is selected, use usual VTE dosing or confirm dosing with pharmacy. If warfarin is selected, hospital admission is required; begin UFH infusion and start warfarin 2.5-5 mg PO daily.");
       } else if (severeRenal || data.cardiacArrest) {
         summary.push("Anticoagulation: start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion; if LMWH is used in severe renal impairment, use enoxaparin 1 mg/kg SC every 24 hours.");
+      } else if (subsegmentalSurveillance.eligible) {
       } else if (data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2"].includes(cls.base) || pendingSeverityScore)) {
         summary.push("Anticoagulation: oral option apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily; parenteral option enoxaparin 1 mg/kg SC every 12 hours.");
       } else {
@@ -2135,7 +2171,12 @@
         summary.push("Transfer: if local advanced therapies are limited, transfer to an advanced-therapy center after initial stabilization.");
       }
 
-      if (absoluteThrombolysisContra && canAnticoag) {
+      if (subsegmentalSurveillance.eligible) {
+        actions.push(`[COR 2c] ${subsegmentalSurveillanceActionText()}`);
+        if (absoluteThrombolysisContra && ["A", "B"].includes(cls.family)) {
+          actions.push("Disposition support: although this profile might otherwise qualify for outpatient or early-discharge care, the presence of an absolute contraindication to thrombolysis may indicate higher hemorrhagic risk; consider observation or hospital admission.");
+        }
+      } else if (absoluteThrombolysisContra && canAnticoag) {
         if (pendingSeverityScore) {
           actions.push("Disposition support: complete the remaining severity inputs, but do not rely on a low-risk disposition pathway while hemorrhage risk and anticoagulation suitability remain uncertain.");
         }
@@ -2313,6 +2354,7 @@
       const scoreHrTachy = data.scoreHr !== null && data.scoreHr > 110;
       const pendingSeverityScore = cls.pendingSeverityScore;
       const hiPeitho = hiPeithoAssessment(data, cls);
+      const subsegmentalSurveillance = subsegmentalSurveillanceAssessment(data, cls);
       const reperfusionRelevantCategory = ["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit;
 
       rationale.push(`Computed AHA/ACC category: ${cls.category} (${categoryDescriptor(cls.base)}).`);
@@ -2339,6 +2381,10 @@
 
       if (specialSummary.length) {
         rationale.push(`Special considerations: ${specialSummary.join(", ")}.`);
+      }
+
+      if (subsegmentalSurveillance.eligible) {
+        rationale.push("Entered features satisfy the tool's structured-surveillance branch for low-risk asymptomatic subsegmental PE, pending bilateral lower-extremity ultrasound to exclude proximal DVT.");
       }
 
       if (bleeding.absolute.length || bleeding.relative.length) {
@@ -2436,7 +2482,11 @@
         recommendations.push("[COR 2a] In suspected acute PE with an AHA/ACC category C2 or higher profile and low bleeding risk, therapeutic anticoagulation is reasonable when imaging is delayed or not immediately accessible.");
       }
 
-      if (["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base)) {
+      if (subsegmentalSurveillance.eligible) {
+        recommendations.push(`[Operational] ${subsegmentalSurveillanceRecommendationText(data)}`);
+      }
+
+      if (!subsegmentalSurveillance.eligible && ["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base)) {
         recommendations.push(`[COR 3: Harm] In category ${cls.base}, systemic thrombolysis should not be used over anticoagulation alone.`);
       }
 
@@ -2552,9 +2602,11 @@
         ["D1", "D2", "E1"].includes(cls.base) ||
         (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
       );
+      const subsegmentalSurveillance = subsegmentalSurveillanceAssessment(data, cls);
       const doacAppropriate =
         (["A", "B"].includes(cls.family) || pendingSeverityScore) &&
         data.confirmedPe === "confirmed" &&
+        !subsegmentalSurveillance.eligible &&
         !data.pregnancy &&
         !data.breastfeeding &&
         !data.aps &&
@@ -2597,6 +2649,9 @@
         monitoring.push("Reassess anticoagulation contraindication at least daily and start anticoagulation as soon as bleeding risk permits.");
       } else if (data.historyHit) {
         medication.push(hitMedicationText(data, cls));
+      } else if (subsegmentalSurveillance.eligible) {
+        medication.push(subsegmentalSurveillanceMedicationText());
+        medication.push(subsegmentalSurveillanceDoacText());
       } else {
         if (severeRenalExtremeWeightBreastfeeding) {
           medication.push(`Breastfeeding with severe renal dysfunction and weight ${data.weightKg} kg: hospitalize and initiate LMWH after pharmacist consultation regarding dosing, or use ${ufhDose}.`);
@@ -2807,6 +2862,9 @@
       } else if (lowRiskBreastfeedingStandard) {
         monitoring.push("Outpatient/early-discharge breastfeeding pathway: confirm hemodynamic stability, oxygen stability, LMWH access, follow-up for the selected breastfeeding-compatible anticoagulant strategy, and explicit return precautions before discharge.");
         monitoring.push("Obtain baseline CBC, hemoglobin, platelets, and creatinine/eGFR before discharge, and arrange prompt INR follow-up if warfarin is selected.");
+      } else if (subsegmentalSurveillance.eligible) {
+        monitoring.push("Before finalizing surveillance, confirm short-term clinical stability and obtain bilateral lower-extremity ultrasound to exclude proximal DVT.");
+        monitoring.push("If proximal DVT is absent, document structured surveillance follow-up, explicit return precautions, and the plan to start anticoagulation if symptoms worsen or DVT is later identified.");
       } else if (["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity) {
         const scoreText = lowRiskScoreThresholds.length
           ? ` (${lowRiskScoreThresholds.join(", ")})`
@@ -2853,6 +2911,8 @@
         monitoring.push("If UFH is selected, check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments. If a DOAC is selected, review renal-specific dosing and monitor closely for bleeding.");
       } else if (useUFHAlternative || data.aps || (data.breastfeeding && !lowRiskBreastfeedingLmwhPath && !severeRenalExtremeWeightBreastfeeding) || severeRenalExtremeWeightPregnancy || severeRenalExtremeWeightC2ToE2) {
         monitoring.push("UFH protocol: check aPTT (or anti-Xa, per local protocol) every 6 hours until therapeutic, then daily and after dose adjustments.");
+      } else if (subsegmentalSurveillance.eligible) {
+        monitoring.push(subsegmentalSurveillanceMonitoringText());
       } else if (!(lmwhLikely && extremeLmwhWeight)) {
         monitoring.push("LMWH/DOAC pathway: routine coagulation labs are not required; monitor renal function, body weight change, interacting medications, and bleeding signs.");
       }
@@ -2904,6 +2964,8 @@
 
       if (pendingSeverityScore) {
         monitoring.push("If the patient is discharged after formal risk stratification is completed, arrange rapid follow-up to confirm anticoagulation access/adherence and reassess for clinical worsening.");
+      } else if (subsegmentalSurveillance.eligible) {
+        monitoring.push("Arrange prompt outpatient follow-up after surveillance is selected to confirm ongoing stability, review ultrasound results, and reassess for new symptoms.");
       } else if (["A", "B"].includes(cls.family) && cls.hasScore && cls.lowSeverity) {
         monitoring.push("Arrange rapid follow-up after discharge to confirm anticoagulation access/adherence and review for early bleeding or clinical worsening.");
       } else {

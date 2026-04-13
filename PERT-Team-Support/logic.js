@@ -69,6 +69,42 @@
     return hasLobarOrMoreProximalClot(value);
   }
 
+  function subsegmentalSurveillanceAssessment(data, cls) {
+    const subsegmentalOnly = isSubsegmentalOnly(data.clotLocation);
+    const confirmedDiagnosis = data.confirmedPe === "confirmed";
+    const asymptomatic = data.symptomatic === "no";
+    const noActiveCancer = !data.activeCancer;
+    const noKeyComorbidities = !data.historyCancer && !data.historyHeartFailure && !data.chronicLungDisease;
+    const unprovokedProfile = data.provokingFactor === "unprovoked";
+    const noSpecialModifiers =
+      !data.pregnancy &&
+      !data.breastfeeding &&
+      !data.aps &&
+      !data.historyHit &&
+      !data.clotTransit &&
+      !data.recurrentOnTherapy;
+    const eligible =
+      cls.base === "A1" &&
+      confirmedDiagnosis &&
+      subsegmentalOnly &&
+      asymptomatic &&
+      noActiveCancer &&
+      noKeyComorbidities &&
+      unprovokedProfile &&
+      noSpecialModifiers;
+
+    return {
+      eligible,
+      subsegmentalOnly,
+      confirmedDiagnosis,
+      asymptomatic,
+      noActiveCancer,
+      noKeyComorbidities,
+      unprovokedProfile,
+      noSpecialModifiers
+    };
+  }
+
   function deriveScoreSbp(data) {
     if (data.scoreSbp !== null && data.scoreSbp !== undefined) return data.scoreSbp;
     if (data.systolicBp !== null && data.systolicBp !== undefined) return data.systolicBp;
@@ -231,6 +267,7 @@
     isSegmentalOnly,
     hasLobarOrMoreProximalClot,
     hasCatheterAccessibleClotBurden,
+    subsegmentalSurveillanceAssessment,
     deriveScoreSbp,
     classify,
     hiPeithoAssessment

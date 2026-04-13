@@ -7,7 +7,8 @@ const {
   scrubPotentialIdentifiers,
   deriveScoreSbp,
   classify,
-  hiPeithoAssessment
+  hiPeithoAssessment,
+  subsegmentalSurveillanceAssessment
 } = require("./logic.js");
 
 function makeBaseData(overrides = {}) {
@@ -39,6 +40,17 @@ function makeBaseData(overrides = {}) {
     incidental: false,
     confirmedPe: "confirmed",
     clotLocation: "lobar_or_more_proximal",
+    provokingFactor: "unknown",
+    activeCancer: false,
+    historyCancer: false,
+    historyHeartFailure: false,
+    chronicLungDisease: false,
+    pregnancy: false,
+    breastfeeding: false,
+    aps: false,
+    historyHit: false,
+    clotTransit: false,
+    recurrentOnTherapy: false,
     scoreHr: 100,
     highBleedingRisk: false,
     contraThrombolysis: false,
@@ -241,6 +253,54 @@ test("Bova stage III no longer leaves symptomatic stable PE stuck in B/C pending
   assert.equal(hiPeitho.absoluteEligible, false);
 });
 
+test("subsegmental surveillance logic identifies the requested low-risk asymptomatic A1 pathway", () => {
+  const eligibleData = makeBaseData({
+    symptomatic: "no",
+    incidental: true,
+    clotLocation: "subsegmental_only",
+    provokingFactor: "unprovoked"
+  });
+  const eligibleCls = classify(eligibleData);
+  assert.equal(eligibleCls.base, "A1");
+  const eligible = subsegmentalSurveillanceAssessment(eligibleData, eligibleCls);
+  assert.equal(eligible.eligible, true);
+
+  const activeCancer = subsegmentalSurveillanceAssessment(
+    makeBaseData({
+      symptomatic: "no",
+      incidental: true,
+      clotLocation: "subsegmental_only",
+      provokingFactor: "unprovoked",
+      activeCancer: true
+    }),
+    eligibleCls
+  );
+  assert.equal(activeCancer.eligible, false);
+
+  const cardiopulmonaryComorbidity = subsegmentalSurveillanceAssessment(
+    makeBaseData({
+      symptomatic: "no",
+      incidental: false,
+      clotLocation: "subsegmental_only",
+      provokingFactor: "unprovoked",
+      chronicLungDisease: true
+    }),
+    eligibleCls
+  );
+  assert.equal(cardiopulmonaryComorbidity.eligible, false);
+
+  const nonRequestedProvokingProfile = subsegmentalSurveillanceAssessment(
+    makeBaseData({
+      symptomatic: "no",
+      incidental: false,
+      clotLocation: "subsegmental_only",
+      provokingFactor: "major-reversible"
+    }),
+    eligibleCls
+  );
+  assert.equal(nonRequestedProvokingProfile.eligible, false);
+});
+
 test("PERT page no longer exposes the audited contradictory strings", () => {
   const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const recurrenceIndex = html.indexOf('recommendations.push(`[COR 1] ${breakthroughPeEvaluationText()}`);');
@@ -266,6 +326,12 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("If recurrence occurred on therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class; if it occurred on reduced-dose DOAC therapy, return to full-dose DOAC within the same class."));
   assert.ok(html.includes("In thrombotic APS, especially if triple-positive and recurrence occurred on standard-intensity VKA therapy, do not switch to a DOAC."));
   assert.ok(html.includes("Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055"));
+  assert.ok(html.includes("CHEST_SUBSEGMENTAL_SURVEILLANCE_CITATION"));
+  assert.ok(html.includes("make clinical surveillance over anticoagulation reasonable in the setting of"));
+  assert.ok(html.includes("Obtain bilateral lower-extremity ultrasound now to exclude proximal DVT before finalizing surveillance"));
+  assert.ok(html.includes("Clinical surveillance pathway: do not start routine anticoagulation unless bilateral lower-extremity ultrasound identifies proximal DVT or the clinical picture changes."));
+  assert.ok(html.includes('if (!subsegmentalSurveillance.eligible && ["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base))'));
+  assert.ok(html.includes("Entered features satisfy the tool's structured-surveillance branch for low-risk asymptomatic subsegmental PE, pending bilateral lower-extremity ultrasound to exclude proximal DVT."));
   assert.ok(html.includes('data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2"].includes(cls.base) || pendingSeverityScore)'));
   assert.ok(html.includes('(["A", "B"].includes(cls.family) || pendingSeverityScore) &&'));
   assert.ok(recurrenceIndex !== -1 && categoryHarmIndex !== -1 && recurrenceIndex < categoryHarmIndex);
