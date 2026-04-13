@@ -266,6 +266,8 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("If recurrence occurred on therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class; if it occurred on reduced-dose DOAC therapy, return to full-dose DOAC within the same class."));
   assert.ok(html.includes("In thrombotic APS, especially if triple-positive and recurrence occurred on standard-intensity VKA therapy, do not switch to a DOAC."));
   assert.ok(html.includes("Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055"));
+  assert.ok(html.includes('data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2"].includes(cls.base) || pendingSeverityScore)'));
+  assert.ok(html.includes('(["A", "B"].includes(cls.family) || pendingSeverityScore) &&'));
   assert.ok(recurrenceIndex !== -1 && categoryHarmIndex !== -1 && recurrenceIndex < categoryHarmIndex);
   assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
   assert.ok(html.includes('if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
@@ -285,6 +287,8 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(!html.includes("Perform immediate breakthrough-PE evaluation: confirm adherence, therapeutic intensity, drug interactions, absorption/administration issues, renal function, and clinical factors contributing to recurrence."));
   assert.ok(!html.includes("Breakthrough PE on anticoagulation: evaluate adherence, dose intensity, interacting drugs, absorption/administration issues, renal function, and other clinical contributors before finalizing the next regimen."));
   assert.ok(!html.includes("changing to an alternative anticoagulant drug class is reasonable rather than continuing the same class."));
+  assert.ok(!html.includes('(["A", "B"].includes(cls.family) || cls.base === "C1" || cls.base === "C2" || pendingSeverityScore)'));
+  assert.ok(!html.includes('(["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base) || pendingSeverityScore)'));
   assert.ok(!html.includes("<h2>Clinical Severity Score</h2>"));
   assert.ok(!html.includes("Hestia positive items"));
   assert.ok(!html.includes("manual score systolic BP"));

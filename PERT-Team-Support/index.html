@@ -2092,7 +2092,7 @@
         summary.push("Anticoagulation: for outpatient/early-discharge severe CKD or dialysis, apixaban or warfarin may be used. If apixaban is selected, use usual VTE dosing or confirm dosing with pharmacy. If warfarin is selected, hospital admission is required; begin UFH infusion and start warfarin 2.5-5 mg PO daily.");
       } else if (severeRenal || data.cardiacArrest) {
         summary.push("Anticoagulation: start UFH 80 units/kg IV bolus, then 18 units/kg/hour infusion; if LMWH is used in severe renal impairment, use enoxaparin 1 mg/kg SC every 24 hours.");
-      } else if (data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2", "C1", "C2"].includes(cls.base) || pendingSeverityScore)) {
+      } else if (data.confirmedPe === "confirmed" && (["A1", "A2", "B1", "B2"].includes(cls.base) || pendingSeverityScore)) {
         summary.push("Anticoagulation: oral option apixaban 10 mg PO twice daily for 7 days, then 5 mg PO twice daily; parenteral option enoxaparin 1 mg/kg SC every 12 hours.");
       } else {
         summary.push("Anticoagulation: start enoxaparin 1 mg/kg SC every 12 hours.");
@@ -2553,7 +2553,7 @@
         (cls.base === "C3" && (data.clotTransit || data.transientHypotension || data.lactate !== null && data.lactate > 2))
       );
       const doacAppropriate =
-        (["A", "B"].includes(cls.family) || cls.base === "C1" || cls.base === "C2" || pendingSeverityScore) &&
+        (["A", "B"].includes(cls.family) || pendingSeverityScore) &&
         data.confirmedPe === "confirmed" &&
         !data.pregnancy &&
         !data.breastfeeding &&
