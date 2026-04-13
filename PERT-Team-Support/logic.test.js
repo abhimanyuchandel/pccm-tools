@@ -243,6 +243,8 @@ test("Bova stage III no longer leaves symptomatic stable PE stuck in B/C pending
 
 test("PERT page no longer exposes the audited contradictory strings", () => {
   const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const recurrenceIndex = html.indexOf('recommendations.push(`[COR 1] ${breakthroughPeEvaluationText()}`);');
+  const categoryHarmIndex = html.indexOf('recommendations.push(`[COR 3: Harm] In category ${cls.base}, systemic thrombolysis should not be used over anticoagulation alone.`);');
   assert.ok(html.includes("const overallRecommendations = [...summaryWithStrength, ...recommendationsWithStrength];"));
   assert.ok(html.includes("<h2>Key Comorbidities</h2>"));
   assert.ok(html.includes("<label for=\"patient-sex\">Gender</label>"));
@@ -260,9 +262,14 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("active bleeding is present; do not administer anticoagulation. If acute PE cannot be treated with anticoagulation, retrievable IVC filter placement can be useful to reduce the short-term incidence of recurrent PE."));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of an absolute contraindication to thrombolysis may indicate higher hemorrhagic risk; consider observation or hospital admission."));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission."));
+  assert.ok(html.includes("Recurrent PE despite therapeutic anticoagulation: immediately evaluate adherence, therapeutic intensity, interactions, absorption, renal function, and other contributors to treatment failure."));
+  assert.ok(html.includes("If recurrence occurred on therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class; if it occurred on reduced-dose DOAC therapy, return to full-dose DOAC within the same class."));
+  assert.ok(html.includes("In thrombotic APS, especially if triple-positive and recurrence occurred on standard-intensity VKA therapy, do not switch to a DOAC."));
+  assert.ok(html.includes("Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055"));
+  assert.ok(recurrenceIndex !== -1 && categoryHarmIndex !== -1 && recurrenceIndex < categoryHarmIndex);
   assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
   assert.ok(html.includes('if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
-  assert.ok(html.includes("Last updated April 12, 2026."));
+  assert.ok(html.includes("Last updated April 13, 2026."));
   assert.ok(html.includes("history of HIT"));
   assert.ok(!html.includes("Advanced therapy (HI-PEITHO)"));
   assert.ok(!html.includes("HI-PEITHO phenotype features present"));
@@ -274,6 +281,10 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(!html.includes("If systemic thrombolysis is contraindicated, prioritize MT or surgical pathways based on fastest local capability."));
   assert.ok(!html.includes('if (data.highBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
   assert.ok(!html.includes('recommendations.push(`[COR 2a] ${absoluteThrombolysisContraAnticoagulationText(bleeding.absolute)}`);'));
+  assert.ok(!html.includes("Breakthrough PE: evaluate immediately for clinical and pharmacologic contributors to recurrence."));
+  assert.ok(!html.includes("Perform immediate breakthrough-PE evaluation: confirm adherence, therapeutic intensity, drug interactions, absorption/administration issues, renal function, and clinical factors contributing to recurrence."));
+  assert.ok(!html.includes("Breakthrough PE on anticoagulation: evaluate adherence, dose intensity, interacting drugs, absorption/administration issues, renal function, and other clinical contributors before finalizing the next regimen."));
+  assert.ok(!html.includes("changing to an alternative anticoagulant drug class is reasonable rather than continuing the same class."));
   assert.ok(!html.includes("<h2>Clinical Severity Score</h2>"));
   assert.ok(!html.includes("Hestia positive items"));
   assert.ok(!html.includes("manual score systolic BP"));

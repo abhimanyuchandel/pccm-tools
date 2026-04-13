@@ -978,7 +978,7 @@
         </section>
 
         <p class="footnote">
-          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 12, 2026.
+          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 13, 2026.
         </p>
       </aside>
     </div>
@@ -1114,6 +1114,7 @@
       { id: "rr", key: "rr", label: "respiratory rate", min: 6, max: 70, unit: "/min" }
     ];
     const HI_PEITHO_CITATION = "HI-PEITHO, N Engl J Med 2026; DOI: 10.1056/NEJMoa2516567";
+    const CHEST_APS_RECURRENCE_CITATION = "Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055";
 
     const aiState = {
       recognition: null,
@@ -1839,6 +1840,28 @@
       return "Advanced therapy: if reperfusion is required, systemic thrombolysis and CDL are not suitable (contraindicated); prioritize consideration of MT or surgical thrombectomy based on clinical trajectory and local expertise.";
     }
 
+    function breakthroughPeEvaluationText() {
+      return "Recurrent PE despite therapeutic anticoagulation: immediately evaluate adherence, therapeutic intensity, interactions, absorption, renal function, and other contributors to treatment failure.";
+    }
+
+    function breakthroughPeTreatmentChangeText() {
+      return "If recurrence occurred on therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class; if it occurred on reduced-dose DOAC therapy, return to full-dose DOAC within the same class.";
+    }
+
+    function apsBreakthroughRecommendationText(data) {
+      if (data.pregnancy) {
+        return `In pregnancy plus thrombotic APS with recurrent VTE, do not use a DOAC; involve hematology/MFM urgently to intensify pregnancy-compatible anticoagulation rather than extrapolating to a DOAC pathway (${CHEST_APS_RECURRENCE_CITATION}).`;
+      }
+      return `In thrombotic APS, especially if triple-positive and recurrence occurred on standard-intensity VKA therapy, do not switch to a DOAC. CHEST suggests considering a higher INR target, treatment-dose LMWH, fondaparinux, or adjunct antiplatelet therapy (${CHEST_APS_RECURRENCE_CITATION}).`;
+    }
+
+    function apsBreakthroughMedicationText(data) {
+      if (data.pregnancy) {
+        return "Pregnancy plus thrombotic APS recurrence: avoid DOACs; work with hematology/MFM to intensify pregnancy-compatible anticoagulation rather than switching to a DOAC.";
+      }
+      return `Thrombotic APS recurrence strategy: if recurrence occurred on standard-intensity VKA, avoid transition to a DOAC; consider a higher INR target, treatment-dose LMWH, fondaparinux, or adjunct antiplatelet therapy with hematology input (${CHEST_APS_RECURRENCE_CITATION}).`;
+    }
+
     function hitOralAnticoagulationAppropriate(data, cls) {
       const severeRenal = data.severeCKD || (data.crcl !== null && data.crcl < 30);
       return data.confirmedPe === "confirmed" &&
@@ -1920,9 +1943,6 @@
       const clotInTransitAdvancedTherapy =
         data.clotTransit &&
         ["C3", "D1", "D2", "E1", "E2"].includes(cls.base);
-      const breakthroughPeFilterEligible =
-        data.recurrentOnTherapy &&
-        ["B", "C", "D", "E"].includes(cls.family);
       const subsegmentalDisproportionatePresentation =
         isSubsegmentalOnly(data.clotLocation) &&
         ["D1", "D2", "E1", "E2"].includes(cls.base) &&
@@ -2079,10 +2099,6 @@
         pushLmwhHighWeightSummary();
       }
 
-      if (data.recurrentOnTherapy) {
-        summary.push(`Breakthrough PE: evaluate immediately for clinical and pharmacologic contributors to recurrence. If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, switching to an alternative anticoagulant drug class is reasonable; if recurrence occurred on reduced-dose DOAC therapy, returning to full-dose DOAC within the same class is reasonable.${breakthroughPeFilterEligible ? " In AHA/ACC categories B-E, retrievable IVC filter placement may also be considered to reduce short-term recurrent PE." : ""}${data.activeCancer ? data.historyHit ? " If active cancer is present together with HIT history, involve hematology to choose a non-heparin intensification strategy rather than LMWH dose escalation." : " If active cancer and recurrence occurred despite therapeutic LMWH, LMWH dose escalation by 20%-25% is reasonable." : ""}`);
-      }
-
       if (["C3", "D1", "D2", "E1", "E2"].includes(cls.base)) {
         if (subsegmentalDisproportionatePresentation) {
           summary.push("Advanced therapy: severity of clinical presentation may be out of proportion to the extent of pulmonary embolism (subsegmental PE) and may be multifactorial; the patient is unlikely to benefit from CDT, MT, surgical thrombectomy, or systemic thrombolysis.");
@@ -2208,11 +2224,6 @@
 
       if (["D2", "E1", "E2"].includes(cls.base)) {
         actions.push("For cardiogenic shock or low-output physiology, use vasopressors and/or inotropes as needed to improve cardiac output and systemic perfusion.");
-      }
-
-      if (data.recurrentOnTherapy) {
-        actions.push("Perform immediate breakthrough-PE evaluation: confirm adherence, therapeutic intensity, drug interactions, absorption/administration issues, renal function, and clinical factors contributing to recurrence.");
-        actions.push("If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, plan a switch to an alternative anticoagulant drug class rather than continuing the same class.");
       }
 
       if (advancedCandidate) {
@@ -2367,6 +2378,25 @@
         alerts.push("Segmental-only or subsegmental-only clot burden: catheter-directed thrombectomy may be less suitable.");
       }
 
+      if (data.recurrentOnTherapy) {
+        recommendations.push(`[COR 1] ${breakthroughPeEvaluationText()}`);
+        if (data.aps) {
+          recommendations.push(`[Operational] ${apsBreakthroughRecommendationText(data)}`);
+        } else {
+          recommendations.push(`[COR 2a] ${breakthroughPeTreatmentChangeText()}`);
+        }
+        if (["B", "C", "D", "E"].includes(cls.family)) {
+          recommendations.push("[COR 2b] In AHA/ACC categories B-E with recurrent PE despite optimal therapeutic anticoagulation, retrievable IVC filter placement may be considered to reduce the short-term incidence of additional recurrent PE.");
+        }
+        if (data.activeCancer) {
+          recommendations.push(data.historyHit
+            ? "[Operational] In active cancer with recurrent PE and HIT history, involve hematology to choose a non-heparin intensification strategy rather than LMWH dose escalation."
+            : severeRenal
+            ? "[Operational] In active cancer with recurrent PE despite therapeutic LMWH and severe renal dysfunction, involve hematology/pharmacy to plan renal-adjusted LMWH escalation or an alternative parenteral strategy."
+            : "[COR 2a] In active cancer with recurrent PE despite therapeutic LMWH, LMWH dose escalation by 20%-25% is reasonable to reduce future recurrence.");
+        }
+      }
+
       if (data.contraThrombolysis) {
         if (data.bleedAbsoluteActive) {
           alerts.push("Active bleeding selected: anticoagulation may not be suitable.");
@@ -2442,20 +2472,6 @@
 
       if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory) {
         recommendations.push(`[Operational] In category ${cls.base} with high bleeding risk, favor non-lytic reperfusion strategies when efficacy is expected to be comparable.`);
-      }
-
-      if (data.recurrentOnTherapy) {
-        recommendations.push("[COR 1] Recurrent PE despite therapeutic anticoagulation should prompt evaluation for clinical and pharmacologic contributors, including adherence, therapeutic intensity, interactions, absorption, and other causes of treatment failure.");
-        recommendations.push("[COR 2a] If recurrence occurred while the patient was adherent to therapeutic-intensity anticoagulation, changing to an alternative anticoagulant drug class is reasonable rather than continuing the same class.");
-        recommendations.push("[COR 2a] If recurrence occurred while the patient was adherent to reduced-dose DOAC therapy, returning to full-dose DOAC within the same class is reasonable.");
-        if (["B", "C", "D", "E"].includes(cls.family)) {
-          recommendations.push("[COR 2b] In AHA/ACC categories B-E with recurrent PE despite optimal therapeutic anticoagulation, retrievable IVC filter placement may be considered to reduce the short-term incidence of additional recurrent PE.");
-        }
-        if (data.activeCancer) {
-          recommendations.push(data.historyHit
-            ? "[Operational] In active cancer with recurrent PE and HIT history, involve hematology to choose a non-heparin intensification strategy rather than LMWH dose escalation."
-            : "[COR 2a] In active cancer with recurrent PE despite therapeutic LMWH, LMWH dose escalation by 20%-25% is reasonable to reduce future recurrence.");
-        }
       }
 
       if (["D1", "D2", "E1", "E2"].includes(cls.base)) {
@@ -2553,9 +2569,6 @@
         (subsegmentalOnly || segmentalOnly) &&
         (["C3", "D1", "D2", "E1", "E2"].includes(cls.base) || data.clotTransit) &&
         !clotInTransitAdvancedTherapy;
-      const breakthroughPeFilterEligible =
-        data.recurrentOnTherapy &&
-        ["B", "C", "D", "E"].includes(cls.family);
       const hiPeitho = hiPeithoAssessment(data, cls);
       const bleeding = bleedingRiskSummary(data);
       const absoluteThrombolysisContra = data.contraThrombolysis;
@@ -2655,11 +2668,8 @@
         }
 
         if (data.recurrentOnTherapy) {
-          medication.push("Breakthrough PE on anticoagulation: evaluate adherence, dose intensity, interacting drugs, absorption/administration issues, renal function, and other clinical contributors before finalizing the next regimen.");
-          medication.push("If recurrence occurred despite adherence to therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class rather than continuing the same class.");
-          medication.push("If recurrence occurred while the patient was adherent to reduced-dose DOAC therapy, return to full-dose DOAC within the same class.");
-          if (breakthroughPeFilterEligible) {
-            medication.push("In AHA/ACC categories B-E with recurrent PE despite optimal therapeutic anticoagulation, consider retrievable IVC filter placement to reduce short-term recurrent PE.");
+          if (data.aps) {
+            medication.push(apsBreakthroughMedicationText(data));
           }
           if (data.activeCancer) {
             medication.push(data.historyHit
