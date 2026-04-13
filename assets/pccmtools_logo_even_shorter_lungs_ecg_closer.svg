@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lungLeftMain" x1="250" y1="210" x2="470" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2F71CD"/>
+      <stop offset="0.28" stop-color="#3981D2"/>
+      <stop offset="0.55" stop-color="#49A4E1"/>
+      <stop offset="0.8" stop-color="#65B4E0"/>
+      <stop offset="1" stop-color="#92D3E8"/>
+    </linearGradient>
+    <linearGradient id="lungRightMain" x1="774" y1="210" x2="554" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E76838"/>
+      <stop offset="0.28" stop-color="#ED792C"/>
+      <stop offset="0.55" stop-color="#F4952F"/>
+      <stop offset="0.8" stop-color="#F4B33A"/>
+      <stop offset="1" stop-color="#F5B93B"/>
+    </linearGradient>
+    <linearGradient id="leftShade" x1="310" y1="280" x2="470" y2="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B6082" stop-opacity="0.22"/>
+      <stop offset="0.55" stop-color="#5C87C0" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#A7D8E3" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rightShade" x1="714" y1="280" x2="554" y2="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A0522F" stop-opacity="0.22"/>
+      <stop offset="0.55" stop-color="#C5805E" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#ECA237" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="airwayGray" x1="512" y1="120" x2="512" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#94A3B8"/>
+      <stop offset="0.5" stop-color="#7C8798"/>
+      <stop offset="1" stop-color="#6B7280"/>
+    </linearGradient>
+    <filter id="shadow" x="125" y="90" width="774" height="860" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="489" y="126" width="46" height="172" rx="23" fill="url(#airwayGray)"/>
+
+    <path d="M512 292 C488 313, 462 347, 442 392 C422 432, 412 484, 412 536"
+          stroke="url(#airwayGray)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M512 292 C536 313, 562 347, 582 392 C602 432, 612 484, 612 536"
+          stroke="url(#airwayGray)" stroke-width="24" stroke-linecap="round"/>
+
+    <!-- Even shorter lungs -->
+    <path d="M458 244
+             C432 208, 370 192, 318 222
+             C266 252, 228 322, 218 424
+             C208 524, 248 608, 350 670
+             C392 696, 436 694, 452 668
+             C460 654, 460 624, 458 244 Z"
+          fill="url(#lungLeftMain)"/>
+
+    <path d="M566 244
+             C592 208, 654 192, 706 222
+             C758 252, 796 322, 806 424
+             C816 524, 776 608, 674 670
+             C632 696, 588 694, 572 668
+             C564 654, 564 624, 566 244 Z"
+          fill="url(#lungRightMain)"/>
+
+    <!-- Inner shading overlays -->
+    <path d="M452 282
+             C422 262, 374 262, 336 294
+             C294 330, 270 390, 270 474
+             C270 548, 302 610, 378 656
+             C414 678, 440 674, 446 652
+             C452 638, 452 602, 452 282 Z"
+          fill="url(#leftShade)"/>
+
+    <path d="M572 282
+             C602 262, 650 262, 688 294
+             C730 330, 754 390, 754 474
+             C754 548, 722 610, 646 656
+             C610 678, 584 674, 578 652
+             C572 638, 572 602, 572 282 Z"
+          fill="url(#rightShade)"/>
+
+    <!-- Outer contour highlights -->
+    <path d="M458 244
+             C432 208, 370 192, 318 222
+             C266 252, 228 322, 218 424
+             C208 524, 248 608, 350 670"
+          stroke="#A7D8E3" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/>
+
+    <path d="M566 244
+             C592 208, 654 192, 706 222
+             C758 252, 796 322, 806 424
+             C816 524, 776 608, 674 670"
+          stroke="#F5B93B" stroke-opacity="0.45" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Sloped inner lines -->
+    <path d="M454 330
+             C434 356, 420 390, 414 438
+             C408 488, 414 544, 426 594
+             C438 636, 450 658, 454 668"
+          fill="none" stroke="#A7D8E3" stroke-opacity="0.38" stroke-width="9" stroke-linecap="round"/>
+
+    <path d="M570 330
+             C590 356, 604 390, 610 438
+             C616 488, 610 544, 598 594
+             C586 636, 574 658, 570 668"
+          fill="none" stroke="#F5B93B" stroke-opacity="0.34" stroke-width="9" stroke-linecap="round"/>
+
+    <!-- Segmental bronchi / branch lines -->
+    <path d="M442 392 C406 404, 370 424, 340 454" stroke="#A7D8E3" stroke-width="14" stroke-linecap="round"/>
+    <path d="M434 450 C394 468, 358 494, 336 526" stroke="#5C87C0" stroke-width="12" stroke-linecap="round"/>
+    <path d="M432 502 C396 520, 366 548, 348 582" stroke="#92D3E8" stroke-width="10" stroke-linecap="round"/>
+    <path d="M416 414 C386 384, 350 366, 308 360" stroke="#A7D8E3" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+
+    <path d="M582 392 C618 404, 654 424, 684 454" stroke="#F5B93B" stroke-width="14" stroke-linecap="round"/>
+    <path d="M590 450 C630 468, 666 494, 688 526" stroke="#ECA237" stroke-width="12" stroke-linecap="round"/>
+    <path d="M592 502 C628 520, 658 548, 676 582" stroke="#C5805E" stroke-width="10" stroke-linecap="round"/>
+    <path d="M608 414 C638 384, 674 366, 716 360" stroke="#F5B93B" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- ECG even closer -->
+    <g id="rhythm">
+      <path d="M346 746
+               L386 746
+               Q393 746 398 741
+               Q403 736 408 746
+               L425 746
+               L432 743
+               L438 754
+               L449 704
+               L461 772
+               L473 746
+               L515 746
+               Q522 746 527 741
+               Q532 736 537 746
+               L554 746
+               L561 743
+               L567 754
+               L578 704
+               L590 772
+               L602 746
+               L642 746"
+            stroke="#EF4444"
+            stroke-width="8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            fill="none"
+            stroke-dasharray="900"
+            stroke-dashoffset="900">
+        <animate attributeName="stroke-dashoffset"
+                 values="900;0"
+                 dur="5.5s"
+                 repeatCount="indefinite"/>
+      </path>
+
+      <path d="M346 746
+               L386 746
+               Q393 746 398 741
+               Q403 736 408 746
+               L425 746
+               L432 743
+               L438 754
+               L449 704
+               L461 772
+               L473 746
+               L515 746
+               Q522 746 527 741
+               Q532 736 537 746
+               L554 746
+               L561 743
+               L567 754
+               L578 704
+               L590 772
+               L602 746
+               L642 746"
+            stroke="#EF4444"
+            stroke-width="12"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            fill="none"
+            opacity="0.035">
+        <animate attributeName="opacity"
+                 values="0.02;0.06;0.02"
+                 dur="2.6s"
+                 repeatCount="indefinite"/>
+      </path>
+    </g>
+  </g>
+</svg>
