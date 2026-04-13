@@ -2469,15 +2469,7 @@ function validateSelection(decision, input, selectedDrugIds, currentRegimenDrugI
   }
 
   if (hasBosentan && hasSildenafil) {
-    const bosentanSource = getDrugSourceLabel("bosentan", currentRegimenDrugIds, newSelectedDrugIds);
-    const sildenafilSource = getDrugSourceLabel("sildenafil", currentRegimenDrugIds, newSelectedDrugIds);
-    if (currentRegimenDrugIds && currentRegimenDrugIds.includes("bosentan") && newSelectedDrugIds && newSelectedDrugIds.includes("sildenafil")) {
-      cautions.push("Bosentan-sildenafil interaction: adding sildenafil to background bosentan lowers sildenafil exposure substantially and the sildenafil label states this add-on does not improve exercise capacity; the combination is usually tolerated and does not require routine dose adjustment.");
-    } else if (currentRegimenDrugIds && currentRegimenDrugIds.includes("sildenafil") && newSelectedDrugIds && newSelectedDrugIds.includes("bosentan")) {
-      cautions.push("Bosentan-sildenafil interaction: adding bosentan to background sildenafil lowers sildenafil exposure and increases bosentan exposure; 2022 ESC/ERS does not recommend bosentan added to sildenafil to reduce morbidity/mortality events.");
-    } else {
-      cautions.push(`Bosentan-sildenafil interaction: bosentan from the ${bosentanSource} lowers sildenafil exposure and sildenafil from the ${sildenafilSource} increases bosentan exposure; this combination is usually tolerated and does not require routine dose adjustment, but outcome benefit is limited compared with preferred ERA/PDE5i pairings.`);
-    }
+    cautions.push("Bosentan-sildenafil interaction: bosentan lowers sildenafil exposure and sildenafil increases bosentan exposure; this combination is usually tolerated and does not require routine dose adjustment, but is not recommended by current clinical practice guidelines.");
     addCitationIdUnique(citationIds, "bosentan_label");
     addCitationIdUnique(citationIds, "sildenafil_label");
     addCitationIdUnique(citationIds, "escers_2022");
