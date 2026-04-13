@@ -264,10 +264,12 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission."));
   assert.ok(html.includes("Recurrent PE despite therapeutic anticoagulation: immediately evaluate adherence, therapeutic intensity, interactions, absorption, renal function, and other contributors to treatment failure."));
   assert.ok(html.includes("If recurrence occurred on therapeutic-intensity anticoagulation, switch to an alternative anticoagulant drug class; if it occurred on reduced-dose DOAC therapy, return to full-dose DOAC within the same class."));
+  assert.ok(html.includes("In thrombotic APS, especially if triple-positive and recurrence occurred on standard-intensity VKA therapy, do not switch to a DOAC."));
+  assert.ok(html.includes("Stevens et al, CHEST 2021;160(6):e545-e608. DOI: 10.1016/j.chest.2021.07.055"));
   assert.ok(recurrenceIndex !== -1 && categoryHarmIndex !== -1 && recurrenceIndex < categoryHarmIndex);
   assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
   assert.ok(html.includes('if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory)'));
-  assert.ok(html.includes("Last updated April 12, 2026."));
+  assert.ok(html.includes("Last updated April 13, 2026."));
   assert.ok(html.includes("history of HIT"));
   assert.ok(!html.includes("Advanced therapy (HI-PEITHO)"));
   assert.ok(!html.includes("HI-PEITHO phenotype features present"));
