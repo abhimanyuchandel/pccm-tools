@@ -355,6 +355,10 @@ a {
   text-align: center;
 }
 
+.homeFooterText .siteDisclaimer:last-of-type {
+  margin-bottom: 16px;
+}
+
 .inlineMail {
   color: var(--accent);
   font-weight: 700;

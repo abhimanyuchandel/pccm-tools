@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PCCM Tools | ILD Multidisciplinary Discussion Support Tool</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ND4PN2RZTR"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "G-ND4PN2RZTR");
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
+    <link rel="icon" type="image/png" href="/assets/pccmapps.png">
+    <link rel="apple-touch-icon" href="/assets/pccmapps.png">
+    <link rel="stylesheet" href="./styles.css?v=20260413-1" />
+  </head>
+  <body class="ild-page">
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+
+    <main class="siteShell">
+      <header class="siteBar">
+        <a class="siteBrand" href="/">Home</a>
+        <p class="siteTagline">Interstitial lung disease multidisciplinary discussion support</p>
+      </header>
+
+      <div class="page-shell">
+      <header class="hero panel">
+        <div class="hero-copy">
+          <p class="eyebrow">Pulmonary Medicine</p>
+          <h1>ILD Multidisciplinary Discussion Support Tool</h1>
+          <p class="subtitle">Adult ILD evaluation and diagnosis support.</p>
+          <p class="lede">
+            Structured intake modeled on key exposure domains, CTD serologies, and guideline-style
+            HRCT patterning. The goal is to surface a transparent working diagnosis, plausible
+            differential, uncertainty level, and the next tests most likely to change the
+            diagnosis.
+          </p>
+        </div>
+        <div class="sample-strip">
+          <span>Load sample cases:</span>
+          <button data-example="ipf" type="button">High-confidence IPF</button>
+          <button data-example="ssc" type="button">Systemic sclerosis ILD</button>
+          <button data-example="hp" type="button">Fibrotic HP</button>
+          <button data-example="myositis" type="button">Antisynthetase ILD</button>
+          <button data-example="ra" type="button">RA-ILD</button>
+          <button data-example="sarcoid" type="button">Sarcoidosis</button>
+          <button data-example="familial_pf" type="button">Familial PF / TERT</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <form id="ildForm" class="intake-column" autocomplete="off">
+          <details class="panel form-panel" open>
+            <summary>1. Patient context</summary>
+            <div class="form-grid">
+              <label>
+                Case label
+                <input name="caseLabel" type="text" placeholder="De-identified case name" />
+              </label>
+              <label>
+                Age
+                <input name="age" type="number" min="0" max="120" placeholder="Years" />
+              </label>
+              <label>
+                Sex at birth
+                <select name="sex">
+                  <option value="">Select</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="intersex">Intersex</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Known connective tissue disease (clinician-established, using current rheumatologic criteria where applicable)
+                <select name="knownCtd">
+                  <option value="">Select</option>
+                  <option value="none">None known</option>
+                  <option value="ssc">Systemic sclerosis</option>
+                  <option value="ra">Rheumatoid arthritis</option>
+                  <option value="iim">Idiopathic inflammatory myopathy</option>
+                  <option value="sjogren">Sjögren disease</option>
+                  <option value="mctd">Mixed connective tissue disease</option>
+                  <option value="sle">Systemic lupus erythematosus</option>
+                  <option value="other">Other CTD</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Smoking status
+                <select name="smokingStatus">
+                  <option value="">Select</option>
+                  <option value="never">Never</option>
+                  <option value="former">Former</option>
+                  <option value="current">Current</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Pack-years
+                <input name="packYears" type="number" min="0" step="0.5" placeholder="0" />
+              </label>
+              <label>
+                Symptom tempo
+                <select name="symptomDuration">
+                  <option value="">Select</option>
+                  <option value="acute">Acute (&lt;1 month)</option>
+                  <option value="subacute">Subacute (1-3 months)</option>
+                  <option value="chronic">Chronic (&gt;3 months)</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Cough pattern
+                <select name="coughPattern">
+                  <option value="">Select</option>
+                  <option value="dry">Predominantly dry</option>
+                  <option value="productive">Productive</option>
+                  <option value="none">Minimal or none</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Dyspnea burden (mMRC-like)
+                <select name="dyspneaScale">
+                  <option value="">Select</option>
+                  <option value="1">1. Dyspnea only with strenuous exercise</option>
+                  <option value="2">2. Dyspnea when hurrying or slight hill</option>
+                  <option value="3">3. Walks slower than peers or stops at own pace</option>
+                  <option value="4">4. Stops after about 100 yards</option>
+                  <option value="5">5. Breathless at rest or dressing</option>
+                </select>
+              </label>
+              <label>
+                Weight loss
+                <select name="weightLoss">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Fever / inflammatory systemic symptoms
+                <select name="fever">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>2. Familial and genetic context</summary>
+            <div class="form-grid">
+              <div class="context-guide full-width">
+                <p class="support-copy">
+                  Genetic information can modify both classification and management. Pathogenic
+                  TRG or SRG findings may support a familial or genetically mediated fibrosis
+                  framework, influence transplant planning and surveillance, and reduce the
+                  incremental value of surgical lung biopsy when histology would not change care.
+                </p>
+                <ul class="plain-list">
+                  <li>
+                    TRG examples include TERT, TERC, RTEL1, PARN, DKC1, NAF1, and ZCCHC8.
+                  </li>
+                  <li>
+                    SRG examples include SFTPC, SFTPA1, and SFTPA2; SFTPA1/2 findings may also
+                    affect lung cancer surveillance planning.
+                  </li>
+                  <li>
+                    Very short age-adjusted telomere length supports a short telomere syndrome
+                    framework even when a pathogenic variant is not identified.
+                  </li>
+                </ul>
+              </div>
+              <label>
+                Family history of pulmonary fibrosis / ILD
+                <select name="familyPf">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no" selected>No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Telomere-related gene testing (TRG)
+                <select name="trgTestingResult">
+                  <option value="">Select</option>
+                  <option value="pathogenic">Pathogenic / likely pathogenic</option>
+                  <option value="vus">Variant of uncertain significance</option>
+                  <option value="negative">Negative</option>
+                  <option value="not_tested" selected>Not tested</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                TRG gene identified
+                <select name="trgGene">
+                  <option value="">Select</option>
+                  <option value="tert">TERT</option>
+                  <option value="terc">TERC</option>
+                  <option value="rtel1">RTEL1</option>
+                  <option value="parn">PARN</option>
+                  <option value="dkc1">DKC1</option>
+                  <option value="naf1">NAF1</option>
+                  <option value="zcchc8">ZCCHC8</option>
+                  <option value="other">Other TRG</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Surfactant-related gene testing (SRG)
+                <select name="srgTestingResult">
+                  <option value="">Select</option>
+                  <option value="pathogenic">Pathogenic / likely pathogenic</option>
+                  <option value="vus">Variant of uncertain significance</option>
+                  <option value="negative">Negative</option>
+                  <option value="not_tested" selected>Not tested</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                SRG gene identified
+                <select name="srgGene">
+                  <option value="">Select</option>
+                  <option value="sftpc">SFTPC</option>
+                  <option value="sftpa1">SFTPA1</option>
+                  <option value="sftpa2">SFTPA2</option>
+                  <option value="abca3">ABCA3</option>
+                  <option value="nkx2_1">NKX2-1</option>
+                  <option value="other">Other SRG</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Age-adjusted leukocyte telomere length
+                <select name="telomereLengthCategory">
+                  <option value="">Select</option>
+                  <option value="lt1">&lt;1st percentile</option>
+                  <option value="p1_10">1st-10th percentile</option>
+                  <option value="p10_50">10th-50th percentile</option>
+                  <option value="gt50">&gt;50th percentile</option>
+                  <option value="not_tested" selected>Not tested</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Short telomere syndrome features present (for example premature graying, cytopenias, liver disease)
+                <select name="shortTelomereFeatures">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no" selected>No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Genetic notes
+                <textarea
+                  name="geneticNotes"
+                  rows="3"
+                  placeholder="Cascade testing, counseling status, common-risk alleles such as MUC5B, transplant considerations, or prior geneMDD conclusions"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>3. Exposure history</summary>
+            <div class="form-grid">
+              <label>
+                Birds / feathers / avian exposure
+                <select name="birdExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Mold or visible mildew exposure
+                <select name="moldExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Water damage in home or workplace
+                <select name="waterDamage">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Humidifier exposure
+                <select name="humidifierExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Hot tub / Jacuzzi / sauna exposure
+                <select name="hotTubExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Farming / hay / compost / grain exposure
+                <select name="farmExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Heavy smoke or general dust exposure
+                <select name="smokeDustExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Metal or hard mineral exposure
+                <select name="metalExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Silica exposure
+                <select name="silicaExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Asbestos exposure
+                <select name="asbestosExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Wood dust / cork / organic dust exposure
+                <select name="woodExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Paint / isocyanate / industrial cleaning exposure
+                <select name="isocyanateExposure">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Travel / residence context relevant to exposure or endemic infection
+                <textarea
+                  name="travelResidence"
+                  rows="2"
+                  placeholder="Countries, regions, old homes, notable environmental context"
+                ></textarea>
+              </label>
+              <label class="full-width">
+                Exposure notes
+                <textarea
+                  name="exposureNotes"
+                  rows="3"
+                  placeholder="Species, timing, duration, mitigation, occupations, hobbies, or unusual exposures"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>4. Medication and toxin screen</summary>
+            <div class="form-grid">
+              <label>
+                Amiodarone exposure
+                <select name="amiodarone">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Nitrofurantoin exposure
+                <select name="nitrofurantoin">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Methotrexate exposure
+                <select name="methotrexate">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Bleomycin or other cytotoxic therapy
+                <select name="bleomycin">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Cyclophosphamide or radiation exposure
+                <select name="radiation">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Other pneumotoxic medication concern
+                <select name="otherDrugConcern">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Medication / toxin notes
+                <textarea
+                  name="medicationNotes"
+                  rows="3"
+                  placeholder="Include timing, duration, and whether symptom onset followed exposure"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>5. CTD and autoimmune clinical screen</summary>
+            <div class="form-grid">
+              <label>
+                Raynaud phenomenon
+                <select name="raynaud">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Sicca (dry eyes / dry mouth)
+                <select name="sicca">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Reflux / significant GERD
+                <select name="reflux">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Dysphagia / esophageal symptoms
+                <select name="dysphagia">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Inflammatory arthritis / morning stiffness
+                <select name="inflammatoryArthritis">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Skin thickening / sclerodactyly
+                <select name="skinThickening">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Mechanic hands
+                <select name="mechanicHands">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Proximal muscle weakness
+                <select name="muscleWeakness">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                CTD-compatible rash / heliotrope / Gottron-like features
+                <select name="rash">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Mouth ulcers / photosensitive mucocutaneous disease
+                <select name="mouthUlcers">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Hematuria / renal vasculitic signal
+                <select name="hematuria">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Hand ulcers / digital ischemia
+                <select name="digitalUlcers">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Autoimmune phenotype notes
+                <textarea
+                  name="ctdNotes"
+                  rows="3"
+                  placeholder="Known rheumatologic diagnosis, classification history, extrapulmonary manifestations"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>6. CTD laboratories and BAL</summary>
+            <div class="form-grid">
+              <label>
+                ANA titer denominator
+                <input name="anaTiter" type="number" min="0" step="10" placeholder="e.g. 640" />
+              </label>
+              <label>
+                ANA pattern
+                <select name="anaPattern">
+                  <option value="">Select</option>
+                  <option value="negative">Negative / not detected</option>
+                  <option value="speckled">Speckled</option>
+                  <option value="homogeneous">Homogeneous</option>
+                  <option value="diffuse">Diffuse</option>
+                  <option value="nucleolar">Nucleolar</option>
+                  <option value="centromere">Centromere</option>
+                  <option value="other">Other pattern</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                RF status
+                <select name="rfFlag">
+                  <option value="">Select</option>
+                  <option value="normal">Normal / negative</option>
+                  <option value="mild">Positive but less than 2x ULN</option>
+                  <option value="high">At least 2x ULN</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Anti-CCP
+                <select name="antiCcp">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Anti-Scl-70 / topoisomerase I
+                <select name="scl70">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                SSA / Ro
+                <select name="ssa">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                SSB / La
+                <select name="ssb">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Anti-Jo-1
+                <select name="jo1">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Extended myositis panel (e.g., PL-7, PL-12, EJ, OJ, SRP, Mi-2, MDA5, TIF1-gamma, NXP2, SAE1, Ro52)
+                <select name="myositisPanel">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                MPO-ANCA
+                <select name="mpoAnca">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                PR3-ANCA
+                <select name="pr3Anca">
+                  <option value="">Select</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                CK and/or aldolase elevated
+                <select name="ckElevated">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Ferritin elevated
+                <select name="ferritinElevated">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                ESR or CRP elevated
+                <select name="esrCrpElevated">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Low complement (C3/C4)
+                <select name="c3c4Low">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                BAL lymphocytes (%)
+                <input name="balLymphocytes" type="number" min="0" max="100" step="1" placeholder="e.g. 35" />
+              </label>
+              <label class="full-width">
+                Laboratory notes
+                <textarea
+                  name="labNotes"
+                  rows="3"
+                  placeholder="Add ENA, PM-Scl, MDA5, urinalysis, or assay-method details as needed"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>7. HRCT descriptors</summary>
+            <div class="form-grid">
+              <div class="context-guide full-width">
+                <p class="support-copy">
+                  The application derives UIP-family and HP-family HRCT categories from the entered
+                  descriptors so the clinician does not have to assign those pattern labels manually.
+                </p>
+                <ul class="plain-list">
+                  <li>
+                    UIP-family derivation is driven mainly by lower-lung subpleural fibrosis,
+                    honeycombing, traction bronchiectasis, and the presence or absence of
+                    alternative-pattern features.
+                  </li>
+                  <li>
+                    HP-family derivation is driven mainly by air trapping, centrilobular nodules,
+                    fibrosis, distribution, and other compatible non-UIP descriptors.
+                  </li>
+                  <li>
+                    These are app-derived helper categories based on the structured inputs below and
+                    should be reviewed against the full radiology interpretation.
+                  </li>
+                </ul>
+              </div>
+              <div class="derived-pattern-grid full-width">
+                <article class="derived-pattern-card">
+                  <p class="eyebrow">App-derived UIP family</p>
+                  <strong id="derivedUipCategory">Awaiting HRCT descriptors</strong>
+                  <p id="derivedUipExplanation" class="support-copy">
+                    Enter distribution, fibrosis, and competing HRCT features.
+                  </p>
+                </article>
+                <article class="derived-pattern-card">
+                  <p class="eyebrow">App-derived HP family</p>
+                  <strong id="derivedHpCategory">Awaiting HRCT descriptors</strong>
+                  <p id="derivedHpExplanation" class="support-copy">
+                    Enter air-trapping, nodules, distribution, fibrosis, and compatible secondary
+                    findings.
+                  </p>
+                </article>
+              </div>
+              <input name="uipCategory" type="hidden" />
+              <input name="hpCategory" type="hidden" />
+              <label>
+                Honeycombing
+                <select name="honeycombing">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Traction bronchiectasis / bronchiolectasis
+                <select name="tractionBronchiectasis">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Ground-glass opacity extent
+                <select name="ggoExtent">
+                  <option value="">Select</option>
+                  <option value="none">None</option>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="marked">Marked</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Consolidation extent
+                <select name="consolidationExtent">
+                  <option value="">Select</option>
+                  <option value="none">None</option>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="marked">Marked</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Dominant distribution
+                <select name="distribution">
+                  <option value="">Select</option>
+                  <option value="lower_subpleural">Lower lung / subpleural</option>
+                  <option value="upper_mid">Upper or mid-lung predominant</option>
+                  <option value="peribronchovascular">Peribronchovascular</option>
+                  <option value="diffuse">Diffuse / mixed</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Mosaic attenuation / expiratory air trapping
+                <select name="airTrapping">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Centrilobular nodules
+                <select name="centrilobularNodules">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Bilateral hilar and/or mediastinal lymphadenopathy
+                <select name="bhlAdenopathy">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Perilymphatic nodules / sarcoid-type nodularity
+                <select name="perilymphaticNodules">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Thin-walled cysts
+                <select name="cysts">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Emphysema
+                <select name="emphysema">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Subpleural sparing
+                <select name="subpleuralSparing">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Fibrosis extent
+                <select name="fibrosisExtent">
+                  <option value="">Select</option>
+                  <option value="under10">&lt;10%</option>
+                  <option value="10_19">10-19%</option>
+                  <option value="20_39">20-39%</option>
+                  <option value="40plus">40% or more</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                HRCT notes
+                <textarea
+                  name="imagingNotes"
+                  rows="3"
+                  placeholder="Radiology impression, pattern nuances, biopsy comment, or competing interpretations"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>8. Pathology and granulomatous disease context</summary>
+            <div class="form-grid">
+              <div class="context-guide full-width">
+                <p class="support-copy">
+                  Use pathology as a structured process rather than a single yes/no toggle: first
+                  document whether tissue exists and what specimen was reviewed, then whether a
+                  thoracic pathology review and clinicoradiologic correlation occurred, and only
+                  then record the dominant histopathologic pattern and companion features.
+                </p>
+                <ul class="plain-list">
+                  <li>
+                    UIP-family disease is best supported by a UIP-like pattern with fibroblast
+                    foci, architectural distortion, and no competing bronchiolocentric or
+                    granulomatous process.
+                  </li>
+                  <li>
+                    HP rises when exposure history aligns with bronchiolocentric or airway-centered
+                    pathology, minor lymphocytic bronchiolitis, and poorly formed granulomas.
+                  </li>
+                  <li>
+                    Sarcoidosis is more convincing when granulomas are well formed and the overall
+                    presentation also fits a perilymphatic or multisystem sarcoid pattern after
+                    alternative granulomatous causes are excluded.
+                  </li>
+                  <li>
+                    Lymphoid follicles or plasma cell-rich infiltrates, NSIP-like change, and
+                    organizing pneumonia can push the discussion toward CTD-ILD or overlap patterns.
+                  </li>
+                  <li>
+                    Use <strong>Unknown / not sampled</strong> rather than <strong>Absent</strong>
+                    when tissue was not obtained; that preserves uncertainty instead of falsely
+                    arguing against a diagnosis.
+                  </li>
+                </ul>
+              </div>
+              <label>
+                Pathology material available
+                <select name="pathologySampleType">
+                  <option value="">Select</option>
+                  <option value="not_sampled" selected>Not sampled / no tissue available</option>
+                  <option value="transbronchial">Transbronchial biopsy</option>
+                  <option value="cryobiopsy">Transbronchial cryobiopsy</option>
+                  <option value="surgical">Surgical lung biopsy</option>
+                  <option value="lymph_node">Lymph node sampling</option>
+                  <option value="extrapulmonary">Extrapulmonary tissue biopsy</option>
+                  <option value="multiple">Multiple specimens reviewed</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Thoracic pathology review documented
+                <select name="pathologyThoracicReview">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown" selected>Unknown</option>
+                </select>
+              </label>
+              <label>
+                Pathology-clinical-radiology correlation completed at MDD
+                <select name="pathologyMddCorrelation">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown" selected>Unknown</option>
+                </select>
+              </label>
+              <label>
+                Dominant histopathologic impression
+                <select name="pathologyPattern">
+                  <option value="">Select</option>
+                  <option value="unknown" selected>Unknown / not assigned</option>
+                  <option value="uip_like">UIP-like fibrosis</option>
+                  <option value="fibrotic_nsip_like">Fibrotic NSIP-like</option>
+                  <option value="cellular_nsip_like">Cellular NSIP-like</option>
+                  <option value="op_like">Organizing pneumonia</option>
+                  <option value="hp_like">Bronchiolocentric / HP-like</option>
+                  <option value="sarcoid_like">Sarcoid-like granulomatous pattern</option>
+                  <option value="lip_like">Lymphoid / LIP-like</option>
+                  <option value="dad_like">Acute lung injury / DAD-like</option>
+                  <option value="unclassifiable">Unclassifiable / mixed pattern</option>
+                </select>
+              </label>
+              <label>
+                Well-formed nonnecrotizing granulomas / sarcoid-type granulomas
+                <select name="nonnecrotizingGranulomas">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Airway-centered fibrosis
+                <select name="airwayCenteredFibrosis">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Minor lymphocytic bronchiolitis
+                <select name="minorLymphocyticBronchiolitis">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Poorly formed nonnecrotizing granulomas
+                <select name="rareGiantCells">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown">Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Fibroblast foci
+                <select name="fibroblastFoci">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown" selected>Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Organizing pneumonia / Masson bodies
+                <select name="organizingPneumoniaBodies">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown" selected>Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Lymphoid follicles / plasma cell-rich infiltrate
+                <select name="lymphoidFollicles">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no">Absent</option>
+                  <option value="unknown" selected>Unknown / not sampled</option>
+                </select>
+              </label>
+              <label>
+                Extrapulmonary sarcoid-compatible features (for example eye, skin, cardiac, or lymph node involvement)
+                <select name="sarcoidExtrapulmonary">
+                  <option value="">Select</option>
+                  <option value="yes">Present</option>
+                  <option value="no" selected>Absent</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Pathology or granulomatous disease notes
+                <textarea
+                  name="pathologyNotes"
+                  rows="3"
+                  placeholder="Specimen site, compartment involved, dominant pattern, granuloma quality, stains or culture exclusions, and whether thoracic pathology review or MDD correlation occurred"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <details class="panel form-panel" open>
+            <summary>9. Progression overlay and MDD context</summary>
+            <div class="form-grid">
+              <label>
+                FVC decline over about 12 months (% predicted)
+                <input name="fvcDecline" type="number" min="0" max="100" step="0.5" placeholder="e.g. 7" />
+              </label>
+              <label>
+                DLCO decline over about 12 months (% predicted)
+                <input name="dlcoDecline" type="number" min="0" max="100" step="0.5" placeholder="e.g. 12" />
+              </label>
+              <label>
+                Symptoms progressing within a year
+                <select name="symptomProgression">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Radiographic progression within a year
+                <select name="radiologyProgression">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Rest / exertional oxygen requirement
+                <select name="oxygenNeed">
+                  <option value="">Select</option>
+                  <option value="none">None</option>
+                  <option value="exertional">Exertional only</option>
+                  <option value="continuous">Continuous or high-flow</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                6MWT or exertional desaturation concern
+                <select name="sixMwtDesat">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Alternative granulomatous causes reasonably excluded (for example infection, HP, pneumoconiosis, vasculitis, or drug reaction)
+                <select name="granulomatousAlternativeExcluded">
+                  <option value="">Select</option>
+                  <option value="not_applicable">Not applicable</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="full-width">
+                Specific MDD question
+                <textarea
+                  name="mddQuestion"
+                  rows="2"
+                  placeholder="What is the main unresolved question for discussion?"
+                ></textarea>
+              </label>
+              <label class="full-width">
+                Narrative context
+                <textarea
+                  name="narrative"
+                  rows="4"
+                  placeholder="De-identified free-text clinical summary, timeline, or consultant concerns"
+                ></textarea>
+              </label>
+            </div>
+          </details>
+
+          <section class="panel form-actions">
+            <button id="runAssessment" class="primary-action" type="button">Run ILD assessment</button>
+            <button id="copyNote" class="secondary-action" type="button">Copy MDD note</button>
+            <button id="resetCase" class="ghost-action" type="button">Reset case</button>
+          </section>
+        </form>
+
+        <aside class="rail">
+          <section class="panel rail-panel accent-panel">
+            <p class="eyebrow">Current output</p>
+            <div id="primaryDiagnosis" class="diagnosis-shell">
+              <h2>Awaiting structured assessment</h2>
+              <p>
+                Complete the form or load a sample case, then run the ILD assessment to generate a
+                working diagnosis and MDD-ready summary.
+              </p>
+            </div>
+          </section>
+
+          <section class="panel rail-panel">
+            <div class="metric-row">
+              <span>Data completeness</span>
+              <strong id="completenessScore">0%</strong>
+            </div>
+            <div id="completenessBar" class="completeness-bar">
+              <span></span>
+            </div>
+            <ul id="missingItems" class="plain-list"></ul>
+          </section>
+
+          <section class="panel rail-panel">
+            <p class="eyebrow">What would change the diagnosis most</p>
+            <ul id="nextSteps" class="plain-list"></ul>
+          </section>
+
+          <section class="panel rail-panel">
+            <p class="eyebrow">Key overlays</p>
+            <div id="overlayList" class="tag-cloud"></div>
+          </section>
+        </aside>
+      </main>
+
+      <section class="results-grid">
+        <article class="panel">
+          <h2>Ranked differential diagnosis</h2>
+          <div id="differentialList" class="differential-list"></div>
+        </article>
+
+        <article class="panel">
+          <h2>MDD note draft</h2>
+          <textarea id="noteOutput" class="note-output" readonly></textarea>
+        </article>
+      </section>
+
+      <section class="panel followup-panel">
+        <div class="panel-heading-row">
+          <h2>Case Summary for External AI</h2>
+          <button id="copyExternalAiSummary" class="secondary-action" type="button">Copy case summary</button>
+        </div>
+        <p class="support-copy">
+          Copy and paste this prompt into OpenEvidence (or similar tool) to request an
+          AI-supported multidisciplinary discussion summary and management-oriented review.
+        </p>
+        <textarea id="openEvidencePrompt" class="note-output prompt-output" readonly></textarea>
+      </section>
+
+      <details class="panel guideline-panel">
+        <summary>About The Application</summary>
+        <div class="guideline-body">
+          <p class="support-copy">
+            This tool uses a transparent rule-based scoring process to generate relative diagnostic
+            probabilities. It does not use a black-box image model, and the displayed percentages
+            should be interpreted as within-tool ranking estimates rather than prospectively validated
+            disease probabilities.
+          </p>
+          <ol class="resource-list">
+            <li>
+              The application first collects structured inputs across familial/genetic context,
+              exposure history, medication and toxin history, CTD symptoms, core serologies, and
+              HRCT pattern descriptors. Those domains are grounded in the CHEST ILD questionnaire
+              and contemporary ILD diagnostic frameworks. <a href="https://www.chestnet.org/store/products/standard-products/elearning/bridging-specialties-ild-clinician-toolkit" target="_blank" rel="noreferrer">CHEST ILD clinician toolkit (2025)</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12824641/" target="_blank" rel="noreferrer">ERS/EULAR CTD-ILD guideline (2026)</a>
+            </li>
+            <li>
+              It then derives clinically meaningful signals from those inputs, such as likely antigen
+              exposure, possible pneumotoxic drug exposure, autoimmune signal strength, UIP-family
+              patterning, HP-family patterning, and progression overlays. This mirrors guideline-based
+              ILD reasoning, where known causes are assessed before idiopathic labels are applied and
+              progression is handled separately from etiology. <a href="https://www.atsjournals.org/doi/10.1164/rccm.202202-0399ST" target="_blank" rel="noreferrer">ATS/ERS/JRS/ALAT IPF and PPF update (2022)</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12824641/" target="_blank" rel="noreferrer">ERS/EULAR CTD-ILD guideline (2026)</a>
+            </li>
+            <li>
+              Certain diagnoses are strengthened by hard rule gates. For example, the HP branch is
+              strongly favored when exposure history, a typical HP HRCT category, and BAL
+              lymphocytosis align or when exposure history and HP-compatible pathology cohere; the
+              IPF branch is only strengthened when the intake supports exclusion of major alternate
+              causes and the HRCT pattern is UIP-family; and the sarcoidosis branch is only hard-gated
+              when compatible thoracic or extrapulmonary presentation, non-necrotizing granulomatous
+              inflammation, and exclusion of alternative granulomatous causes align. Autoimmune and
+              CTD-ILD branches are up-weighted by disease-specific clinical and serologic cues. <a href="https://www.atsjournals.org/doi/10.1164/rccm.202005-2032ST" target="_blank" rel="noreferrer">ATS/JRS/ALAT HP guideline (2020)</a>,
+              <a href="https://www.atsjournals.org/doi/10.1164/rccm.202202-0399ST" target="_blank" rel="noreferrer">ATS/ERS/JRS/ALAT IPF and PPF update (2022)</a>,
+              <a href="https://publications.ersnet.org/content/erj/46/4/976" target="_blank" rel="noreferrer">ERS/ATS IPAF research statement (2015)</a>,
+              <a href="https://www.atsjournals.org/doi/10.1164/rccm.202002-0251ST" target="_blank" rel="noreferrer">ATS sarcoidosis diagnosis and detection guideline (2020)</a>
+            </li>
+            <li>
+              For every candidate diagnosis, the current version applies an additive point-based score:
+              supportive findings add weight and conflicting findings subtract weight. This keeps the
+              logic inspectable and easier to review in multidisciplinary discussion. Pathology and
+              granulomatous inputs are active parts of this score, especially when they increase or
+              decrease confidence in HP or sarcoidosis and help avoid premature idiopathic labeling.
+            </li>
+            <li>
+              Familial and genetic data are also incorporated as diagnostic and prognostic modifiers.
+              Pathogenic TRG or SRG findings, very short telomere length, and strong familial
+              context do not automatically erase clinicoradiologic phenotypes, but they can reframe
+              the case as familial or genetically mediated fibrosis and change how the final MDD
+              diagnosis is worded, how strongly surgical biopsy is pursued, and how follow-up and
+              transplant planning are prioritized.
+              <a href="https://doi.org/10.1183/13993003.00158-2025" target="_blank" rel="noreferrer">ERS/ATS interstitial pneumonias statement update (2025)</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12128731/" target="_blank" rel="noreferrer">geneMDD study (2025)</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6376948/" target="_blank" rel="noreferrer">Telomeres in ILD review</a>
+            </li>
+            <li>
+              Those raw scores are then converted into relative percentages using a softmax transform.
+              The percentages therefore express how strongly each candidate diagnosis is favored
+              relative to the others in the current rule set, not an externally calibrated absolute risk.
+            </li>
+            <li>
+              Formal CTD diagnoses are not auto-classified from first principles inside the tool. If a
+              clinician marks a known CTD, the application treats that as externally established using
+              current rheumatologic classification criteria where applicable, while the tool itself uses
+              structured autoimmune features and serologies to support CTD-ILD and IPAF branches.
+              <a href="https://www.eular.org/recommendations-eular-acr" target="_blank" rel="noreferrer">EULAR/ACR criteria index</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6827566/" target="_blank" rel="noreferrer">2019 EULAR/ACR SLE criteria</a>
+            </li>
+            <li>
+              Diagnostic certainty is assigned separately from probability. High-certainty output
+              requires either a hard-gated branch or a well-supported leading diagnosis with adequate
+              data completeness. Low completeness lowers certainty even if one diagnosis remains the
+              top-ranked choice.
+            </li>
+            <li>
+              The application only prints competing differential diagnoses when their estimated
+              probability is at least 5%, to keep the output focused on clinically meaningful competing
+              possibilities.
+            </li>
+            <li>
+              MDD-style outputs are designed to support case review by documenting a leading
+              diagnosis, confidence, competing differential, expected disease behavior, and suggested
+              next tests or management steps, consistent with published ILD multidisciplinary meeting
+              recommendations.
+              <a href="https://doi.org/10.1111/resp.13163" target="_blank" rel="noreferrer">LFA/TSANZ ILD MDM position statement (2017)</a>,
+              <a href="https://doi.org/10.3389/fmed.2022.1017501" target="_blank" rel="noreferrer">Glenn et al. ILD MDM review (2022)</a>
+            </li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="panel guideline-panel">
+        <summary>Guideline Basis And Current Practice Anchors</summary>
+        <div class="guideline-body">
+          <p class="support-copy">
+            The diagnostic logic is intentionally transparent and aligned to major current ILD practice
+            frameworks rather than an opaque model.
+          </p>
+          <ul class="resource-list">
+            <li>
+              <a href="https://www.atsjournals.org/doi/10.1164/rccm.202202-0399ST" target="_blank" rel="noreferrer">ATS/ERS/JRS/ALAT IPF and PPF update (2022)</a>
+              for UIP-family diagnostic framing, exclusion of known causes, multidisciplinary discussion, and separate progression overlay logic.
+            </li>
+            <li>
+              <a href="https://doi.org/10.1183/13993003.00158-2025" target="_blank" rel="noreferrer">ERS/ATS interstitial pneumonias statement update (2025)</a>
+              for the broader interstitial pneumonia framework used by the application, while preserving practical MDD-facing labels such as IPF, NSIP, OP-spectrum disease, smoking-related ILD, sarcoidosis, and unclassifiable ILD.
+            </li>
+            <li>
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12128731/" target="_blank" rel="noreferrer">Impact of a Multidisciplinary Team Discussion for Genetic Lung Fibrosis (2025)</a>,
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5470751/" target="_blank" rel="noreferrer">Genetic Evaluation and Testing of Patients and Families with IPF</a>,
+              and <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6376948/" target="_blank" rel="noreferrer">Telomeres in Interstitial Lung Disease: The Short and the Long of It</a>
+              for familial pulmonary fibrosis framing, TRG/SRG testing, telomere-length interpretation, transplant and surveillance implications, and the role of gene-focused MDD review.
+            </li>
+            <li>
+              <a href="https://www.atsjournals.org/doi/10.1164/rccm.202005-2032ST" target="_blank" rel="noreferrer">ATS/JRS/ALAT hypersensitivity pneumonitis guideline (2020)</a>
+              for exposure-first evaluation, HP HRCT categories, BAL integration, and HP pathology features such as airway-centered fibrosis, giant cells, and bronchiolitis.
+            </li>
+            <li>
+              <a href="https://publications.ersnet.org/content/erj/46/4/976" target="_blank" rel="noreferrer">ERS/ATS IPAF research statement (2015)</a>
+              for structured autoimmune-feature criteria when defined CTD is uncertain.
+            </li>
+            <li>
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12824641/" target="_blank" rel="noreferrer">ERS/EULAR CTD-ILD guideline (2026)</a>
+              for CTD-ILD screening, baseline assessment, BAL and biopsy positioning, and monitoring considerations.
+            </li>
+            <li>
+              <a href="https://www.atsjournals.org/doi/10.1164/rccm.202002-0251ST" target="_blank" rel="noreferrer">ATS sarcoidosis diagnosis and detection guideline (2020)</a>
+              for the sarcoidosis framework of compatible presentation, non-necrotizing granulomatous inflammation, and exclusion of alternative granulomatous causes, with WASOG organ assessment referenced by the ATS guideline.
+            </li>
+            <li>
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11063619/" target="_blank" rel="noreferrer">High risk of lung cancer in surfactant-related gene variant carriers</a>
+              for the added lung cancer surveillance concern in SFTPA1 and SFTPA2 variant carriers.
+            </li>
+            <li>
+              <a href="https://www.chestnet.org/store/products/standard-products/elearning/bridging-specialties-ild-clinician-toolkit" target="_blank" rel="noreferrer">CHEST ILD clinician toolkit (2025)</a>
+              for the structured exposure, medication, and symptom intake domains used in this interface.
+            </li>
+            <li>
+              <a href="https://doi.org/10.1111/resp.13163" target="_blank" rel="noreferrer">LFA/TSANZ ILD MDM position statement (2017)</a>
+              and <a href="https://doi.org/10.3389/fmed.2022.1017501" target="_blank" rel="noreferrer">Glenn et al. ILD MDM review (2022)</a>
+              for recommended MDD inputs, participants, documentation, and outputs.
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <footer class="footer-note">
+        Use this as a transparent decision-support layer for pulmonologists and MDD review. It is
+        not validated as a standalone diagnostic device and should not be used without independent
+        clinician interpretation.
+      </footer>
+      </div>
+    </main>
+
+    <script src="./app.js?v=20260413-1"></script>
+  </body>
+</html>
