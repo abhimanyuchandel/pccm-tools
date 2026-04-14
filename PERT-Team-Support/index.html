@@ -933,6 +933,7 @@
 
         <section class="section" style="display:grid; gap: 8px;">
           <h3>Narrative for External AI (De-identified)</h3>
+          <p class="hint">Copy and paste this prompt into OpenEvidence (or similar tool) to request an AI-supported PERT documentation and management-oriented review.</p>
           <textarea id="narrative-text" class="narrative-output" readonly></textarea>
           <div class="toolbar">
             <button id="copy-narrative" type="button" class="btn btn-primary">Copy Narrative</button>
@@ -981,7 +982,7 @@
         </section>
 
         <p class="footnote">
-          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 13, 2026.
+          Developed by Abhimanyu Chandel, MD MAS. Clinicians should not use this tool in isolation for clinical decisions; integrate with bedside judgment, local protocols, and specialist input. Source anchor: 2026 AHA/ACC/ACCP/ACEP/CHEST/SCAI/SHM/SIR/SVM/SVN acute PE guideline (DOI: 10.1161/CIR.0000000000001415). Last updated April 14, 2026.
         </p>
       </aside>
     </div>
@@ -1342,10 +1343,14 @@
       };
       const age = derivePatientAge(raw);
       const sex = derivePatientSex(raw);
+      const pregnancyControls = ["pregnancy", "bleed-relative-pregnancy"]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      const pregnancySelected = pregnancyControls.some((el) => el.checked);
       const breastfeedingEl = document.getElementById("breastfeeding");
       const breastfeedingSelected = !!(breastfeedingEl && breastfeedingEl.checked);
-      const ineligible = sex === "male" || (age !== null && age > 60);
-      const reason = sex === "male"
+      const pregnancyIneligible = sex === "male" || (age !== null && age > 60);
+      const pregnancyReason = sex === "male"
         ? "Pregnancy cannot be selected when sex is male."
         : age !== null && age > 60
           ? "Pregnancy cannot be selected when age is greater than 60 years."
@@ -1354,16 +1359,35 @@
       ["pregnancy", "bleed-relative-pregnancy"].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.disabled = ineligible;
-        if (ineligible) {
+        el.disabled = pregnancyIneligible;
+        if (pregnancyIneligible) {
           el.checked = false;
-          el.title = reason;
+          el.title = pregnancyReason;
         } else if (breastfeedingSelected) {
           el.title = "Pregnancy cannot be selected at the same time as breastfeeding.";
         } else {
           el.removeAttribute("title");
         }
       });
+
+      if (!breastfeedingEl) return;
+
+      const breastfeedingIneligible = sex === "male" || (age !== null && age > 60);
+      const breastfeedingReason = sex === "male"
+        ? "Breastfeeding cannot be selected when sex is male."
+        : age !== null && age > 60
+          ? "Breastfeeding cannot be selected when age is greater than 60 years."
+          : "";
+
+      breastfeedingEl.disabled = breastfeedingIneligible;
+      if (breastfeedingIneligible) {
+        breastfeedingEl.checked = false;
+        breastfeedingEl.title = breastfeedingReason;
+      } else if (pregnancySelected) {
+        breastfeedingEl.title = "Breastfeeding cannot be selected at the same time as pregnancy.";
+      } else {
+        breastfeedingEl.removeAttribute("title");
+      }
     }
 
     function preferredRecognitionLanguage() {

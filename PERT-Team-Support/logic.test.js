@@ -273,6 +273,8 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(html.includes('actions.push("[COR 2a] With suspected acute PE, an AHA/ACC category C2 or higher profile, and no absolute anticoagulation contraindication, initiate empiric therapeutic anticoagulation while imaging is delayed or not immediately accessible.");'));
   assert.ok(html.includes('const suspectedEmpiricAnticoagEligible ='));
   assert.ok(html.includes('const pregnancyOnlyRelativeBleedingRisk ='));
+  assert.ok(html.includes("Breastfeeding cannot be selected when sex is male."));
+  assert.ok(html.includes("Breastfeeding cannot be selected when age is greater than 60 years."));
   assert.ok(html.includes('monitoring.push("Avoid deep sedation and mechanical ventilation if possible; if they are required, optimize preload, vasoactive support, and RV afterload to reduce hemodynamic collapse risk.");'));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of an absolute contraindication to thrombolysis may indicate higher hemorrhagic risk; consider observation or hospital admission."));
   assert.ok(html.includes("Disposition: although this profile might otherwise be considered for outpatient or early-discharge care, the presence of a relative bleeding risk consideration may indicate higher hemorrhagic risk; consider observation or hospital admission."));
@@ -285,7 +287,7 @@ test("PERT page no longer exposes the audited contradictory strings", () => {
   assert.ok(recurrenceIndex !== -1 && categoryHarmIndex !== -1 && recurrenceIndex < categoryHarmIndex);
   assert.ok(html.includes('if (cls.base === "C3" && !hiPeitho.recommendationEligible)'));
   assert.ok(html.includes('if (data.relativeBleedingRisk && !data.contraThrombolysis && reperfusionRelevantCategory && !pregnancyOnlyRelativeBleedingRisk)'));
-  assert.ok(html.includes("Last updated April 13, 2026."));
+  assert.ok(html.includes("Last updated April 14, 2026."));
   assert.ok(html.includes("history of HIT"));
   assert.ok(!html.includes("Advanced therapy (HI-PEITHO)"));
   assert.ok(!html.includes("HI-PEITHO phenotype features present"));
