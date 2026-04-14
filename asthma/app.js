@@ -12,6 +12,30 @@ const {
   getBenralizumabDetail: getBenralizumabDetailForContext
 } = window.asthmaLogic;
 
+const NUMERIC_FIELD_CONFIG = {
+  age: { id: "age", label: "Age", options: { min: 18, max: 120, integer: true } },
+  fev1Pre: { id: "fev1-pre", label: "Pre-BD FEV1", options: { min: 0, max: 8 } },
+  fev1Post: { id: "fev1-post", label: "Post-BD FEV1", options: { min: 0, max: 8 } },
+  fvcPre: { id: "fvc-pre", label: "Pre-BD FVC", options: { min: 0, max: 8 } },
+  fvcPost: { id: "fvc-post", label: "Post-BD FVC", options: { min: 0, max: 8 } },
+  fev1Predicted: { id: "fev1-predicted", label: "FEV1 % predicted", options: { min: 0, max: 150 } },
+  fvcPredicted: { id: "fvc-predicted", label: "FVC % predicted", options: { min: 0, max: 150 } },
+  moderateExac: {
+    id: "moderate-exac",
+    label: "Oral corticosteroid-treated exacerbation count",
+    options: { min: 0, max: 20, integer: true }
+  },
+  severeExac: {
+    id: "severe-exac",
+    label: "Hospitalization-level exacerbation count",
+    options: { min: 0, max: 20, integer: true }
+  },
+  eosinophils: { id: "eosinophils", label: "Blood eosinophils", options: { min: 0, max: 5000, integer: true } },
+  feno: { id: "feno", label: "FeNO", options: { min: 0, max: 500, integer: true } },
+  totalIge: { id: "total-ige", label: "Total IgE (IU/mL)", options: { min: 0, max: 5000, integer: true } },
+  weightKg: { id: "weight-kg", label: "Weight", options: { min: 20, max: 300 } }
+};
+
 function readNumericField(id, options = {}) {
   const raw = document.getElementById(id).value.trim();
   if (raw === "") {
@@ -58,14 +82,46 @@ function describeNumericRule(options = {}) {
   return parts.join(" ");
 }
 
-function getValidatedNumericValue(id, label, invalidEntries, options = {}) {
-  const parsed = readNumericField(id, options);
+function setNumericFieldAlertState(id, isInvalid) {
+  const field = document.getElementById(id);
+  if (!field) {
+    return;
+  }
 
-  if (parsed.invalid) {
-    invalidEntries.push(`${label} must be ${describeNumericRule(options)}.`);
+  field.classList.toggle("numeric-alert", isInvalid);
+
+  const label = field.closest("label");
+  if (label) {
+    label.classList.toggle("numeric-alert-label", isInvalid);
+  }
+
+  if (isInvalid) {
+    field.setAttribute("aria-invalid", "true");
+  } else {
+    field.removeAttribute("aria-invalid");
+  }
+}
+
+function validateNumericField(configKey, invalidEntries = null) {
+  const config = NUMERIC_FIELD_CONFIG[configKey];
+  const parsed = readNumericField(config.id, config.options);
+  setNumericFieldAlertState(config.id, parsed.invalid);
+
+  if (parsed.invalid && invalidEntries) {
+    invalidEntries.push(`${config.label} must be ${describeNumericRule(config.options)}.`);
   }
 
   return parsed.value;
+}
+
+function getValidatedNumericValue(configKey, invalidEntries) {
+  return validateNumericField(configKey, invalidEntries);
+}
+
+function refreshNumericFieldAlerts() {
+  Object.keys(NUMERIC_FIELD_CONFIG).forEach((configKey) => {
+    validateNumericField(configKey);
+  });
 }
 
 function getCheckboxValue(id) {
@@ -81,19 +137,19 @@ function getInputState() {
 
   return {
     managementPhase: getSelectValue("management-phase"),
-    age: getValidatedNumericValue("age", "Age", invalidEntries, { min: 18, max: 120, integer: true }),
+    age: getValidatedNumericValue("age", invalidEntries),
     typicalSymptoms: getCheckboxValue("typical-symptoms"),
     urgentRedFlags: getCheckboxValue("urgent-red-flags"),
     symptomDaysCategory: getSelectValue("symptom-days-category"),
     nightWakingCategory: getSelectValue("night-waking-category"),
     acuteExacerbationToday: getCheckboxValue("acute-exacerbation-today"),
     bronchodilatorHeld: getCheckboxValue("bronchodilator-held"),
-    fev1Pre: getValidatedNumericValue("fev1-pre", "Pre-BD FEV1", invalidEntries, { min: 0, max: 8 }),
-    fev1Post: getValidatedNumericValue("fev1-post", "Post-BD FEV1", invalidEntries, { min: 0, max: 8 }),
-    fvcPre: getValidatedNumericValue("fvc-pre", "Pre-BD FVC", invalidEntries, { min: 0, max: 8 }),
-    fvcPost: getValidatedNumericValue("fvc-post", "Post-BD FVC", invalidEntries, { min: 0, max: 8 }),
-    fev1Predicted: getValidatedNumericValue("fev1-predicted", "FEV1 % predicted", invalidEntries, { min: 0, max: 150 }),
-    fvcPredicted: getValidatedNumericValue("fvc-predicted", "FVC % predicted", invalidEntries, { min: 0, max: 150 }),
+    fev1Pre: getValidatedNumericValue("fev1Pre", invalidEntries),
+    fev1Post: getValidatedNumericValue("fev1Post", invalidEntries),
+    fvcPre: getValidatedNumericValue("fvcPre", invalidEntries),
+    fvcPost: getValidatedNumericValue("fvcPost", invalidEntries),
+    fev1Predicted: getValidatedNumericValue("fev1Predicted", invalidEntries),
+    fvcPredicted: getValidatedNumericValue("fvcPredicted", invalidEntries),
     bronchoprovocation: getSelectValue("bronchoprovocation"),
     icsResponse: getCheckboxValue("ics-response"),
     dxBronchodilatorResponse: getCheckboxValue("dx-bronchodilator-response"),
@@ -103,14 +159,14 @@ function getInputState() {
     nightWaking4w: getCheckboxValue("night-waking-4w"),
     relieverGt2: getCheckboxValue("reliever-gt2"),
     activityLimitation: getCheckboxValue("activity-limitation"),
-    moderateExac: getValidatedNumericValue("moderate-exac", "Oral corticosteroid-treated exacerbation count", invalidEntries, { min: 0, max: 20, integer: true }),
-    severeExac: getValidatedNumericValue("severe-exac", "Hospitalization-level exacerbation count", invalidEntries, { min: 0, max: 20, integer: true }),
+    moderateExac: getValidatedNumericValue("moderateExac", invalidEntries),
+    severeExac: getValidatedNumericValue("severeExac", invalidEntries),
     lifeThreateningHistory: getCheckboxValue("life-threatening-history"),
     persistentExacerbations: getCheckboxValue("persistent-exacerbations"),
-    eosinophils: getValidatedNumericValue("eosinophils", "Blood eosinophils", invalidEntries, { min: 0, max: 5000, integer: true }),
-    feno: getValidatedNumericValue("feno", "FeNO", invalidEntries, { min: 0, max: 500, integer: true }),
-    totalIge: getValidatedNumericValue("total-ige", "Total IgE", invalidEntries, { min: 0, max: 5000, integer: true }),
-    weightKg: getValidatedNumericValue("weight-kg", "Weight", invalidEntries, { min: 20, max: 300 }),
+    eosinophils: getValidatedNumericValue("eosinophils", invalidEntries),
+    feno: getValidatedNumericValue("feno", invalidEntries),
+    totalIge: getValidatedNumericValue("totalIge", invalidEntries),
+    weightKg: getValidatedNumericValue("weightKg", invalidEntries),
     smokingStatus: getSelectValue("smoking-status"),
     allergenDriven: getCheckboxValue("allergen-driven"),
     sensitizationConfirmed: getCheckboxValue("sensitization-confirmed"),
@@ -405,7 +461,14 @@ function initHelpers() {
     document.getElementById(id).addEventListener("change", updateExacerbationDisplay);
   });
 
+  Object.values(NUMERIC_FIELD_CONFIG).forEach(({ id }) => {
+    const element = document.getElementById(id);
+    element.addEventListener("input", refreshNumericFieldAlerts);
+    element.addEventListener("change", refreshNumericFieldAlerts);
+  });
+
   syncManagementPhaseUi();
+  refreshNumericFieldAlerts();
   updateDiagnosticDisplay();
   updateControlDisplay();
   updateExacerbationDisplay();
@@ -480,7 +543,7 @@ function getAzithromycinDetail() {
 }
 
 function getOmalizumabDetail() {
-  return "Omalizumab option for severe allergic asthma: subcutaneous injection every 2 to 4 weeks with dose determined by baseline IgE and weight. Use only when objective sensitization is confirmed and the local dosing table can be satisfied. Common adverse effects include injection-site reactions; anaphylaxis is rare.";
+  return "Omalizumab option for severe allergic asthma: subcutaneous injection every 2 to 4 weeks with dose determined by baseline IgE (IU/mL) and weight. Use only when objective sensitization is confirmed and the local dosing table can be satisfied. Common adverse effects include injection-site reactions; anaphylaxis is rare.";
 }
 
 function getMepolizumabDetail() {
@@ -632,7 +695,7 @@ function buildBiologicGuidance(data, severeState, control, exacRisk) {
     phenotypeParts.push(`FeNO ${data.feno} ppb`);
   }
   if (omalizumabStatus.eligibleForConsideration) {
-    phenotypeParts.push(`sensitization-confirmed allergen-driven disease with total IgE ${data.totalIge}`);
+    phenotypeParts.push(`sensitization-confirmed allergen-driven disease with total IgE ${data.totalIge} IU/mL`);
   } else if (data.allergenDriven) {
     phenotypeParts.push("allergen-driven symptoms");
   }
@@ -767,7 +830,7 @@ function buildBiologicGuidance(data, severeState, control, exacRisk) {
   }
 
   if (omalizumabStatus.eligibleForConsideration && !omalizumabStatus.fullyAssessable) {
-    addConsideration("Enter weight before choosing omalizumab because dosing depends on both baseline IgE and weight.");
+    addConsideration("Enter weight before choosing omalizumab because dosing depends on both baseline IgE (IU/mL) and weight.");
   }
 
   addConsideration("Confirm local payer/regulatory criteria before ordering; required exacerbation counts and biomarker thresholds vary by product and insurer.");
@@ -1183,7 +1246,7 @@ function buildRecommendation(data) {
   }
 
   if (data.eosinophils === null && data.feno === null && data.totalIge === null) {
-    therapy.plan.push("Biomarkers not documented: obtain blood eosinophils, FeNO, and total IgE when phenotype assessment or treatment escalation is being considered.");
+    therapy.plan.push("Biomarkers not documented: obtain blood eosinophils, FeNO, and total IgE (IU/mL) when phenotype assessment or treatment escalation is being considered.");
     therapy.rationale.push("Biomarker data can help refine future asthma management, especially if symptoms or exacerbations persist.");
   }
 
@@ -1200,7 +1263,7 @@ function buildRecommendation(data) {
     phenotypeParts.push(`FeNO ${data.feno} ppb`);
   }
   if (data.totalIge !== null) {
-    phenotypeParts.push(`total IgE ${data.totalIge}`);
+    phenotypeParts.push(`total IgE ${data.totalIge} IU/mL`);
   }
   if (data.allergenDriven) {
     phenotypeParts.push("allergen-driven features present");
@@ -1346,7 +1409,7 @@ function buildNoteText(data, rec) {
     lines.push("- FeNO: not available.");
   }
   if (data.totalIge !== null) {
-    lines.push(`- Total IgE: ${data.totalIge}.`);
+    lines.push(`- Total IgE (IU/mL): ${data.totalIge}.`);
   }
   if (data.weightKg !== null) {
     lines.push(`- Weight: ${data.weightKg} kg.`);
