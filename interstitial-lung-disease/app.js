@@ -20,6 +20,14 @@
   const derivedHpExplanation = document.getElementById("derivedHpExplanation");
   const exampleButtons = document.querySelectorAll("[data-example]");
   const PRINTABLE_DIFFERENTIAL_THRESHOLD = 0.05;
+  const NUMERIC_FIELD_CONFIG = {
+    age: { min: 18, max: 120, integer: true },
+    packYears: { min: 0, max: 200 },
+    anaTiter: { min: 0, max: 10240, integer: true },
+    balLymphocytes: { min: 0, max: 100, integer: true },
+    fvcDecline: { min: 0, max: 100 },
+    dlcoDecline: { min: 0, max: 100 },
+  };
   const defaultGeneticExample = {
     familyPf: "no",
     trgTestingResult: "not_tested",
@@ -921,6 +929,63 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  function readNumericField(fieldName) {
+    const field = form.elements.namedItem(fieldName);
+    if (!field) {
+      return { value: null, invalid: false };
+    }
+
+    const raw = field.value.trim();
+    if (raw === "") {
+      return { value: null, invalid: false };
+    }
+
+    const value = Number(raw);
+    if (!Number.isFinite(value)) {
+      return { value: null, invalid: true };
+    }
+
+    const config = NUMERIC_FIELD_CONFIG[fieldName] || {};
+    if (config.integer && !Number.isInteger(value)) {
+      return { value: null, invalid: true };
+    }
+    if (config.min !== undefined && value < config.min) {
+      return { value: null, invalid: true };
+    }
+    if (config.max !== undefined && value > config.max) {
+      return { value: null, invalid: true };
+    }
+
+    return { value, invalid: false };
+  }
+
+  function setNumericFieldAlertState(fieldName, isInvalid) {
+    const field = form.elements.namedItem(fieldName);
+    if (!field) {
+      return;
+    }
+
+    field.classList.toggle("numeric-alert", isInvalid);
+
+    const label = field.closest("label");
+    if (label) {
+      label.classList.toggle("numeric-alert-label", isInvalid);
+    }
+
+    if (isInvalid) {
+      field.setAttribute("aria-invalid", "true");
+    } else {
+      field.removeAttribute("aria-invalid");
+    }
+  }
+
+  function refreshNumericFieldAlerts() {
+    Object.keys(NUMERIC_FIELD_CONFIG).forEach((fieldName) => {
+      const parsed = readNumericField(fieldName);
+      setNumericFieldAlertState(fieldName, parsed.invalid);
+    });
+  }
+
   function anyKnown(data, fields) {
     return fields.some((field) => !unknown(data[field]));
   }
@@ -1382,6 +1447,15 @@
     for (const [key, value] of fields.entries()) {
       data[key] = typeof value === "string" ? value.trim() : value;
     }
+
+    Object.keys(NUMERIC_FIELD_CONFIG).forEach((fieldName) => {
+      const parsed = readNumericField(fieldName);
+      setNumericFieldAlertState(fieldName, parsed.invalid);
+      if (parsed.invalid) {
+        data[fieldName] = "";
+      }
+    });
+
     return data;
   }
 
@@ -1570,6 +1644,7 @@
     applyDefaultNegatives();
     applyBaselineDefaults(true);
     syncDerivedImagingCategories();
+    refreshNumericFieldAlerts();
   }
 
   function fillForm(values) {
@@ -1581,6 +1656,7 @@
     applyDefaultNegatives();
     applyBaselineDefaults();
     syncDerivedImagingCategories();
+    refreshNumericFieldAlerts();
   }
 
   function clearPersistedState() {
@@ -2570,9 +2646,11 @@
 
   form.addEventListener("input", () => {
     syncDerivedImagingCategories();
+    refreshNumericFieldAlerts();
   });
   form.addEventListener("change", () => {
     syncDerivedImagingCategories();
+    refreshNumericFieldAlerts();
   });
 
   clearPersistedState();

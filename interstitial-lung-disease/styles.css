@@ -411,6 +411,21 @@ textarea:focus {
   background: #fff;
 }
 
+label.numeric-alert-label {
+  color: var(--danger);
+}
+
+input.numeric-alert {
+  border-color: var(--danger);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(185, 28, 28, 0.08) 100%);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+input.numeric-alert:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.16);
+}
+
 textarea {
   resize: vertical;
   min-height: 72px;
