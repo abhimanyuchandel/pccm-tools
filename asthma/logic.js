@@ -9,7 +9,7 @@
     root.asthmaLogic = logic;
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const DEFAULT_NO_WARNING = "No major data-quality or safety warning was detected from the entered fields.";
+  const DEFAULT_NO_WARNING = "No major data-quality or safety warning was detected.";
 
   function formatSignedNumber(value, decimals) {
     if (!Number.isFinite(value)) {
