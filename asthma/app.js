@@ -1103,8 +1103,6 @@ function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk,
     return { plan, rationale, medicationDetails, trackStep: "Initial pathway needed" };
   }
 
-  plan.push("If symptoms remain uncontrolled after step-up therapy, reassess inhaler technique, adherence, smoke/irritant exposure, obesity, chronic rhinosinusitis with or without nasal polyps, GERD, OSA, inducible laryngeal obstruction, and medication adverse effects before further escalation.");
-
   if (exacRisk.anyExacerbation === null) {
     plan.push("Prior-year exacerbation counts are incomplete; confirm them before deciding against escalation or interpreting biologic eligibility.");
     rationale.push("Missing exacerbation history limits follow-up risk assessment.");
@@ -1128,6 +1126,8 @@ function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk,
     rationale.push("No clear symptom-control or exacerbation trigger for escalation was entered.");
     return { plan, rationale, medicationDetails, trackStep };
   }
+
+  plan.push("If symptoms remain uncontrolled after step-up therapy, reassess inhaler technique, adherence, smoke/irritant exposure, obesity, chronic rhinosinusitis with or without nasal polyps, GERD, OSA, inducible laryngeal obstruction, and medication adverse effects before further escalation.");
 
   if (data.currentRegimen === "air-only") {
     trackStep = "GINA Track 1 Step 3";
