@@ -431,51 +431,51 @@ function getRegimenLabel(regimen) {
 }
 
 function getRoflumilastDetail() {
-  return "Roflumilast dosing: 250 mcg by mouth once daily for the first 4 weeks, then 500 mcg by mouth once daily maintenance. It is an add-on anti-inflammatory, not a rescue bronchodilator. Avoid in moderate-to-severe hepatic impairment; monitor for weight loss, insomnia, anxiety, depression, and suicidality.";
+  return "Roflumilast option: 250 mcg PO daily x4 weeks, then 500 mcg PO daily. Not rescue therapy; avoid in moderate-severe hepatic impairment and monitor weight, mood, insomnia, and suicidality.";
 }
 
 function getAzithromycinDetail() {
-  return "Azithromycin prophylaxis in GOLD evidence: 250 mg by mouth daily or 500 mg by mouth three times weekly for 1 year in exacerbation-prone patients. Check baseline QT risk, interacting drugs, hearing impairment, and antimicrobial-resistance concerns. GOLD notes less benefit in active smokers.";
+  return "Azithromycin option: 250 mg PO daily or 500 mg PO three times weekly for 1 year. Review QT risk, hearing impairment, drug interactions, and antimicrobial-resistance concerns; benefit is lower in active smokers.";
 }
 
 function getEnsifentrineDetail() {
-  return "Ensifentrine dosing: 3 mg (one unit-dose ampule) by nebulization twice daily using a standard jet nebulizer with mouthpiece. Empty the full ampule into the nebulizer cup; do not mix with other nebulized medicines. It is maintenance therapy, not rescue therapy. Avoid if prior serious hypersensitivity to ensifentrine or excipients.";
+  return "Ensifentrine option: 3 mg by nebulization BID. Do not mix with other nebulized drugs; use as maintenance, not rescue therapy.";
 }
 
 function getDupilumabDetail() {
-  return "Dupilumab dosing for COPD: 300 mg subcutaneously every 2 weeks as add-on maintenance therapy. Administer by prefilled pen or syringe into thigh, abdomen, or upper arm; rotate sites. It is not for acute bronchospasm. Avoid in patients with prior serious hypersensitivity; review helminth infection status and avoid live vaccines during therapy.";
+  return "Dupilumab option: 300 mg SC every 2 weeks as add-on maintenance therapy. Not for acute bronchospasm; review hypersensitivity history, helminth risk, and live-vaccine plans.";
 }
 
 function getMepolizumabDetail() {
-  return "Mepolizumab dosing for COPD: 100 mg subcutaneously once every 4 weeks as add-on maintenance therapy. It may be given by autoinjector, prefilled syringe, or reconstituted vial. It is not for acute bronchospasm. Avoid in patients with prior serious hypersensitivity; consider herpes zoster vaccination before treatment when appropriate.";
+  return "Mepolizumab option: 100 mg SC every 4 weeks as add-on maintenance therapy. Not for acute bronchospasm; review hypersensitivity history and zoster vaccination status.";
 }
 
 function getAzithromycinRoflumilastInteractionDetail() {
-  return "If azithromycin and roflumilast are used together, review the full medication list carefully. Macrolides as a class can affect CYP-mediated metabolism and may increase roflumilast systemic exposure; monitor tolerability and adverse effects.";
+  return "If azithromycin and roflumilast are used together, review for drug interactions and monitor tolerability/adverse effects.";
 }
 
 function getSmokingCessationDetails(data) {
   const details = [];
 
-  details.push("Smoking cessation works best with combined counseling plus pharmacotherapy. Refer to a structured cessation program and offer quit-line support.");
-  details.push("Varenicline: start 1 week before quit date. 0.5 mg by mouth once daily on days 1-3, 0.5 mg by mouth twice daily on days 4-7, then 1 mg by mouth twice daily for 12 weeks. Key cautions: serious hypersensitivity or severe skin reaction history, renal dose adjustment, possible nausea, sleep disturbance, neuropsychiatric symptoms, and seizure risk.");
-  details.push("Bupropion SR: 150 mg by mouth once daily for 3 days, then 150 mg by mouth twice daily, starting before the quit date. Key contraindications: seizure disorder, current or prior bulimia/anorexia nervosa, abrupt alcohol/benzodiazepine/barbiturate withdrawal, monoamine oxidase inhibitor use, or another bupropion product.");
+  details.push("Offer smoking-cessation counseling plus pharmacotherapy; refer to a structured program and quit-line.");
+  details.push("Varenicline option: start 1 week before quit date; titrate to 1 mg PO BID for 12 weeks. Review renal dosing and adverse effects (nausea, sleep disturbance, neuropsychiatric symptoms, seizure risk).");
+  details.push("Bupropion SR option: 150 mg PO daily for 3 days, then 150 mg PO BID. Avoid in seizure disorder, eating disorders, abrupt sedative/alcohol withdrawal, MAOI use, or concurrent bupropion use.");
 
   if (data.cigarettesPerDay !== null) {
     if (data.cigarettesPerDay > 10) {
-      details.push("Nicotine patch: 21 mg/24 hour transdermal daily for 6 weeks, then 14 mg daily for 2 weeks, then 7 mg daily for 2 weeks. Do not smoke while wearing the patch. Use caution after a recent myocardial infarction or stroke.");
+      details.push("Nicotine patch option: 21 mg daily x6 weeks, then 14 mg daily x2 weeks, then 7 mg daily x2 weeks. Do not smoke while patch is on; use caution after recent MI or stroke.");
     } else {
-      details.push("Nicotine patch: 14 mg/24 hour transdermal daily for 6 weeks, then 7 mg daily for 2 weeks. Do not smoke while wearing the patch. Use caution after a recent myocardial infarction or stroke.");
+      details.push("Nicotine patch option: 14 mg daily x6 weeks, then 7 mg daily x2 weeks. Do not smoke while patch is on; use caution after recent MI or stroke.");
     }
   } else {
-    details.push("Nicotine patch dosing depends on baseline cigarette consumption; use caution after a recent myocardial infarction or stroke.");
+    details.push("Choose nicotine patch dose based on baseline cigarette consumption; use caution after recent MI or stroke.");
   }
 
   if (data.firstCigarette30) {
-    details.push("High nicotine-dependence marker present: first cigarette is within 30 minutes of waking.");
-    details.push("Nicotine gum or lozenge: use the 4 mg strength if the first cigarette is within 30 minutes of waking. Gum: 1 piece every 1-2 hours for weeks 1-6, at least 9 pieces/day, maximum 24/day. Lozenge: 1 lozenge every 1-2 hours for weeks 1-6, maximum 20/day.");
+    details.push("High nicotine dependence marker: first cigarette within 30 minutes of waking.");
+    details.push("Use 4 mg nicotine gum or lozenge because first cigarette is within 30 minutes of waking; use every 1-2 hours initially.");
   } else {
-    details.push("Nicotine gum or lozenge: use the 2 mg strength if the first cigarette is more than 30 minutes after waking. Gum: 1 piece every 1-2 hours for weeks 1-6, at least 9 pieces/day, maximum 24/day. Lozenge: 1 lozenge every 1-2 hours for weeks 1-6, maximum 20/day.");
+    details.push("Use 2 mg nicotine gum or lozenge because first cigarette is >30 minutes after waking; use every 1-2 hours initially.");
   }
 
   return details;
@@ -497,7 +497,7 @@ function shouldRecommendParasitePrecaution(data) {
 }
 
 function getParasitePrecautionRecommendation() {
-  return "Because blood eosinophils are above 300 cells/uL and the patient has lived or resided in an endemic area, consider parasite testing or treatment before starting biologic therapy.";
+  return "If eosinophils >300 cells/uL and there is epidemiologic helminth risk, screen for and treat parasitic infection before biologic therapy.";
 }
 
 function buildInitialRecommendations(group, data, symptoms) {
@@ -507,42 +507,42 @@ function buildInitialRecommendations(group, data, symptoms) {
   const followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
 
   if (group === "A") {
-    plan.push("Start a bronchodilator for breathlessness. A long-acting bronchodilator is preferred when available and affordable unless symptoms are very occasional.");
-    plan.push("Continue the bronchodilator only if clinical benefit is documented.");
+    plan.push("Start bronchodilator therapy for dyspnea; prefer a long-acting bronchodilator if symptoms are more than occasional.");
+    plan.push("Continue bronchodilator only if symptomatic benefit is documented.");
   }
 
   if (group === "B") {
-    plan.push("Initiate LABA + LAMA combination therapy as the preferred initial pharmacologic treatment.");
-    plan.push("If LABA + LAMA is not feasible, choose either a LABA or a LAMA based on symptom response, cost, and tolerability.");
+    plan.push("Initial therapy: start LABA + LAMA.");
+    plan.push("If LABA + LAMA is not feasible, use either LABA or LAMA based on response, cost, and tolerability.");
   }
 
   if (group === "E") {
-    plan.push("Preferred initial treatment is LABA + LAMA because the patient is in GOLD Group E.");
+    plan.push("Initial therapy: start LABA + LAMA (GOLD Group E).");
     if (data.eosinophils !== null && data.eosinophils >= 300) {
-      plan.push("Because eosinophils are at least 300 cells/uL, consider initial LABA + LAMA + ICS.");
+      plan.push("Eosinophils >=300 cells/uL: consider initial LABA + LAMA + ICS.");
     }
-    plan.push("Avoid LABA + ICS alone when COPD is the only diagnosis. If an ICS is indicated, prefer triple therapy.");
+    plan.push("Avoid LABA + ICS alone in COPD without asthma; if ICS is indicated, prefer triple therapy.");
   }
 
   if (group === "A/B/E (exacerbation history required to classify)") {
-    plan.push("Confirm prior-year moderate and severe exacerbation counts before finalizing GOLD A/B/E classification and initial inhaled therapy.");
-    rationale.push("GOLD A/B/E grouping cannot be assigned definitively when exacerbation history is missing.");
+    plan.push("Confirm prior-year moderate and severe exacerbation counts before assigning final GOLD A/B/E group and inhaled therapy.");
+    rationale.push("Final GOLD A/B/E group cannot be assigned when exacerbation history is missing.");
   }
 
   if (group === "A/B (symptom score required to distinguish)" || symptoms.high === null) {
-    plan.push("Complete CAT/CAAT or mMRC scoring before finalizing symptom-driven inhaled therapy intensity.");
+    plan.push("Obtain CAT/CAAT or mMRC score before finalizing symptom-based inhaled therapy intensity.");
   }
 
   if (data.concomitantAsthma) {
-    plan.push("Because concomitant asthma is suspected or confirmed, use an ICS-containing maintenance regimen and follow asthma-focused treatment principles. Avoid LABA without ICS.");
+    plan.push("Asthma overlap present: use an ICS-containing regimen and avoid LABA without ICS.");
     if (group === "B" || group === "E") {
-      plan.push("Because this patient otherwise meets a higher-intensity COPD pathway, consider LABA + LAMA + ICS so the regimen remains ICS-containing.");
+      plan.push("Because higher-intensity therapy is otherwise indicated and asthma overlap is present, consider LABA + LAMA + ICS.");
     }
-    rationale.push("Asthma overlap changes the initial pathway because GOLD states COPD with concomitant asthma should be treated like asthma and requires ICS.");
+    rationale.push("Asthma overlap changes the initial pathway because ICS-containing therapy is required.");
   }
 
-  plan.push("Ensure a rescue short-acting bronchodilator is available for immediate symptom relief.");
-  rationale.push("Initial treatment path follows GOLD 2026 Figure 3.8 for treatment-naive COPD.");
+  plan.push("Ensure rescue SABA/SAMA is available for breakthrough symptoms.");
+  rationale.push("Initial-treatment logic mapped to GOLD 2026 treatment-naive COPD pathway.");
 
   return { plan, rationale, medicationDetails, followUpRecommendation };
 }
@@ -558,45 +558,45 @@ function buildFollowUpRecommendations(data, exacRisk) {
 
   if (data.currentRegimen === "naive") {
     managementChangeRecommended = true;
-    plan.push("Follow-up management was selected, but no maintenance regimen is documented. Use the initial pharmacologic pathway first, then reassess response.");
+    plan.push("No maintenance regimen documented; apply the initial-treatment pathway, then reassess response.");
     if (data.concomitantAsthma) {
-      plan.push("Because concomitant asthma is suspected or confirmed, the next maintenance regimen should include ICS rather than bronchodilator monotherapy alone.");
+      plan.push("Asthma overlap present: the next maintenance regimen should include ICS, not bronchodilator monotherapy alone.");
     }
-    rationale.push("Follow-up algorithms in GOLD 2026 are intended for patients already receiving maintenance treatment.");
+    rationale.push("Follow-up algorithms apply to patients already receiving maintenance therapy.");
     followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
     return { plan, rationale, medicationDetails, followUpRecommendation };
   }
 
   if (hasExacerbation) {
     managementChangeRecommended = true;
-    rationale.push("Exacerbation pathway selected because GOLD prioritizes exacerbation prevention when both dyspnea and exacerbations are present.");
+    rationale.push("Exacerbation pathway selected because exacerbation prevention takes priority when both dyspnea and exacerbations are present.");
 
     if (data.currentRegimen === "mono") {
-      plan.push("Escalate from bronchodilator monotherapy to LABA + LAMA because exacerbations occurred on monotherapy.");
+      plan.push("Escalate bronchodilator monotherapy to LABA + LAMA because exacerbations occurred.");
     } else if (data.currentRegimen === "laba-lama") {
       if (data.eosinophils !== null && data.eosinophils >= 100) {
-        plan.push("Escalate from LABA + LAMA to LABA + LAMA + ICS because exacerbations occurred and eosinophils are at least 100 cells/uL.");
+        plan.push("Escalate LABA + LAMA to triple therapy because exacerbations occurred and eosinophils are >=100 cells/uL.");
       } else {
-        plan.push("Because exacerbations occurred on LABA + LAMA and eosinophils are below 100 cells/uL or unavailable, consider non-ICS add-on strategies.");
+        plan.push("Exacerbations on LABA + LAMA with eosinophils <100 cells/uL or unavailable: consider non-ICS add-on therapy.");
         if (data.eosinophils === null) {
-          plan.push("Obtain a blood eosinophil count soon because it helps guide ICS benefit.");
+          plan.push("Obtain blood eosinophil count; it helps estimate expected ICS benefit.");
         }
         if (data.smokingStatus !== "current") {
-          plan.push("Consider chronic azithromycin as an add-on because the patient is not currently smoking.");
+          plan.push("Consider add-on azithromycin because the patient is not currently smoking.");
           medicationDetails.push(getAzithromycinDetail());
         }
         if (isRoflumilastCandidate(data)) {
-          plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of exacerbations despite maintenance therapy.");
+          plan.push("Consider roflumilast (FEV1 <50%, chronic bronchitis, persistent exacerbations despite maintenance therapy).");
           medicationDetails.push(getRoflumilastDetail());
         }
       }
     } else if (data.currentRegimen === "triple") {
       if (data.eosinophils !== null && data.eosinophils >= 300) {
         if (data.chronicBronchitis) {
-          plan.push("Consider add-on biologic therapy with dupilumab or mepolizumab because eosinophils are at least 300 cells/uL and chronic bronchitis is present. Select one biologic rather than prescribing both together.");
+          plan.push("Consider one add-on biologic (dupilumab or mepolizumab) because eosinophils >=300 cells/uL and chronic bronchitis are present; do not use both together.");
           medicationDetails.push(getDupilumabDetail());
         } else {
-          plan.push("Consider mepolizumab as add-on biologic therapy because eosinophils are at least 300 cells/uL.");
+          plan.push("Consider add-on mepolizumab (eosinophils >=300 cells/uL).");
         }
         if (shouldRecommendParasitePrecaution(data)) {
           plan.push(getParasitePrecautionRecommendation());
@@ -604,70 +604,70 @@ function buildFollowUpRecommendations(data, exacRisk) {
         medicationDetails.push(getMepolizumabDetail());
       }
       if (data.smokingStatus !== "current") {
-        plan.push("Consider chronic azithromycin because exacerbations persist and the patient is not currently smoking.");
+        plan.push("Consider azithromycin prophylaxis because exacerbations persist and the patient is not currently smoking.");
         medicationDetails.push(getAzithromycinDetail());
       }
       if (isRoflumilastCandidate(data)) {
-        plan.push("Consider roflumilast because FEV1 is below 50%, chronic bronchitis is present, and there is a history of exacerbations despite optimized inhaled therapy.");
+        plan.push("Consider roflumilast (FEV1 <50%, chronic bronchitis, persistent exacerbations despite optimized inhaled therapy).");
         medicationDetails.push(getRoflumilastDetail());
       }
       if (data.icsSideEffects) {
         if (data.eosinophils !== null && data.eosinophils >= 300) {
-          plan.push("Use caution with ICS withdrawal because eosinophils are at least 300 cells/uL and de-escalation may increase exacerbation risk.");
+          plan.push("Use caution with ICS withdrawal; eosinophils >=300 cells/uL may predict higher exacerbation risk after de-escalation.");
         } else {
-          plan.push("If ICS was ineffective, inappropriate, or harmful, ICS de-escalation may be considered with close follow-up.");
+          plan.push("If ICS was ineffective, not indicated, or harmful, consider ICS de-escalation with close follow-up.");
         }
       }
     } else {
-      plan.push("Clarify the current maintenance regimen and align it to a standard pathway before adjusting therapy.");
+      plan.push("Clarify the current maintenance regimen and align it with a standard pathway before adjusting therapy.");
     }
   } else if (data.persistentDyspnea) {
     managementChangeRecommended = true;
     rationale.push("Dyspnea pathway selected because persistent breathlessness is the main follow-up issue.");
 
     if (data.currentRegimen === "mono") {
-      plan.push("Escalate from bronchodilator monotherapy to LABA + LAMA for persistent dyspnea or exercise limitation.");
+      plan.push("Escalate bronchodilator monotherapy to LABA + LAMA for persistent dyspnea or exercise limitation.");
     } else if (data.currentRegimen === "laba-lama") {
-      plan.push("If dyspnea persists on LABA + LAMA, consider switching inhaler device or bronchodilator molecules, and escalate non-pharmacologic therapy such as pulmonary rehabilitation.");
-      plan.push("Consider ensifentrine if it is available.");
+      plan.push("If dyspnea persists on LABA + LAMA, consider switching device or bronchodilator molecule and intensifying nonpharmacologic therapy (for example pulmonary rehabilitation).");
+      plan.push("Consider ensifentrine if available.");
       medicationDetails.push(getEnsifentrineDetail());
     } else if (data.currentRegimen === "triple") {
-      plan.push("Persistent dyspnea on triple therapy should prompt reassessment of inhaler technique, device choice, comorbid contributors, and rehabilitation needs.");
+      plan.push("Persistent dyspnea on triple therapy warrants reassessment of inhaler technique, device choice, comorbidities, and rehabilitation needs.");
       plan.push("Consider ensifentrine if symptoms remain limiting despite optimized inhaler use and rehabilitation.");
       medicationDetails.push(getEnsifentrineDetail());
     } else {
-      plan.push("Clarify the current maintenance regimen and optimize bronchodilation before escalating further.");
+      plan.push("Clarify the current maintenance regimen and optimize bronchodilation before further escalation.");
     }
 
-    plan.push("Investigate non-COPD causes of dyspnea, including cardiac disease, deconditioning, anemia, anxiety, or other comorbidity.");
+    plan.push("Evaluate non-COPD contributors to dyspnea (for example cardiac disease, deconditioning, anemia, or anxiety).");
   } else if (exacHistoryMissing) {
-    plan.push("Exacerbation history was not entered, so confirm prior-year moderate and severe exacerbation counts before concluding that no escalation is needed.");
-    rationale.push("Follow-up maintenance recommendations should not assume zero exacerbations when history is missing.");
+    plan.push("Exacerbation history is incomplete; confirm prior-year moderate and severe exacerbation counts before deciding that no escalation is needed.");
+    rationale.push("Follow-up recommendations should not assume zero exacerbations when history is missing.");
     followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
   } else {
-    plan.push("Given symptom stability and the lack of recent exacerbations, continue current maintenance therapy.");
-    rationale.push("Follow-up reassessment did not identify a dominant dyspnea or exacerbation target.");
+    plan.push("Symptoms stable and no recent exacerbations: continue current maintenance therapy.");
+    rationale.push("Reassessment did not identify a dominant dyspnea or exacerbation target.");
   }
 
   if (data.concomitantAsthma) {
-    rationale.push("Asthma overlap changes the follow-up pathway because GOLD states COPD with concomitant asthma should be treated like asthma and requires ICS.");
+    rationale.push("Asthma overlap changes follow-up management because ICS-containing therapy is required.");
 
     if (data.currentRegimen === "mono") {
       managementChangeRecommended = true;
-      plan.push("Current maintenance therapy may not include ICS. Because concomitant asthma is present, transition to an ICS-containing regimen rather than bronchodilator monotherapy alone.");
+      plan.push("Current regimen may lack ICS; with asthma overlap, transition to an ICS-containing regimen.");
     } else if (data.currentRegimen === "laba-lama") {
       managementChangeRecommended = true;
-      plan.push("Current LABA + LAMA regimen lacks ICS. Because concomitant asthma is present, step up to LABA + LAMA + ICS unless ICS is contraindicated or the asthma diagnosis is revised.");
+      plan.push("LABA + LAMA lacks ICS; with asthma overlap, step up to LABA + LAMA + ICS unless ICS is contraindicated or the asthma diagnosis is revised.");
     } else if (data.currentRegimen === "triple") {
-      plan.push("Maintain the ICS-containing component because concomitant asthma is present; only consider ICS withdrawal after careful reassessment if harms clearly outweigh benefit.");
+      plan.push("Maintain ICS because asthma overlap is present; consider withdrawal only if harms clearly outweigh benefit.");
     } else {
       managementChangeRecommended = true;
-      plan.push("Clarify the current maintenance regimen and ensure it includes ICS because concomitant asthma is present.");
+      plan.push("Clarify the current regimen and ensure it includes ICS because asthma overlap is present.");
     }
   }
 
-  plan.push("At every follow-up visit, review adherence, inhaler technique, device fit, and comorbid contributors before escalating treatment.");
-  plan.push("Ensure a rescue short-acting bronchodilator is available for immediate symptom relief.");
+  plan.push("Before escalation, reassess adherence, inhaler technique, device fit, and comorbid contributors.");
+  plan.push("Ensure rescue SABA/SAMA is available for breakthrough symptoms.");
 
   if (managementChangeRecommended) {
     followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
@@ -680,13 +680,13 @@ function buildPreventiveCare(data) {
   const prevention = [];
 
   if (data.aatdStatus === "unknown" || data.aatdStatus === "not-done") {
-    prevention.push("Screen once for alpha-1 antitrypsin deficiency because GOLD recommends AATD testing in all patients with COPD.");
+    prevention.push("If not previously done, obtain one-time alpha-1 antitrypsin deficiency testing.");
   } else if (data.aatdStatus === "known-aatd") {
-    prevention.push("Known alpha-1 antitrypsin deficiency: confirm specialist follow-up and consider family screening.");
+    prevention.push("Known alpha-1 antitrypsin deficiency: confirm specialist follow-up and discuss family screening.");
   }
 
   if (isLungCancerScreenEligible(data)) {
-    prevention.push("Meets American Cancer Society lung cancer screening criteria: recommend annual low-dose thoracic CT.");
+    prevention.push("Eligible for annual low-dose CT lung cancer screening; confirm that the patient is willing and able to undergo curative-intent evaluation and treatment if screening is positive.");
     const screeningCaveat = getLungCancerScreeningCaveat(data);
     if (screeningCaveat) {
       prevention.push(screeningCaveat);
@@ -694,33 +694,33 @@ function buildPreventiveCare(data) {
   }
 
   if (data.pneumococcalStatus === "unknown" || data.pneumococcalStatus === "unvaccinated") {
-    prevention.push("Recommend one dose of PCV20 or PCV21 now because COPD is a qualifying chronic lung disease and vaccination status is unknown or incomplete.");
+    prevention.push("Verify pneumococcal vaccine history; if no prior PCV is documented, give PCV20 or PCV21 now (or PCV15 then PPSV23).");
   }
 
   if (data.age !== null && data.age >= 50 && data.rsvStatus !== "complete") {
-    prevention.push("Recommend RSV vaccination because the patient is age 50 or older and has chronic lung disease.");
+    prevention.push("Recommend a single RSV vaccine dose because chronic lung disease increases RSV risk.");
   }
 
   if (data.age !== null && data.age >= 50 && data.zosterStatus !== "complete") {
-    prevention.push("Recommend recombinant zoster vaccine (Shingrix) as a 2-dose intramuscular series, with the second dose 2 to 6 months after the first.");
+    prevention.push("Recommend recombinant zoster vaccine (Shingrix), 2-dose series.");
   }
 
   if (data.tdapStatus === "unknown" || data.tdapStatus === "not-up-to-date") {
-    prevention.push("Recommend tetanus booster vaccination now because no tetanus-containing vaccine is documented within the last 10 years.");
+    prevention.push("Review Td/Tdap history; give Tdap once if never documented, otherwise give Td or Tdap booster if due (every 10 years).");
   }
 
-  prevention.push("Keep influenza and COVID-19 vaccination current according to local recommendations.");
+  prevention.push("Keep influenza and COVID-19 vaccination up to date.");
 
   if (data.restingSpo2 !== null && data.restingSpo2 <= 92) {
-    prevention.push("Resting SpO2 is 92% or lower, so check ABG and formally assess for oxygen need.");
+    prevention.push("Resting SpO2 <=92%: obtain ABG and formally assess oxygen requirement.");
   }
 
   if (hasAdvancedCopdFeatures(data)) {
-    prevention.push("Severe or advanced COPD features are present. Consider assessment for LTOT eligibility, home NIV candidacy if hypercapnic, lung volume reduction or LVRS referral in the right phenotype, and supportive or palliative care needs.");
+    prevention.push("Advanced COPD features present: assess for LTOT eligibility, home NIV if hypercapnic, lung volume reduction/LVRS candidacy, and supportive or palliative needs.");
   }
 
   if (data.smokingStatus === "current") {
-    prevention.push("Offer intensive smoking-cessation treatment now. Counseling plus pharmacotherapy is more effective than either approach alone.");
+    prevention.push("Offer smoking-cessation treatment now (counseling plus pharmacotherapy).");
   }
 
   return prevention;
@@ -728,14 +728,14 @@ function buildPreventiveCare(data) {
 
 function buildNonPharmacologicBundle(data) {
   const bundle = [
-    "Check inhaler technique and adherence at every review and correct barriers before further escalation.",
+    "At each review, assess inhaler technique and adherence and correct barriers before escalation.",
     "Provide written self-management education and an exacerbation action plan.",
-    "Offer pulmonary rehabilitation when dyspnea, reduced exercise tolerance, or advanced disease features are present.",
-    "Address multimorbidity actively, including cardiovascular disease, mood symptoms, osteoporosis, sleep-disordered breathing, and malignancy risk."
+    "Offer pulmonary rehabilitation for dyspnea, reduced exercise tolerance, or advanced disease.",
+    "Actively address multimorbidity, including cardiovascular disease, mood symptoms, osteoporosis, sleep-disordered breathing, and malignancy risk."
   ];
 
   if (data.smokingStatus === "current") {
-    bundle.push("Advise complete smoking cessation at every visit and document readiness to quit.");
+    bundle.push("Advise smoking cessation at every visit and document readiness to quit.");
   }
 
   return bundle;
@@ -768,33 +768,33 @@ function buildCautions(data, exacRisk) {
   const cautions = [];
 
   if (data.fev1fvcRawValue !== null && data.fev1fvc === null) {
-    cautions.push("Entered FEV1/FVC could not be interpreted. Use either a ratio (for example 0.65) or a percent (for example 65).");
+    cautions.push("FEV1/FVC entry could not be interpreted; enter either a ratio (for example 0.65) or a percent (for example 65).");
   }
   if (!data.spirometryConfirmed) {
-    cautions.push("Confirm airflow obstruction with post-bronchodilator spirometry before making long-term treatment decisions.");
+    cautions.push("Confirm airflow obstruction with post-bronchodilator spirometry before long-term treatment decisions.");
   }
   if (data.fev1fvc !== null && data.fev1fvc >= 0.7) {
-    cautions.push("Entered FEV1/FVC is 0.70 or greater; re-check the diagnosis and differential before applying the COPD algorithm.");
+    cautions.push("Entered FEV1/FVC is >=0.70; recheck diagnosis and differential before applying COPD-specific recommendations.");
   }
   if (exacRisk.high === null) {
-    cautions.push("Exacerbation history is missing, so GOLD A/B/E classification and follow-up escalation logic are provisional until the prior-year moderate and severe counts are confirmed.");
+    cautions.push("Exacerbation history missing; GOLD grouping and escalation logic are provisional until prior-year counts are confirmed.");
   } else if (exacRisk.missing) {
-    cautions.push(`The ${exacRisk.missing} exacerbation count was not entered and was provisionally treated as 0. Confirm the full prior-year exacerbation history.`);
+    cautions.push(`${exacRisk.missing[0].toUpperCase() + exacRisk.missing.slice(1)} exacerbation count missing and provisionally treated as 0; confirm full prior-year exacerbation history.`);
   }
   if (data.concomitantAsthma) {
-    cautions.push("Asthma overlap is suspected or confirmed, so include asthma treatment principles and an ICS-containing regimen. Avoid LABA without ICS and be cautious about ICS withdrawal.");
+    cautions.push("Asthma overlap present: include asthma treatment principles, avoid LABA without ICS, and use caution with ICS withdrawal.");
   }
   if (data.managementPhase === "initial" && data.currentRegimen !== "naive") {
-    cautions.push("Initial management was selected, but a maintenance regimen is already documented. Confirm whether this should instead be handled as follow-up management.");
+    cautions.push("Initial-treatment mode selected, but maintenance therapy is already documented; consider using follow-up mode.");
   }
   if (data.managementPhase === "followup" && data.currentRegimen === "naive") {
-    cautions.push("Follow-up management was selected, but no maintenance regimen is documented. The app will default to an initial-treatment style recommendation.");
+    cautions.push("Follow-up mode selected, but no maintenance regimen is documented; output defaults to an initial-treatment style recommendation.");
   }
   if ((data.smokingStatus === "current" || data.smokingStatus === "former") && data.packYears === null) {
-    cautions.push("Pack-year history is missing, so lung cancer screening eligibility cannot be fully assessed.");
+    cautions.push("Pack-year history missing; lung cancer screening eligibility cannot be fully assessed.");
   }
   if (data.age === null) {
-    cautions.push("Age is missing, so age-based vaccine and lung cancer screening recommendations may be incomplete.");
+    cautions.push("Age missing; age-based vaccine and lung cancer screening recommendations may be incomplete.");
   }
 
   if (cautions.length === 0) {
@@ -824,8 +824,8 @@ function buildRecommendation(data) {
     medicationDetails.push(...getSmokingCessationDetails(data));
   }
 
-  const hasAzithromycin = medicationDetails.some((item) => item.includes("Azithromycin prophylaxis"));
-  const hasRoflumilast = medicationDetails.some((item) => item.includes("Roflumilast dosing"));
+  const hasAzithromycin = medicationDetails.some((item) => item.includes("Azithromycin option"));
+  const hasRoflumilast = medicationDetails.some((item) => item.includes("Roflumilast option"));
   if (hasAzithromycin && hasRoflumilast) {
     medicationDetails.push(getAzithromycinRoflumilastInteractionDetail());
   }

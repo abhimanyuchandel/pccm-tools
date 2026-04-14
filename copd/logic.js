@@ -9,7 +9,7 @@
     root.copdLogic = logic;
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const DEFAULT_NO_RISK_ISSUE = "No additional high-risk data issues were detected from the entered fields.";
+  const DEFAULT_NO_RISK_ISSUE = "No major data-quality or safety flags identified from the entered fields.";
 
   function getCatImpact(score) {
     if (score === null) {
@@ -161,7 +161,7 @@
       data.yearsSinceQuit !== null &&
       data.yearsSinceQuit > 15
     ) {
-      return "Eligible under American Cancer Society criteria; USPSTF-based coverage workflows may differ if smoking cessation was more than 15 years ago, so confirm payer criteria.";
+      return "ACS screening criteria met; if smoking cessation was >15 years ago, confirm payer-specific coverage requirements.";
     }
 
     return null;
