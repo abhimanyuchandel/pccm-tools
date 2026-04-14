@@ -9,14 +9,140 @@ const {
   getLungCancerScreeningCaveat
 } = window.copdLogic;
 
-function getNumberValue(id) {
+const NUMERIC_FIELD_CONFIG = {
+  age: { id: "age", label: "Age", options: { min: 18, max: 120, integer: true } },
+  fev1fvc: {
+    id: "fev1fvc",
+    label: "Post-BD FEV1/FVC",
+    options: {
+      validate: (value) => describeFev1FvcEntry(value).ratio !== null,
+      ruleText: "a numeric value entered either as a ratio between 0 and 1.2 or as a percent between 0 and 100"
+    }
+  },
+  fev1Predicted: { id: "fev1-predicted", label: "FEV1 % predicted", options: { min: 0, max: 150, integer: true } },
+  restingSpo2: { id: "resting-spo2", label: "Resting SpO2 %", options: { min: 50, max: 100, integer: true } },
+  catScore: { id: "cat-score", label: "CAT or CAAT score", options: { min: 0, max: 40, integer: true } },
+  mmrcScore: { id: "mmrc-score", label: "mMRC dyspnea score", options: { min: 0, max: 4, integer: true } },
+  moderateExac: {
+    id: "moderate-exac",
+    label: "Moderate exacerbation count",
+    options: { min: 0, max: 20, integer: true }
+  },
+  severeExac: {
+    id: "severe-exac",
+    label: "Severe exacerbation count",
+    options: { min: 0, max: 20, integer: true }
+  },
+  eosinophils: { id: "eosinophils", label: "Blood eosinophils", options: { min: 0, max: 5000, integer: true } },
+  packYears: { id: "pack-years", label: "Pack-years", options: { min: 0, max: 200 } },
+  cigarettesPerDay: {
+    id: "cigarettes-per-day",
+    label: "Cigarettes per day",
+    options: { min: 0, max: 100, integer: true }
+  },
+  yearsSinceQuit: { id: "years-since-quit", label: "Years since quit", options: { min: 0, max: 80 } }
+};
+
+function readNumericField(id) {
   const raw = document.getElementById(id).value.trim();
   if (raw === "") {
-    return null;
+    return { value: null, invalid: false };
   }
 
   const value = Number(raw);
-  return Number.isFinite(value) ? value : null;
+  if (!Number.isFinite(value)) {
+    return { value: null, invalid: true };
+  }
+
+  return { value, invalid: false };
+}
+
+function isNumericValueInvalid(value, options = {}) {
+  if (!Number.isFinite(value)) {
+    return true;
+  }
+
+  if (options.validate) {
+    return !options.validate(value);
+  }
+
+  if (options.integer && !Number.isInteger(value)) {
+    return true;
+  }
+
+  if (options.min !== undefined && value < options.min) {
+    return true;
+  }
+
+  if (options.max !== undefined && value > options.max) {
+    return true;
+  }
+
+  return false;
+}
+
+function describeNumericRule(options = {}) {
+  if (options.ruleText) {
+    return options.ruleText;
+  }
+
+  const parts = [];
+
+  if (options.integer) {
+    parts.push("a whole number");
+  } else {
+    parts.push("a numeric value");
+  }
+
+  if (options.min !== undefined && options.max !== undefined) {
+    parts.push(`between ${options.min} and ${options.max}`);
+  } else if (options.min !== undefined) {
+    parts.push(`at least ${options.min}`);
+  } else if (options.max !== undefined) {
+    parts.push(`no more than ${options.max}`);
+  }
+
+  return parts.join(" ");
+}
+
+function setNumericFieldAlertState(id, isInvalid) {
+  const field = document.getElementById(id);
+  if (!field) {
+    return;
+  }
+
+  field.classList.toggle("numeric-alert", isInvalid);
+
+  const label = field.closest("label");
+  if (label) {
+    label.classList.toggle("numeric-alert-label", isInvalid);
+  }
+
+  if (isInvalid) {
+    field.setAttribute("aria-invalid", "true");
+  } else {
+    field.removeAttribute("aria-invalid");
+  }
+}
+
+function getValidatedNumericValue(configKey, invalidEntries = null) {
+  const config = NUMERIC_FIELD_CONFIG[configKey];
+  const parsed = readNumericField(config.id);
+  const invalid = parsed.value !== null && isNumericValueInvalid(parsed.value, config.options);
+
+  setNumericFieldAlertState(config.id, invalid);
+
+  if (invalid && invalidEntries) {
+    invalidEntries.push(`${config.label} must be ${describeNumericRule(config.options)}.`);
+  }
+
+  return invalid ? null : parsed.value;
+}
+
+function refreshNumericFieldAlerts() {
+  Object.keys(NUMERIC_FIELD_CONFIG).forEach((configKey) => {
+    getValidatedNumericValue(configKey);
+  });
 }
 
 function getCheckboxValue(id) {
@@ -60,22 +186,22 @@ function getInputState() {
 
   return {
     managementPhase: getSelectValue("management-phase"),
-    age: getNumberValue("age"),
+    age: getValidatedNumericValue("age"),
     spirometryConfirmed: getCheckboxValue("spirometry-confirmed"),
-    fev1fvc: fev1fvcState.ratio,
+    fev1fvc: getValidatedNumericValue("fev1fvc") === null ? null : fev1fvcState.ratio,
     fev1fvcEntryMode: fev1fvcState.entryMode,
     fev1fvcRawValue: fev1fvcState.rawValue,
-    fev1Predicted: getNumberValue("fev1-predicted"),
-    restingSpo2: getNumberValue("resting-spo2"),
-    catScore: getNumberValue("cat-score"),
-    mmrcScore: getNumberValue("mmrc-score"),
-    moderateExac: getNumberValue("moderate-exac"),
-    severeExac: getNumberValue("severe-exac"),
-    eosinophils: getNumberValue("eosinophils"),
+    fev1Predicted: getValidatedNumericValue("fev1Predicted"),
+    restingSpo2: getValidatedNumericValue("restingSpo2"),
+    catScore: getValidatedNumericValue("catScore"),
+    mmrcScore: getValidatedNumericValue("mmrcScore"),
+    moderateExac: getValidatedNumericValue("moderateExac"),
+    severeExac: getValidatedNumericValue("severeExac"),
+    eosinophils: getValidatedNumericValue("eosinophils"),
     smokingStatus: getSelectValue("smoking-status"),
-    packYears: getNumberValue("pack-years"),
-    cigarettesPerDay: getNumberValue("cigarettes-per-day"),
-    yearsSinceQuit: getNumberValue("years-since-quit"),
+    packYears: getValidatedNumericValue("packYears"),
+    cigarettesPerDay: getValidatedNumericValue("cigarettesPerDay"),
+    yearsSinceQuit: getValidatedNumericValue("yearsSinceQuit"),
     firstCigarette30: getCheckboxValue("first-cigarette-30"),
     chronicBronchitis: getCheckboxValue("chronic-bronchitis"),
     concomitantAsthma: getCheckboxValue("concomitant-asthma"),
@@ -132,6 +258,7 @@ function applyCatScore() {
   }
 
   document.getElementById("cat-score").value = String(state.total);
+  refreshNumericFieldAlerts();
   note.textContent = `Applied CAT score ${state.total} to symptom input.`;
 }
 
@@ -141,6 +268,7 @@ function clearCatCalculator() {
     input.value = "";
   });
   document.getElementById("cat-score").value = "";
+  refreshNumericFieldAlerts();
   updateCatCalculatorDisplay();
 }
 
@@ -179,6 +307,7 @@ function applyMmrcScore() {
   }
 
   document.getElementById("mmrc-score").value = String(selected);
+  refreshNumericFieldAlerts();
   note.textContent = `Applied mMRC score ${selected} to symptom input.`;
 }
 
@@ -187,6 +316,7 @@ function clearMmrcCalculator() {
     input.checked = false;
   });
   document.getElementById("mmrc-score").value = "";
+  refreshNumericFieldAlerts();
   updateMmrcDisplay();
 }
 
@@ -257,12 +387,14 @@ function syncSmokingFields() {
   if (smokingStatus === "former") {
     yearsSinceQuitWrap.classList.remove("hidden");
     yearsSinceQuitInput.disabled = false;
+    refreshNumericFieldAlerts();
     return;
   }
 
   yearsSinceQuitWrap.classList.add("hidden");
   yearsSinceQuitInput.disabled = true;
   yearsSinceQuitInput.value = "";
+  refreshNumericFieldAlerts();
 }
 
 function initSmokingFieldHelpers() {
@@ -273,6 +405,7 @@ function initSmokingFieldHelpers() {
 function setNoExacerbationCounts() {
   document.getElementById("moderate-exac").value = "0";
   document.getElementById("severe-exac").value = "0";
+  refreshNumericFieldAlerts();
 }
 
 function initExacerbationHelpers() {
@@ -895,3 +1028,9 @@ initSymptomCalculators();
 initSpirometryHelpers();
 initSmokingFieldHelpers();
 initExacerbationHelpers();
+Object.values(NUMERIC_FIELD_CONFIG).forEach(({ id }) => {
+  const element = document.getElementById(id);
+  element.addEventListener("input", refreshNumericFieldAlerts);
+  element.addEventListener("change", refreshNumericFieldAlerts);
+});
+refreshNumericFieldAlerts();
