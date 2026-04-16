@@ -296,6 +296,44 @@ input.numeric-alert:focus {
   margin-top: 5px;
 }
 
+.washout-table {
+  width: 100%;
+  max-width: 360px;
+  margin-top: 7px;
+  border-collapse: collapse;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #355171;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.washout-table th,
+.washout-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.washout-table tr:last-child th,
+.washout-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.washout-table th {
+  width: 55%;
+  background: #f5f8fc;
+  color: var(--ink);
+  font-weight: 700;
+  text-align: left;
+}
+
+.washout-table td {
+  text-align: left;
+}
+
 .calculator {
   margin-top: 14px;
   padding: 18px;
