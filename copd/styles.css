@@ -256,6 +256,10 @@ input.numeric-alert:focus {
   color: #4e6581;
 }
 
+#prevention-footnote {
+  margin-top: 10px;
+}
+
 .checkbox-grid {
   align-items: start;
 }

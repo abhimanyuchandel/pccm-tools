@@ -9,6 +9,7 @@ const {
   classifyExacerbationRisk,
   assignGoldGroup,
   isRoflumilastCandidate,
+  isLungCancerScreenEligible,
   getLungCancerScreeningFootnote
 } = require("./logic.js");
 
@@ -92,6 +93,28 @@ test("adds the NCCN screening footnote when lung cancer screening is recommended
   assert.match(footnote, /2026 revision/i);
 });
 
+test("nccn lung cancer screening eligibility has no years-since-quit cutoff or upper age limit", () => {
+  assert.equal(
+    isLungCancerScreenEligible({
+      age: 82,
+      smokingStatus: "former",
+      packYears: 25,
+      yearsSinceQuit: 20
+    }),
+    true
+  );
+
+  assert.equal(
+    isLungCancerScreenEligible({
+      age: 49,
+      smokingStatus: "former",
+      packYears: 25,
+      yearsSinceQuit: 20
+    }),
+    false
+  );
+});
+
 test("copd app includes endemic-area exposure field and biologic parasite precaution text", () => {
   const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
@@ -107,6 +130,6 @@ test("copd symptom calculators auto-apply totals without dedicated apply buttons
 
   assert.ok(!html.includes('id="calc-cat-btn"'));
   assert.ok(!html.includes('id="apply-mmrc-btn"'));
-  assert.ok(app.includes("Score applied automatically."));
-  assert.ok(app.includes("mMRC score applied automatically."));
+  assert.ok(app.includes('applyCalculatorValue("cat-score", state.total, "cat")'));
+  assert.ok(app.includes('applyCalculatorValue("mmrc-score", selected, "mmrc")'));
 });

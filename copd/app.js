@@ -272,7 +272,7 @@ function updateCatCalculatorDisplay() {
   display.textContent = `CAT total: ${state.total}/40`;
   if (state.complete) {
     applyCalculatorValue("cat-score", state.total, "cat");
-    note.textContent = "CAT questionnaire complete. Score applied automatically.";
+    note.textContent = "";
   } else {
     clearCalculatorValue("cat-score", "cat");
     note.textContent = state.answered === 0
@@ -314,7 +314,7 @@ function updateMmrcDisplay() {
 
   display.textContent = `mMRC selected: ${selected}/4`;
   applyCalculatorValue("mmrc-score", selected, "mmrc");
-  note.textContent = "mMRC score applied automatically.";
+  note.textContent = "";
 }
 
 function clearMmrcCalculator() {
@@ -685,6 +685,7 @@ function buildFollowUpRecommendations(data, exacRisk) {
 
 function buildPreventiveCare(data) {
   const prevention = [];
+  let preventionFootnote = null;
 
   if (data.aatdStatus === "unknown" || data.aatdStatus === "not-done") {
     prevention.push("If not previously done, obtain one-time alpha-1 antitrypsin deficiency testing.");
@@ -694,10 +695,7 @@ function buildPreventiveCare(data) {
 
   if (isLungCancerScreenEligible(data)) {
     prevention.push("Eligible for annual low-dose CT lung cancer screening; review expected benefits, potential harms, downstream testing, and patient preferences before screening, and discontinue screening if the patient can no longer benefit from curative-intent treatment.");
-    const screeningFootnote = getLungCancerScreeningFootnote(data);
-    if (screeningFootnote) {
-      prevention.push(screeningFootnote);
-    }
+    preventionFootnote = getLungCancerScreeningFootnote(data);
   }
 
   if (data.pneumococcalStatus === "unknown" || data.pneumococcalStatus === "unvaccinated") {
@@ -730,7 +728,7 @@ function buildPreventiveCare(data) {
     prevention.push("Offer smoking-cessation treatment now (counseling plus pharmacotherapy).");
   }
 
-  return prevention;
+  return { items: prevention, footnote: preventionFootnote };
 }
 
 function buildNonPharmacologicBundle(data) {
@@ -848,7 +846,8 @@ function buildRecommendation(data) {
     plan: therapy.plan,
     rationale: therapy.rationale,
     medicationDetails,
-    prevention,
+    prevention: prevention.items,
+    preventionFootnote: prevention.footnote,
     cautions,
     nonPharm
   };
@@ -989,12 +988,28 @@ function renderRecommendation(rec, data) {
   document.getElementById("symptom-output").textContent = rec.symptomSummary;
   document.getElementById("risk-output").textContent = rec.riskSummary;
 
+  const preventionItems = rec.prevention.map((item, index) => {
+    if (rec.preventionFootnote && item.startsWith("Eligible for annual low-dose CT lung cancer screening")) {
+      return `${item}¹`;
+    }
+    return item;
+  });
+
   fillList("plan-list", rec.plan, "No treatment changes were triggered.");
   fillList("medication-list", rec.medicationDetails, "No medication-specific dosing instructions were triggered by the current scenario.");
-  fillList("prevention-list", rec.prevention, "No additional preventive care gaps were triggered from the entered fields.");
+  fillList("prevention-list", preventionItems, "No additional preventive care gaps were triggered from the entered fields.");
   fillList("rationale-list", rec.rationale, "No extra rationale notes were needed.");
   fillList("caution-list", rec.cautions, "No cautions identified.");
   fillList("nonpharm-list", rec.nonPharm, "No additional non-pharmacologic recommendations were triggered.");
+
+  const preventionFootnote = document.getElementById("prevention-footnote");
+  if (rec.preventionFootnote) {
+    preventionFootnote.textContent = `1. ${rec.preventionFootnote}`;
+    preventionFootnote.classList.remove("hidden");
+  } else {
+    preventionFootnote.textContent = "";
+    preventionFootnote.classList.add("hidden");
+  }
 
   document.getElementById("note-output").value = buildNoteText(data, rec);
   document.getElementById("copy-note-status").textContent = "";

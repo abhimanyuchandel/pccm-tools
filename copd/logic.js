@@ -147,7 +147,6 @@
     return (
       data.age !== null &&
       data.age >= 50 &&
-      data.age <= 80 &&
       (data.smokingStatus === "current" || data.smokingStatus === "former") &&
       data.packYears !== null &&
       data.packYears >= 20
