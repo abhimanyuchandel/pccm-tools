@@ -132,6 +132,35 @@ a {
   line-height: 1.55;
 }
 
+.contributors-drawer {
+  margin-top: 0.7rem;
+  max-width: 72ch;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.contributors-drawer summary {
+  display: inline-block;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.contributors-list {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.contributors-list li + li {
+  margin-top: 0.18rem;
+}
+
 .form-panels,
 .results {
   display: grid;
