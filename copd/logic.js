@@ -154,14 +154,9 @@
     );
   }
 
-  function getLungCancerScreeningCaveat(data) {
-    if (
-      isLungCancerScreenEligible(data) &&
-      data.smokingStatus === "former" &&
-      data.yearsSinceQuit !== null &&
-      data.yearsSinceQuit > 15
-    ) {
-      return "ACS screening criteria met; if smoking cessation was >15 years ago, confirm payer-specific coverage requirements.";
+  function getLungCancerScreeningFootnote(data) {
+    if (isLungCancerScreenEligible(data)) {
+      return "Screening reference: National Comprehensive Cancer Network (NCCN) Clinical Practice Guidelines in Oncology, Lung Cancer Screening (2026 revision).";
     }
 
     return null;
@@ -176,6 +171,6 @@
     assignGoldGroup,
     isRoflumilastCandidate,
     isLungCancerScreenEligible,
-    getLungCancerScreeningCaveat
+    getLungCancerScreeningFootnote
   };
 });

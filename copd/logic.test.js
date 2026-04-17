@@ -9,7 +9,7 @@ const {
   classifyExacerbationRisk,
   assignGoldGroup,
   isRoflumilastCandidate,
-  getLungCancerScreeningCaveat
+  getLungCancerScreeningFootnote
 } = require("./logic.js");
 
 test("normalizes FEV1/FVC percent-style entry without rounding across threshold", () => {
@@ -80,15 +80,16 @@ test("aligns roflumilast candidacy with chronic bronchitis, low FEV1, and any ex
   );
 });
 
-test("adds the ACS versus USPSTF caveat when years since quit is greater than 15", () => {
-  const caveat = getLungCancerScreeningCaveat({
+test("adds the NCCN screening footnote when lung cancer screening is recommended", () => {
+  const footnote = getLungCancerScreeningFootnote({
     age: 60,
     smokingStatus: "former",
     packYears: 30,
     yearsSinceQuit: 20
   });
 
-  assert.match(caveat, /confirm payer-specific coverage requirements/i);
+  assert.match(footnote, /National Comprehensive Cancer Network/i);
+  assert.match(footnote, /2026 revision/i);
 });
 
 test("copd app includes endemic-area exposure field and biologic parasite precaution text", () => {
@@ -98,4 +99,14 @@ test("copd app includes endemic-area exposure field and biologic parasite precau
   assert.ok(html.includes('id="endemic-area-exposure"'));
   assert.ok(html.includes("Patient has lived or resided in an endemic area for parasitic infection"));
   assert.ok(app.includes("If eosinophils >300 cells/uL and there is epidemiologic helminth risk, screen for and treat parasitic infection before biologic therapy."));
+});
+
+test("copd symptom calculators auto-apply totals without dedicated apply buttons", () => {
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
+
+  assert.ok(!html.includes('id="calc-cat-btn"'));
+  assert.ok(!html.includes('id="apply-mmrc-btn"'));
+  assert.ok(app.includes("Score applied automatically."));
+  assert.ok(app.includes("mMRC score applied automatically."));
 });

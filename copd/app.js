@@ -6,7 +6,7 @@ const {
   assignGoldGroup,
   isRoflumilastCandidate,
   isLungCancerScreenEligible,
-  getLungCancerScreeningCaveat
+  getLungCancerScreeningFootnote
 } = window.copdLogic;
 
 const NUMERIC_FIELD_CONFIG = {
@@ -235,6 +235,35 @@ function getCatCalculatorState() {
   return { answered, complete, total, itemCount: values.length, inputs };
 }
 
+function applyCalculatorValue(fieldId, value, source) {
+  const field = document.getElementById(fieldId);
+  const nextValue = String(value);
+
+  if (field.value !== nextValue || field.dataset.autoSource !== source) {
+    field.value = nextValue;
+    field.dataset.autoSource = source;
+    refreshNumericFieldAlerts();
+  }
+}
+
+function clearCalculatorValue(fieldId, source) {
+  const field = document.getElementById(fieldId);
+
+  if (field.dataset.autoSource === source) {
+    field.value = "";
+    delete field.dataset.autoSource;
+    refreshNumericFieldAlerts();
+  }
+}
+
+function clearCalculatorSyncFlag(fieldId, source) {
+  const field = document.getElementById(fieldId);
+
+  if (field.dataset.autoSource === source) {
+    delete field.dataset.autoSource;
+  }
+}
+
 function updateCatCalculatorDisplay() {
   const state = getCatCalculatorState();
   const display = document.getElementById("cat-total-display");
@@ -242,24 +271,14 @@ function updateCatCalculatorDisplay() {
 
   display.textContent = `CAT total: ${state.total}/40`;
   if (state.complete) {
-    note.textContent = "CAT questionnaire complete. Click Apply CAT Total to copy this value.";
+    applyCalculatorValue("cat-score", state.total, "cat");
+    note.textContent = "CAT questionnaire complete. Score applied automatically.";
   } else {
-    note.textContent = `CAT questionnaire incomplete (${state.answered}/${state.itemCount} items answered).`;
+    clearCalculatorValue("cat-score", "cat");
+    note.textContent = state.answered === 0
+      ? "Complete all CAT items to auto-fill the CAT/CAAT score."
+      : `CAT questionnaire incomplete (${state.answered}/${state.itemCount} items answered).`;
   }
-}
-
-function applyCatScore() {
-  const state = getCatCalculatorState();
-  const note = document.getElementById("cat-calc-note");
-
-  if (!state.complete) {
-    note.textContent = "Complete all 8 CAT items before applying the total.";
-    return;
-  }
-
-  document.getElementById("cat-score").value = String(state.total);
-  refreshNumericFieldAlerts();
-  note.textContent = `Applied CAT score ${state.total} to symptom input.`;
 }
 
 function clearCatCalculator() {
@@ -267,8 +286,7 @@ function clearCatCalculator() {
   state.inputs.forEach((input) => {
     input.value = "";
   });
-  document.getElementById("cat-score").value = "";
-  refreshNumericFieldAlerts();
+  clearCalculatorValue("cat-score", "cat");
   updateCatCalculatorDisplay();
 }
 
@@ -289,34 +307,21 @@ function updateMmrcDisplay() {
 
   if (selected === null) {
     display.textContent = "mMRC selected: --/4";
-    note.textContent = "Select one mMRC statement, then click Apply mMRC Score.";
+    clearCalculatorValue("mmrc-score", "mmrc");
+    note.textContent = "Selecting an mMRC statement auto-fills the score field.";
     return;
   }
 
   display.textContent = `mMRC selected: ${selected}/4`;
-  note.textContent = "mMRC statement selected. Click Apply mMRC Score to copy this value.";
-}
-
-function applyMmrcScore() {
-  const selected = getSelectedMmrc();
-  const note = document.getElementById("mmrc-note");
-
-  if (selected === null) {
-    note.textContent = "Select one mMRC statement before applying.";
-    return;
-  }
-
-  document.getElementById("mmrc-score").value = String(selected);
-  refreshNumericFieldAlerts();
-  note.textContent = `Applied mMRC score ${selected} to symptom input.`;
+  applyCalculatorValue("mmrc-score", selected, "mmrc");
+  note.textContent = "mMRC score applied automatically.";
 }
 
 function clearMmrcCalculator() {
   document.querySelectorAll('input[name="mmrc-choice"]').forEach((input) => {
     input.checked = false;
   });
-  document.getElementById("mmrc-score").value = "";
-  refreshNumericFieldAlerts();
+  clearCalculatorValue("mmrc-score", "mmrc");
   updateMmrcDisplay();
 }
 
@@ -324,14 +329,16 @@ function initSymptomCalculators() {
   document.querySelectorAll("[data-cat-item]").forEach((input) => {
     input.addEventListener("change", updateCatCalculatorDisplay);
   });
-  document.getElementById("calc-cat-btn").addEventListener("click", applyCatScore);
   document.getElementById("clear-cat-btn").addEventListener("click", clearCatCalculator);
 
   document.querySelectorAll('input[name="mmrc-choice"]').forEach((input) => {
     input.addEventListener("change", updateMmrcDisplay);
   });
-  document.getElementById("apply-mmrc-btn").addEventListener("click", applyMmrcScore);
   document.getElementById("clear-mmrc-btn").addEventListener("click", clearMmrcCalculator);
+  document.getElementById("cat-score").addEventListener("input", () => clearCalculatorSyncFlag("cat-score", "cat"));
+  document.getElementById("cat-score").addEventListener("change", () => clearCalculatorSyncFlag("cat-score", "cat"));
+  document.getElementById("mmrc-score").addEventListener("input", () => clearCalculatorSyncFlag("mmrc-score", "mmrc"));
+  document.getElementById("mmrc-score").addEventListener("change", () => clearCalculatorSyncFlag("mmrc-score", "mmrc"));
 
   updateCatCalculatorDisplay();
   updateMmrcDisplay();
@@ -686,10 +693,10 @@ function buildPreventiveCare(data) {
   }
 
   if (isLungCancerScreenEligible(data)) {
-    prevention.push("Eligible for annual low-dose CT lung cancer screening; confirm that the patient is willing and able to undergo curative-intent evaluation and treatment if screening is positive.");
-    const screeningCaveat = getLungCancerScreeningCaveat(data);
-    if (screeningCaveat) {
-      prevention.push(screeningCaveat);
+    prevention.push("Eligible for annual low-dose CT lung cancer screening; review expected benefits, potential harms, downstream testing, and patient preferences before screening, and discontinue screening if the patient can no longer benefit from curative-intent treatment.");
+    const screeningFootnote = getLungCancerScreeningFootnote(data);
+    if (screeningFootnote) {
+      prevention.push(screeningFootnote);
     }
   }
 
