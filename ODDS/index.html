@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PCCM Tools | ODDS Score for IPF</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ND4PN2RZTR"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "G-ND4PN2RZTR");
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
+    <link rel="icon" type="image/png" href="/assets/pccmapps.png">
+    <link rel="apple-touch-icon" href="/assets/pccmapps.png">
+    <link rel="stylesheet" href="styles.css?v=20260617-1">
+  </head>
+  <body>
+    <div class="pccm-bar-wrap">
+      <div class="pccm-bar">
+        <a class="pccm-home" href="/">PCCM Tools</a>
+        <p class="pccm-tag">Pulmonary and critical care clinical decision support</p>
+      </div>
+    </div>
+
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">IPF longitudinal 6MWT model</p>
+        <h1>Oxygen-Distance-Dyspnea-Saturation (ODDS) Score for Prognosis in IPF</h1>
+        <p class="hero-sub">
+          Serial six-minute walk test inputs are translated into ODDS score estimates and predicted event-free survival for adults with idiopathic pulmonary fibrosis.
+        </p>
+      </div>
+    </header>
+
+    <main class="app-layout">
+      <section class="panel input-panel" aria-labelledby="inputTitle">
+        <div class="panel-heading">
+          <div>
+            <h2 id="inputTitle">Six-minute Walk Test Data</h2>
+            <p id="inputSummary">0 visits</p>
+          </div>
+          <div class="button-row">
+            <button type="button" id="addRowButton">+ Visit</button>
+            <button type="button" id="clearButton" class="quiet">Clear</button>
+          </div>
+        </div>
+
+        <label class="field patient-label">
+          <span>Patient label</span>
+          <input id="patientLabel" type="text" autocomplete="off" placeholder="Optional">
+        </label>
+
+        <div class="table-shell input-table-shell">
+          <table class="data-entry-table" aria-label="Editable 6MWT data">
+            <thead>
+              <tr>
+                <th>Visit</th>
+                <th>Date</th>
+                <th>6MWD m</th>
+                <th>O2 L/min</th>
+                <th>Rest SpO2 %</th>
+                <th>Nadir SpO2 %</th>
+                <th>Borg</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="entryRows"></tbody>
+          </table>
+        </div>
+
+        <div class="import-box">
+          <label for="importText">Import from note</label>
+          <textarea id="importText" rows="5" spellcheck="false"></textarea>
+          <div class="button-row">
+            <button type="button" id="importButton">Import</button>
+            <button type="button" id="exampleButton" class="quiet">Example</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel output-panel" aria-labelledby="resultsTitle">
+        <div class="panel-heading">
+          <div>
+            <h2 id="resultsTitle">Predicted Event-Free Survival</h2>
+            <p id="predictionSummary">Add a visit to calculate</p>
+          </div>
+          <div class="button-row">
+            <button type="button" id="copyButton">Copy Table</button>
+          </div>
+        </div>
+
+        <div id="qualityMessages" class="quality-messages" aria-live="polite"></div>
+
+        <div class="current-estimate" id="currentEstimate" aria-live="polite">
+          <div>
+            <span>1 year</span>
+            <strong>--</strong>
+          </div>
+          <div>
+            <span>2 years</span>
+            <strong>--</strong>
+          </div>
+          <div>
+            <span>3 years</span>
+            <strong>--</strong>
+          </div>
+        </div>
+
+        <div class="table-shell">
+          <table class="results-table" aria-label="Predicted event-free survival table">
+            <thead>
+              <tr>
+                <th>Visit</th>
+                <th>Date</th>
+                <th>Years</th>
+                <th>6MWD</th>
+                <th>O2</th>
+                <th>Rest</th>
+                <th>Nadir</th>
+                <th>Delta SpO2</th>
+                <th>Borg</th>
+                <th>ODDS score</th>
+                <th>Model</th>
+                <th>1y EFS</th>
+                <th>2y EFS</th>
+                <th>3y EFS</th>
+              </tr>
+            </thead>
+            <tbody id="resultRows"></tbody>
+          </table>
+        </div>
+
+        <div class="note-label">Clinical note table</div>
+        <div id="notePreview" class="clinical-note-preview" tabindex="0" aria-label="Clinical note table preview"></div>
+        <textarea id="noteText" class="note-text note-source" spellcheck="false" readonly tabindex="-1" aria-hidden="true"></textarea>
+
+      </section>
+    </main>
+
+    <section class="about-shell" aria-labelledby="aboutTitle">
+      <details class="about-tool">
+        <summary id="aboutTitle">About this tool</summary>
+        <div class="about-content">
+          <p class="about-updated">Last updated: June 17, 2026</p>
+
+          <h2>Model Development and Validation</h2>
+          <p>
+            The ODDS score was developed in the ISABELA IPF cohort to use the full signal of the six-minute walk test: oxygen requirement, walk distance, exertional dyspnea, and oxygen saturation, rather than relying on distance alone. It was subsequently externally validated and applied longitudinally, demonstrating that serial ODDS measurements can help estimate evolving event-free survival risk over time.
+          </p>
+
+          <h2>Contributors</h2>
+          <div class="name-list">
+            <span>Abhimanyu Chandel</span>
+            <span>Jie Gao</span>
+            <span>Ho Cheol Kim</span>
+            <span>Henry Chen</span>
+            <span>Xiaomin Lu</span>
+            <span>Bernt van den Blink</span>
+            <span>Lixin Shao</span>
+            <span>Timothy R Watkins</span>
+            <span>Toby M Maher</span>
+            <span>Lisa Lancaster</span>
+            <span>Steven D Nathan</span>
+          </div>
+
+          <h2>Use and Limitations</h2>
+          <p>
+            This tool is intended to support clinical discussion, risk stratification, and shared decision-making. It is not intended to be used in isolation to determine prognosis or decisions about IPF related management.
+          </p>
+          <p>
+            This calculator is provided for research and educational purposes only and has not been approved as a medical device. Use does not replace expert clinical assessment.
+          </p>
+
+          <h2>Citations</h2>
+          <ol class="citation-list">
+            <li>Nathan SD, Gao J, Kim HC, Chandel A, Chen H, Lu X, van den Blink B, Shao L, Watkins TR, Maher TM, Lancaster L. Development and validation of a predictive 6-min walk score in patients with idiopathic pulmonary fibrosis. <em>European Respiratory Journal</em>. 2025;66(5):2402565. <a href="https://doi.org/10.1183/13993003.02565-2024">doi:10.1183/13993003.02565-2024</a>. PMID: 40610052; PMCID: PMC12591136.</li>
+            <li>Maher TM, Ford P, Brown KK, et al. Ziritaxestat, a Novel Autotaxin Inhibitor, and Lung Function in Idiopathic Pulmonary Fibrosis: The ISABELA 1 and 2 Randomized Clinical Trials. <em>JAMA</em>. 2023;329(18):1567-1578. <a href="https://doi.org/10.1001/jama.2023.5355">doi:10.1001/jama.2023.5355</a></li>
+          </ol>
+        </div>
+      </details>
+    </section>
+
+    <script src="model-parameters.js?v=20260617-1"></script>
+    <script src="app.js?v=20260617-1"></script>
+  </body>
+</html>
