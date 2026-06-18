@@ -197,14 +197,14 @@
     els.entryRows.innerHTML = state.rows.map((row, index) => {
       return `
         <tr data-id="${escapeHtml(row.id)}">
-          <td>${index + 1}</td>
-          <td><input data-field="date" type="date" value="${escapeHtml(row.date)}"></td>
-          <td><input data-field="distance" type="number" min="0" step="1" value="${escapeHtml(row.distance)}"></td>
-          <td><input data-field="oxygen" type="number" min="0" step="0.5" value="${escapeHtml(row.oxygen)}"></td>
-          <td><input data-field="restSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.restSpo2)}"></td>
-          <td><input data-field="nadirSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.nadirSpo2)}"></td>
-          <td><input data-field="borg" type="number" min="0" step="0.5" value="${escapeHtml(row.borg)}"></td>
-          <td><button type="button" class="icon-button" data-action="delete" aria-label="Remove visit">x</button></td>
+          <td data-label="Visit"><span class="visit-badge">${index + 1}</span></td>
+          <td data-label="Date"><input data-field="date" type="date" value="${escapeHtml(row.date)}"></td>
+          <td data-label="6MWD m"><input data-field="distance" type="number" min="0" step="1" value="${escapeHtml(row.distance)}"></td>
+          <td data-label="O2 L/min"><input data-field="oxygen" type="number" min="0" step="0.5" value="${escapeHtml(row.oxygen)}"></td>
+          <td data-label="Rest SpO2 %"><input data-field="restSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.restSpo2)}"></td>
+          <td data-label="Nadir SpO2 %"><input data-field="nadirSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.nadirSpo2)}"></td>
+          <td data-label="Borg"><input data-field="borg" type="number" min="0" step="0.5" value="${escapeHtml(row.borg)}"></td>
+          <td class="row-action"><button type="button" class="icon-button" data-action="delete" aria-label="Remove visit">x</button></td>
         </tr>
       `;
     }).join("");
@@ -236,8 +236,10 @@
 
       let phase = "";
       let predictions = {};
+      let fallbackPredictions = {};
       let modelLabel = "";
       let error = "";
+      let pendingJointModel = false;
 
       if (!hasOddsScore) {
         error = "Missing ODDS score inputs";
@@ -249,9 +251,15 @@
         if (phase === "longitudinal" && row.yearsComputed === null) {
           error = "Missing date";
         } else {
-          predictions = Object.fromEntries(
+          fallbackPredictions = Object.fromEntries(
             horizons.map((horizon) => [horizon, predictEfs(row, phase, horizon)])
           );
+          predictions = fallbackPredictions;
+          if (phase === "longitudinal" && canUseJointEndpoint()) {
+            pendingJointModel = true;
+            predictions = {};
+            modelLabel = "Calculating JMbayes2 joint model";
+          }
         }
       }
 
@@ -261,8 +269,10 @@
         phase,
         modelLabel,
         jointModel: false,
+        pendingJointModel,
         predictionIntervals: {},
         predictions,
+        fallbackPredictions,
         error
       };
     });
@@ -277,7 +287,9 @@
   }
 
   function refreshComputedMetadata(computed) {
-    computed.latest = [...computed.rows].reverse().find((row) => Object.keys(row.predictions).length > 0);
+    computed.latest = [...computed.rows].reverse().find((row) => {
+      return row.pendingJointModel || Object.keys(row.predictions).length > 0;
+    });
     computed.summary = predictionSummaryFor(computed.rows, computed.latest);
     computed.flags = dedupeFlags([...qualityFlags(computed.rows), ...(computed.backendFlags || [])]);
     return computed;
@@ -286,6 +298,9 @@
   function predictionSummaryFor(rows, latest) {
     if (!latest) {
       return rows.length ? "No ODDS score prediction available" : "Add a visit to calculate";
+    }
+    if (latest.pendingJointModel) {
+      return `Calculating joint longitudinal-survival model using trend in ODDS score over the preceding ${latest.oddsCount} ${latest.oddsCount === 1 ? "six-minute walk test" : "six-minute walk tests"}`;
     }
 
     const basis = latest.jointModel
@@ -403,6 +418,7 @@
     if (serialRows.length === 0) return;
 
     if (!canUseJointEndpoint()) {
+      serialRows.forEach(applyFallbackPrediction);
       computed.backendFlags = [{
         level: "warning",
         message: "JMbayes2 joint-model predictions require the R backend. Static-file mode is showing time-updated Cox fallback estimates for serial visits."
@@ -419,6 +435,7 @@
         let failures = 0;
         results.forEach((result, index) => {
           if (result.status !== "fulfilled") {
+            applyFallbackPrediction(serialRows[index]);
             failures += 1;
             return;
           }
@@ -426,6 +443,7 @@
           if (applyJointPrediction(row, result.value)) {
             successes += 1;
           } else {
+            applyFallbackPrediction(row);
             failures += 1;
           }
         });
@@ -480,8 +498,17 @@
     row.predictionIntervals = payload.intervals || {};
     row.modelLabel = "JMbayes2 joint ODDS model";
     row.jointModel = true;
+    row.pendingJointModel = false;
     row.error = "";
     return true;
+  }
+
+  function applyFallbackPrediction(row) {
+    row.predictions = row.fallbackPredictions || {};
+    row.predictionIntervals = {};
+    row.modelLabel = "Serial ODDS fallback";
+    row.jointModel = false;
+    row.pendingJointModel = false;
   }
 
   function jointBackendFlags(successes, failures) {
