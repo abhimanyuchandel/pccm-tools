@@ -1,12 +1,46 @@
 # Oxygen-Distance-Dyspnea-Saturation (ODDS) Score for Prognosis in IPF
 
-Open `index.html` in a browser to use the app. It is static and does not need a server.
+For the full joint-model application, run the local R server from the project root:
+
+```sh
+Rscript ODDS/joint_model_server.R
+```
+
+Then open the printed local URL, usually `http://127.0.0.1:8787`.
+
+Opening `index.html` directly still works for data entry, note formatting, and static fallback estimates, but the saved JMbayes2 joint model object can only be used through the R server.
+
+On pccmtools.org, this static route will continue to display exported fallback estimates unless a hosted R endpoint is configured and exposed to the browser as `window.ODDS_JOINT_ENDPOINT`.
+
+## Privacy and Deployment
+
+Do not commit raw `.rds`, `.RData`, or `.rda` artifacts to the public website repository. The derived analysis data can contain patient-level fields and direct identifiers, and it is not required by the deployed endpoint.
+
+The joint-model endpoint uses fixed ODDS scaling constants by default:
+
+```text
+ODDS_MARKER_CENTER=-7.172273
+ODDS_MARKER_SCALE=1.236317
+```
+
+Create a deployment copy of the joint model before hosting it:
+
+```sh
+Rscript ODDS/scripts/create_deployment_model.R \
+  "/path/to/joint_model_Serial_ODDS_joint_model.rds" \
+  "ODDS/Models/joint_model_Serial_ODDS_joint_model.sanitized.rds"
+```
+
+The sanitizer remaps retained `patient_id` values in the fitted model object. The sanitized model should still be treated as private backend material, not a static web asset.
+
+For a hosted backend, set `ODDS_JOINT_MODEL_PATH` to the private model path and optionally set `ODDS_ALLOWED_ORIGINS` to a comma-separated allowlist such as `https://pccmtools.org,https://www.pccmtools.org`.
 
 ## Prediction Logic
 
 - Predictions use ODDS score only.
 - One available ODDS score uses the baseline ODDS Cox model from `analysis/ODDS_validation_recalibration/ODDS_validation_recalibration_analysis.Rmd`.
-- Serial ODDS scores use the time-updated ODDS Cox longitudinal model from the same analysis.
+- Serial ODDS scores use the saved JMbayes2 Serial ODDS joint longitudinal-survival model object when the app is launched with `joint_model_server.R`.
+- If the page is opened directly as a static file, serial ODDS estimates fall back to the exported time-updated ODDS Cox model and the app displays a warning.
 - 6MWD and other 6MWT fields are used only to calculate the ODDS score or to format the clinical note; 6MWD is not used as a standalone predictor.
 - Event-free survival is defined as freedom from death or lung transplantation.
 
@@ -25,7 +59,7 @@ The `Copy Table` button writes a formatted HTML table plus a tab-delimited plain
 From the project root:
 
 ```sh
-Rscript ipf-6mwt-survival-app/scripts/export_model_parameters.R
+Rscript ODDS/scripts/export_model_parameters.R
 ```
 
 This rewrites `model-parameters.js` from `analysis/ODDS_validation_recalibration/data/derived_analysis_data.rds`.

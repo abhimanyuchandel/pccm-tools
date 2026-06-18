@@ -14,7 +14,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="styles.css?v=20260617-1">
+    <link rel="stylesheet" href="styles.css?v=20260618-2">
   </head>
   <body>
     <div class="pccm-bar-wrap">
@@ -149,6 +149,9 @@
           <p>
             The ODDS score was developed in the ISABELA IPF cohort to use the full signal of the six-minute walk test: oxygen requirement, walk distance, exertional dyspnea, and oxygen saturation, rather than relying on distance alone. It was subsequently externally validated and applied longitudinally, demonstrating that serial ODDS measurements can help estimate evolving event-free survival risk over time.
           </p>
+          <p>
+            Serial predictions use the JMbayes2 Serial ODDS joint longitudinal-survival model when the R backend endpoint is available. If that endpoint is unavailable, the page remains usable and displays the exported time-updated Cox fallback estimates.
+          </p>
 
           <h2>Contributors</h2>
           <div class="name-list">
@@ -182,7 +185,10 @@
       </details>
     </section>
 
-    <script src="model-parameters.js?v=20260617-1"></script>
-    <script src="app.js?v=20260617-1"></script>
+    <script>
+      window.ODDS_JOINT_ENDPOINT = "https://pccm-odds-backend.onrender.com/api/joint-odds-prediction";
+    </script>
+    <script src="model-parameters.js?v=20260618-2"></script>
+    <script src="app.js?v=20260618-2"></script>
   </body>
 </html>

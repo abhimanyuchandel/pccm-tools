@@ -4,6 +4,8 @@
   const model = window.IPF_6MWT_MODEL;
   const storageKey = "ipf-6mwt-survival-app-state-v1";
   const horizons = model?.horizonsYears || [1, 2, 3];
+  const jointEndpoint = window.ODDS_JOINT_ENDPOINT || "api/joint-odds-prediction";
+  let predictionRequestId = 0;
 
   const state = loadState();
 
@@ -211,6 +213,11 @@
   function updateOutputs() {
     saveState();
     const computed = computePredictions();
+    renderOutputs(computed);
+    requestJointPredictions(computed);
+  }
+
+  function renderOutputs(computed) {
     renderResultRows(computed);
     renderCurrentEstimate(computed);
     renderQualityMessages(computed);
@@ -236,7 +243,9 @@
         error = "Missing ODDS score inputs";
       } else {
         phase = oddsCount <= 1 ? "baseline" : "longitudinal";
-        modelLabel = `${phase === "baseline" ? "Baseline" : "Serial"} ODDS score`;
+        modelLabel = phase === "baseline"
+          ? "Baseline ODDS score"
+          : "Serial ODDS fallback";
         if (phase === "longitudinal" && row.yearsComputed === null) {
           error = "Missing date";
         } else {
@@ -251,24 +260,38 @@
         oddsCount,
         phase,
         modelLabel,
+        jointModel: false,
+        predictionIntervals: {},
         predictions,
         error
       };
     });
 
-    const latest = [...outputRows].reverse().find((row) => Object.keys(row.predictions).length > 0);
-    const summary = latest
-      ? `Prediction based on trend in ODDS score over the preceding ${latest.oddsCount} ${latest.oddsCount === 1 ? "six-minute walk test" : "six-minute walk tests"}`
-      : rows.length
-        ? "No ODDS score prediction available"
-        : "Add a visit to calculate";
-
-    return {
+    return refreshComputedMetadata({
       rows: outputRows,
-      latest,
-      summary,
-      flags: qualityFlags(outputRows)
-    };
+      latest: null,
+      summary: "",
+      flags: [],
+      backendFlags: []
+    });
+  }
+
+  function refreshComputedMetadata(computed) {
+    computed.latest = [...computed.rows].reverse().find((row) => Object.keys(row.predictions).length > 0);
+    computed.summary = predictionSummaryFor(computed.rows, computed.latest);
+    computed.flags = dedupeFlags([...qualityFlags(computed.rows), ...(computed.backendFlags || [])]);
+    return computed;
+  }
+
+  function predictionSummaryFor(rows, latest) {
+    if (!latest) {
+      return rows.length ? "No ODDS score prediction available" : "Add a visit to calculate";
+    }
+
+    const basis = latest.jointModel
+      ? "Prediction based on joint longitudinal-survival model using trend in ODDS score"
+      : "Prediction based on trend in ODDS score";
+    return `${basis} over the preceding ${latest.oddsCount} ${latest.oddsCount === 1 ? "six-minute walk test" : "six-minute walk tests"}`;
   }
 
   function prepareRows() {
@@ -369,6 +392,110 @@
 
   function modelKeyFor(phase) {
     return phase === "baseline" ? "baselineOddsRaw" : "longitudinalOddsRaw";
+  }
+
+  function requestJointPredictions(computed) {
+    const requestId = ++predictionRequestId;
+    const serialRows = computed.rows.filter((row) => {
+      return row.phase === "longitudinal" && !row.error && row.yearsComputed !== null && row.oddsScoreNum !== null;
+    });
+
+    if (serialRows.length === 0) return;
+
+    if (!canUseJointEndpoint()) {
+      computed.backendFlags = [{
+        level: "warning",
+        message: "JMbayes2 joint-model predictions require the R backend. Static-file mode is showing time-updated Cox fallback estimates for serial visits."
+      }];
+      renderOutputs(refreshComputedMetadata(computed));
+      return;
+    }
+
+    Promise.allSettled(serialRows.map((row) => fetchJointPrediction(computed.rows, row)))
+      .then((results) => {
+        if (requestId !== predictionRequestId) return;
+
+        let successes = 0;
+        let failures = 0;
+        results.forEach((result, index) => {
+          if (result.status !== "fulfilled") {
+            failures += 1;
+            return;
+          }
+          const row = serialRows[index];
+          if (applyJointPrediction(row, result.value)) {
+            successes += 1;
+          } else {
+            failures += 1;
+          }
+        });
+
+        computed.backendFlags = jointBackendFlags(successes, failures);
+        renderOutputs(refreshComputedMetadata(computed));
+      });
+  }
+
+  function canUseJointEndpoint() {
+    return window.location.protocol === "http:" || window.location.protocol === "https:";
+  }
+
+  async function fetchJointPrediction(rows, targetRow) {
+    const history = rows
+      .filter((row) => row.visit <= targetRow.visit && row.oddsScoreNum !== null && row.yearsComputed !== null)
+      .map((row) => ({
+        visit: row.visit,
+        years: row.yearsComputed,
+        oddsScore: row.oddsScoreNum
+      }));
+
+    const response = await fetch(jointEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rows: history,
+        horizons,
+        nSamples: 500,
+        seed: 20260617
+      })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload || payload.ok !== true) {
+      throw new Error(payload?.error || "JMbayes2 prediction request failed.");
+    }
+    return payload;
+  }
+
+  function applyJointPrediction(row, payload) {
+    const nextPredictions = {};
+    horizons.forEach((horizon) => {
+      const value = Number(payload.predictions?.[horizon] ?? payload.predictions?.[String(horizon)]);
+      if (Number.isFinite(value)) {
+        nextPredictions[horizon] = clampProbability(value);
+      }
+    });
+
+    if (Object.keys(nextPredictions).length === 0) return false;
+
+    row.predictions = nextPredictions;
+    row.predictionIntervals = payload.intervals || {};
+    row.modelLabel = "JMbayes2 joint ODDS model";
+    row.jointModel = true;
+    row.error = "";
+    return true;
+  }
+
+  function jointBackendFlags(successes, failures) {
+    if (successes > 0 && failures === 0) return [];
+    if (successes > 0) {
+      return [{
+        level: "warning",
+        message: "Some serial visits could not be updated from the JMbayes2 joint model; fallback estimates remain for those rows."
+      }];
+    }
+    return [{
+      level: "warning",
+      message: "JMbayes2 joint-model endpoint is unavailable; serial visits are showing time-updated Cox fallback estimates."
+    }];
   }
 
   function hazardAt(baselineHazard, time) {
@@ -534,7 +661,7 @@
     const generated = new Date().toISOString().slice(0, 10);
     const title = `IPF 6MWT / ODDS event-free survival estimates${state.patientLabel ? ` - ${state.patientLabel}` : ""}`;
     const prediction = latest
-      ? `Prediction based on trend in ODDS score over the preceding ${latest.oddsCount} ${latest.oddsCount === 1 ? "six-minute walk test" : "six-minute walk tests"}.`
+      ? `${predictionSummaryFor(computed.rows, latest)}.`
       : "Prediction not available because ODDS score inputs are incomplete.";
     const current = latest
       ? `Current predicted event-free survival: 1y ${formatPercent(latest.predictions[1])}, 2y ${formatPercent(latest.predictions[2])}, 3y ${formatPercent(latest.predictions[3])}.`
