@@ -14,7 +14,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="styles.css?v=20260623-1">
+    <link rel="stylesheet" href="styles.css?v=20260623-2">
   </head>
   <body>
     <div class="pccm-bar-wrap">
@@ -49,11 +49,6 @@
         <p class="section-instructions">
           Enter all available 6MWT results for this patient. Serial data improve longitudinal event-free survival estimation.
         </p>
-
-        <label class="field patient-label">
-          <span>Patient label</span>
-          <input id="patientLabel" type="text" autocomplete="off" placeholder="Optional">
-        </label>
 
         <div class="table-shell input-table-shell">
           <table class="data-entry-table" aria-label="Editable 6MWT data">
@@ -94,7 +89,7 @@
           </div>
         </div>
         <p class="section-instructions">
-          Joint-model estimates may take up to a minute to calculate, especially if the prediction service has been idle.
+          Joint-model estimates may take one to two minutes to calculate after clinical data is inputed.
         </p>
 
         <div id="qualityMessages" class="quality-messages" aria-live="polite"></div>
@@ -115,29 +110,6 @@
           </div>
         </div>
 
-        <div class="table-shell">
-          <table class="results-table" aria-label="Predicted event-free survival table">
-            <thead>
-              <tr>
-                <th>Visit</th>
-                <th>Date</th>
-                <th>Years</th>
-                <th>6MWD</th>
-                <th>O2</th>
-                <th>Rest</th>
-                <th>Nadir</th>
-                <th>Delta SpO2</th>
-                <th>Borg</th>
-                <th>ODDS score</th>
-                <th>Model</th>
-                <th>1y EFS</th>
-                <th>2y EFS</th>
-                <th>3y EFS</th>
-              </tr>
-            </thead>
-            <tbody id="resultRows"></tbody>
-          </table>
-        </div>
       </section>
 
       <section class="panel note-panel" aria-labelledby="noteTitle">
@@ -163,10 +135,7 @@
 
           <h2>Model Development and Validation</h2>
           <p>
-            The ODDS score was developed in the ISABELA IPF cohort to use the full signal of the six-minute walk test: oxygen requirement, walk distance, exertional dyspnea, and oxygen saturation, rather than relying on distance alone. It was subsequently externally validated and applied longitudinally, demonstrating that serial ODDS measurements can help estimate evolving event-free survival risk over time.
-          </p>
-          <p>
-            Serial predictions use the JMbayes2 Serial ODDS joint longitudinal-survival model when the R backend endpoint is available. If that endpoint is unavailable, the page remains usable and displays the exported time-updated Cox fallback estimates.
+            The ODDS score was developed in the ISABELA IPF cohort to use the full signal of the six-minute walk test: oxygen requirement, walk distance, exertional dyspnea, and oxygen saturation, rather than relying on distance alone. It was subsequently externally validated and applied longitudinally, demonstrating that serial ODDS measurements can help estimate evolving event-free survival risk among adult patients with IPF over time.
           </p>
 
           <h2>Contributors</h2>
@@ -204,7 +173,7 @@
     <script>
       window.ODDS_JOINT_ENDPOINT = "https://pccm-odds-backend.onrender.com/api/joint-odds-prediction";
     </script>
-    <script src="model-parameters.js?v=20260623-1"></script>
-    <script src="app.js?v=20260623-1"></script>
+    <script src="model-parameters.js?v=20260623-2"></script>
+    <script src="app.js?v=20260623-2"></script>
   </body>
 </html>

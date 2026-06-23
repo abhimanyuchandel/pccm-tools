@@ -13,11 +13,9 @@
     inputSummary: document.getElementById("inputSummary"),
     predictionSummary: document.getElementById("predictionSummary"),
     entryRows: document.getElementById("entryRows"),
-    resultRows: document.getElementById("resultRows"),
     notePreview: document.getElementById("notePreview"),
     noteText: document.getElementById("noteText"),
     importText: document.getElementById("importText"),
-    patientLabel: document.getElementById("patientLabel"),
     qualityMessages: document.getElementById("qualityMessages"),
     currentEstimate: document.getElementById("currentEstimate"),
     calculationStatus: document.getElementById("calculationStatus"),
@@ -33,8 +31,6 @@
     return;
   }
 
-  els.patientLabel.value = state.patientLabel;
-
   renderEntryRows();
   updateOutputs();
 
@@ -48,14 +44,7 @@
 
   els.clearButton.addEventListener("click", () => {
     state.rows = [blankRow()];
-    state.patientLabel = "";
-    els.patientLabel.value = "";
     renderEntryRows();
-    updateOutputs();
-  });
-
-  els.patientLabel.addEventListener("input", () => {
-    state.patientLabel = els.patientLabel.value;
     updateOutputs();
   });
 
@@ -88,10 +77,6 @@
       return;
     }
     state.rows = imported.rows;
-    if (imported.patientLabel) {
-      state.patientLabel = imported.patientLabel;
-      els.patientLabel.value = imported.patientLabel;
-    }
     renderEntryRows();
     updateOutputs();
     showTemporaryMessage(`Imported ${imported.rows.length} visits.`, "ok");
@@ -156,14 +141,12 @@
 
   function loadState() {
     const fallback = {
-      patientLabel: "",
       rows: [blankRow()]
     };
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (!saved || !Array.isArray(saved.rows)) return fallback;
       return {
-        patientLabel: saved.patientLabel || "",
         rows: saved.rows.length ? saved.rows.map((row) => blankRow(row)) : [blankRow()]
       };
     } catch (_error) {
@@ -219,7 +202,6 @@
   }
 
   function renderOutputs(computed) {
-    renderResultRows(computed);
     renderCurrentEstimate(computed);
     renderQualityMessages(computed);
     renderCalculationStatus(computed);
@@ -548,34 +530,6 @@
     return hazards[Math.max(0, high)];
   }
 
-  function renderResultRows(computed) {
-    if (computed.rows.length === 0) {
-      els.resultRows.innerHTML = `<tr><td colspan="14" class="empty-state">No 6MWT data entered</td></tr>`;
-      return;
-    }
-
-    els.resultRows.innerHTML = computed.rows.map((row) => {
-      return `
-        <tr>
-          <td>${row.visit}</td>
-          <td>${escapeHtml(row.date || "")}</td>
-          <td>${formatNumber(row.yearsComputed, 2)}</td>
-          <td>${formatNumber(row.distanceNum, 0)}</td>
-          <td>${formatNumber(row.oxygenNum, 1)}</td>
-          <td>${formatNumber(row.restSpo2Num, 0)}</td>
-          <td>${formatNumber(row.nadirSpo2Num, 0)}</td>
-          <td>${formatNumber(row.desaturationNum, 0)}</td>
-          <td>${formatNumber(row.borgNum, 1)}</td>
-          <td>${formatNumber(row.oddsScoreNum, 2)}</td>
-          <td>${escapeHtml(row.error || row.modelLabel)}</td>
-          <td>${formatPercent(row.predictions[1])}</td>
-          <td>${formatPercent(row.predictions[2])}</td>
-          <td>${formatPercent(row.predictions[3])}</td>
-        </tr>
-      `;
-    }).join("");
-  }
-
   function renderCurrentEstimate(computed) {
     const values = horizons.map((horizon) => {
       const value = computed.latest?.predictions[horizon];
@@ -600,7 +554,7 @@
     const pending = computed.rows.some((row) => row.pendingJointModel);
     els.calculationStatus.hidden = !pending;
     els.calculationStatus.textContent = pending
-      ? "Calculating predicted event-free survival with the joint longitudinal-survival model. This can take up to a minute; thank you for your patience."
+      ? "Calculating predicted event-free survival with the joint longitudinal-survival model. This may take one to two minutes; thank you for your patience."
       : "";
   }
 
@@ -697,7 +651,7 @@
       formatPercent(row.predictions[3])
     ]);
     const generated = new Date().toISOString().slice(0, 10);
-    const title = `IPF 6MWT / ODDS event-free survival estimates${state.patientLabel ? ` - ${state.patientLabel}` : ""}`;
+    const title = "IPF 6MWT / ODDS event-free survival estimates";
     const prediction = latest
       ? `${predictionSummaryFor(computed.rows, latest)}.`
       : "Prediction not available because ODDS score inputs are incomplete.";
@@ -779,14 +733,9 @@
   }
 
   function parseImportedTable(text) {
-    const result = { rows: [], patientLabel: "" };
+    const result = { rows: [] };
     const lines = text.split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length === 0) return result;
-
-    const titleLine = lines.find((line) => /^IPF 6MWT/i.test(line));
-    if (titleLine && titleLine.includes(" - ")) {
-      result.patientLabel = titleLine.split(" - ").slice(1).join(" - ").trim();
-    }
 
     const headerIndex = lines.findIndex((line) => {
       const normalized = normalizeHeader(line);

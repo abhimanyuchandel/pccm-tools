@@ -204,17 +204,12 @@ h2 {
 }
 
 .field,
-.import-box,
-.note-label {
+.import-box {
   display: grid;
   gap: 6px;
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 650;
-}
-
-.patient-label {
-  margin-bottom: 14px;
 }
 
 .section-instructions,
@@ -316,7 +311,10 @@ tbody tr:nth-child(even) td {
 
 .data-entry-table tr {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns:
+    42px minmax(142px, 1.35fr) minmax(82px, 0.82fr)
+    minmax(82px, 0.82fr) minmax(92px, 0.9fr) minmax(96px, 0.9fr)
+    minmax(76px, 0.72fr) auto;
   gap: 8px;
   align-items: end;
   border: 1px solid var(--line);
@@ -346,17 +344,14 @@ tbody tr:nth-child(even) td {
   letter-spacing: 0.02em;
 }
 
-.data-entry-table td:nth-child(2) {
-  grid-column: span 2;
-}
-
 .data-entry-table .row-action {
-  align-self: end;
+  align-self: stretch;
   justify-self: end;
 }
 
 .data-entry-table .row-action::before {
-  content: "";
+  content: "Action";
+  visibility: hidden;
 }
 
 .data-entry-table input {
@@ -463,53 +458,6 @@ tbody tr:nth-child(even) td {
   font-size: 1.55rem;
   line-height: 1.15;
   letter-spacing: 0;
-}
-
-.results-table {
-  min-width: 1110px;
-}
-
-.results-table th:nth-child(1),
-.results-table td:nth-child(1) {
-  width: 54px;
-}
-
-.results-table th:nth-child(2),
-.results-table td:nth-child(2) {
-  width: 110px;
-}
-
-.results-table th:nth-child(3),
-.results-table td:nth-child(3),
-.results-table th:nth-child(4),
-.results-table td:nth-child(4),
-.results-table th:nth-child(5),
-.results-table td:nth-child(5),
-.results-table th:nth-child(6),
-.results-table td:nth-child(6),
-.results-table th:nth-child(7),
-.results-table td:nth-child(7),
-.results-table th:nth-child(8),
-.results-table td:nth-child(8),
-.results-table th:nth-child(9),
-.results-table td:nth-child(9),
-.results-table th:nth-child(10),
-.results-table td:nth-child(10) {
-  width: 76px;
-}
-
-.results-table th:nth-child(11),
-.results-table td:nth-child(11) {
-  width: 136px;
-}
-
-.results-table th:nth-child(12),
-.results-table td:nth-child(12),
-.results-table th:nth-child(13),
-.results-table td:nth-child(13),
-.results-table th:nth-child(14),
-.results-table td:nth-child(14) {
-  width: 82px;
 }
 
 .clinical-note-preview {
@@ -700,10 +648,6 @@ tbody tr:nth-child(even) td {
 
   .data-entry-table tr {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .data-entry-table td:nth-child(2) {
-    grid-column: span 1;
   }
 
   .data-entry-table .row-action {
