@@ -20,6 +20,7 @@
     patientLabel: document.getElementById("patientLabel"),
     qualityMessages: document.getElementById("qualityMessages"),
     currentEstimate: document.getElementById("currentEstimate"),
+    calculationStatus: document.getElementById("calculationStatus"),
     addRowButton: document.getElementById("addRowButton"),
     clearButton: document.getElementById("clearButton"),
     importButton: document.getElementById("importButton"),
@@ -204,7 +205,7 @@
           <td data-label="Rest SpO2 %"><input data-field="restSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.restSpo2)}"></td>
           <td data-label="Nadir SpO2 %"><input data-field="nadirSpo2" type="number" min="0" max="100" step="1" value="${escapeHtml(row.nadirSpo2)}"></td>
           <td data-label="Borg"><input data-field="borg" type="number" min="0" step="0.5" value="${escapeHtml(row.borg)}"></td>
-          <td class="row-action"><button type="button" class="icon-button" data-action="delete" aria-label="Remove visit">x</button></td>
+          <td class="row-action"><button type="button" class="remove-button" data-action="delete" aria-label="Remove visit ${index + 1}">Remove</button></td>
         </tr>
       `;
     }).join("");
@@ -221,6 +222,7 @@
     renderResultRows(computed);
     renderCurrentEstimate(computed);
     renderQualityMessages(computed);
+    renderCalculationStatus(computed);
     els.noteText.value = buildNoteText(computed);
     els.notePreview.innerHTML = buildNoteHtml(computed);
     els.inputSummary.textContent = `${computed.rows.length} ${computed.rows.length === 1 ? "visit" : "visits"}`;
@@ -591,6 +593,15 @@
     els.qualityMessages.innerHTML = computed.flags.map((flag) => {
       return `<div class="quality-message ${flag.level === "error" ? "error" : ""}">${escapeHtml(flag.message)}</div>`;
     }).join("");
+  }
+
+  function renderCalculationStatus(computed) {
+    if (!els.calculationStatus) return;
+    const pending = computed.rows.some((row) => row.pendingJointModel);
+    els.calculationStatus.hidden = !pending;
+    els.calculationStatus.textContent = pending
+      ? "Calculating predicted event-free survival with the joint longitudinal-survival model. This can take up to a minute; thank you for your patience."
+      : "";
   }
 
   function qualityFlags(rows) {

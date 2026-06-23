@@ -165,10 +165,10 @@ h2 {
 }
 
 .app-layout {
-  max-width: 1420px;
+  max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(430px, 0.92fr) minmax(520px, 1.08fr);
+  grid-template-columns: 1fr;
   gap: 18px;
   padding: 18px clamp(16px, 3vw, 34px) 26px;
 }
@@ -215,6 +215,20 @@ h2 {
 
 .patient-label {
   margin-bottom: 14px;
+}
+
+.section-instructions,
+.field-help {
+  margin: -4px 0 14px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.field-help {
+  margin: -2px 0 2px;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 input,
@@ -351,6 +365,20 @@ tbody tr:nth-child(even) td {
   padding: 0 8px;
 }
 
+.remove-button {
+  min-height: 34px;
+  border-color: #d79aa5;
+  background: #ffffff;
+  color: var(--danger);
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.remove-button:hover {
+  background: var(--danger-soft);
+}
+
 .visit-badge {
   display: inline-grid;
   width: 34px;
@@ -387,6 +415,24 @@ tbody tr:nth-child(even) td {
   border-color: #ebc3bd;
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+.calculation-status {
+  margin-bottom: 12px;
+  border: 1px solid #a8c6dc;
+  border-left: 5px solid var(--blue);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(230, 238, 247, 0.95), rgba(255, 255, 255, 0.98));
+  color: #15395c;
+  padding: 11px 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.calculation-status[hidden] {
+  display: none;
 }
 
 .current-estimate {
@@ -466,12 +512,7 @@ tbody tr:nth-child(even) td {
   width: 82px;
 }
 
-.note-label {
-  margin-top: 14px;
-}
-
 .clinical-note-preview {
-  margin-top: 6px;
   max-height: 360px;
   overflow: auto;
   border: 1px solid var(--line);
@@ -530,7 +571,7 @@ tbody tr:nth-child(even) td {
 }
 
 .about-shell {
-  max-width: 1420px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 0 clamp(16px, 3vw, 34px) 34px;
 }
@@ -669,7 +710,7 @@ tbody tr:nth-child(even) td {
     justify-self: stretch;
   }
 
-  .data-entry-table .row-action .icon-button {
+  .data-entry-table .row-action .remove-button {
     width: 100%;
   }
 }

@@ -14,7 +14,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="styles.css?v=20260618-3">
+    <link rel="stylesheet" href="styles.css?v=20260623-1">
   </head>
   <body>
     <div class="pccm-bar-wrap">
@@ -46,6 +46,9 @@
             <button type="button" id="clearButton" class="quiet">Clear</button>
           </div>
         </div>
+        <p class="section-instructions">
+          Enter all available 6MWT results for this patient. Serial data improve longitudinal event-free survival estimation.
+        </p>
 
         <label class="field patient-label">
           <span>Patient label</span>
@@ -72,7 +75,10 @@
 
         <div class="import-box">
           <label for="importText">Import from note</label>
-          <textarea id="importText" rows="5" spellcheck="false"></textarea>
+          <p class="field-help" id="importHelp">
+            Paste a prior ODDS clinical note table to re-import previous 6MWT rows.
+          </p>
+          <textarea id="importText" rows="5" spellcheck="false" aria-describedby="importHelp"></textarea>
           <div class="button-row">
             <button type="button" id="importButton">Import</button>
             <button type="button" id="exampleButton" class="quiet">Example</button>
@@ -86,12 +92,13 @@
             <h2 id="resultsTitle">Predicted Event-Free Survival</h2>
             <p id="predictionSummary">Add a visit to calculate</p>
           </div>
-          <div class="button-row">
-            <button type="button" id="copyButton">Copy Table</button>
-          </div>
         </div>
+        <p class="section-instructions">
+          Joint-model estimates may take up to a minute to calculate, especially if the prediction service has been idle.
+        </p>
 
         <div id="qualityMessages" class="quality-messages" aria-live="polite"></div>
+        <div id="calculationStatus" class="calculation-status" aria-live="polite" hidden></div>
 
         <div class="current-estimate" id="currentEstimate" aria-live="polite">
           <div>
@@ -131,11 +138,20 @@
             <tbody id="resultRows"></tbody>
           </table>
         </div>
+      </section>
 
-        <div class="note-label">Clinical note table</div>
+      <section class="panel note-panel" aria-labelledby="noteTitle">
+        <div class="panel-heading">
+          <div>
+            <h2 id="noteTitle">Clinical Note Table</h2>
+            <p>Copy formatted ODDS estimates into clinical documentation.</p>
+          </div>
+          <div class="button-row">
+            <button type="button" id="copyButton">Copy Table</button>
+          </div>
+        </div>
         <div id="notePreview" class="clinical-note-preview" tabindex="0" aria-label="Clinical note table preview"></div>
         <textarea id="noteText" class="note-text note-source" spellcheck="false" readonly tabindex="-1" aria-hidden="true"></textarea>
-
       </section>
     </main>
 
@@ -188,7 +204,7 @@
     <script>
       window.ODDS_JOINT_ENDPOINT = "https://pccm-odds-backend.onrender.com/api/joint-odds-prediction";
     </script>
-    <script src="model-parameters.js?v=20260618-3"></script>
-    <script src="app.js?v=20260618-3"></script>
+    <script src="model-parameters.js?v=20260623-1"></script>
+    <script src="app.js?v=20260623-1"></script>
   </body>
 </html>
