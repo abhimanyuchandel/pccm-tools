@@ -573,6 +573,27 @@ tbody tr:nth-child(even) td {
   font-weight: 700;
 }
 
+.contributor-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 980px;
+}
+
+.contributor-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.contributor-group h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
 .name-list {
   display: grid;
   gap: 2px;
@@ -656,6 +677,10 @@ tbody tr:nth-child(even) td {
 
   .data-entry-table .row-action .remove-button {
     width: 100%;
+  }
+
+  .contributor-columns {
+    grid-template-columns: 1fr;
   }
 }
 
