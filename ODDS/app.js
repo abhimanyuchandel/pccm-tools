@@ -551,8 +551,15 @@
     if (!els.calculationStatus) return;
     const pending = computed.rows.some((row) => row.pendingJointModel);
     els.calculationStatus.hidden = !pending;
-    els.calculationStatus.textContent = pending
-      ? "Calculating predicted event-free survival with the joint longitudinal-survival model. This may take one to two minutes; thank you for your patience."
+    els.currentEstimate.setAttribute("aria-busy", pending ? "true" : "false");
+    els.calculationStatus.innerHTML = pending
+      ? `
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span class="calculation-status-copy">
+          <strong>Calculating joint-model prediction</strong>
+          <span>The finalized JMbayes2 model is processing the submitted 6MWT history. Results may take 1-2 minutes, especially if the service is waking up.</span>
+        </span>
+      `
       : "";
   }
 

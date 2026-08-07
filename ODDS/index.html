@@ -14,7 +14,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="styles.css?v=20260807-1">
+    <link rel="stylesheet" href="styles.css?v=20260807-2">
   </head>
   <body>
     <div class="pccm-bar-wrap">
@@ -93,7 +93,7 @@
         </p>
 
         <div id="qualityMessages" class="quality-messages" aria-live="polite"></div>
-        <div id="calculationStatus" class="calculation-status" aria-live="polite" hidden></div>
+        <div id="calculationStatus" class="calculation-status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
         <div class="current-estimate" id="currentEstimate" aria-live="polite">
           <div>
@@ -191,7 +191,7 @@
     <script>
       window.ODDS_JOINT_ENDPOINT = "/ODDS/api/joint-odds-prediction";
     </script>
-    <script src="model-parameters.js?v=20260807-1"></script>
-    <script src="app.js?v=20260807-1"></script>
+    <script src="model-parameters.js?v=20260807-2"></script>
+    <script src="app.js?v=20260807-2"></script>
   </body>
 </html>

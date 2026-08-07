@@ -413,6 +413,9 @@ tbody tr:nth-child(even) td {
 }
 
 .calculation-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
   border: 1px solid #a8c6dc;
   border-left: 5px solid var(--blue);
@@ -420,14 +423,41 @@ tbody tr:nth-child(even) td {
   background:
     linear-gradient(90deg, rgba(230, 238, 247, 0.95), rgba(255, 255, 255, 0.98));
   color: #15395c;
-  padding: 11px 12px;
+  padding: 12px 13px;
   font-size: 0.9rem;
-  font-weight: 800;
   line-height: 1.4;
+  box-shadow: 0 10px 22px rgba(15, 79, 134, 0.08);
 }
 
 .calculation-status[hidden] {
   display: none;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 3px solid rgba(15, 79, 134, 0.18);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.calculation-status-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.calculation-status-copy strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.calculation-status-copy span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
 .current-estimate {
@@ -626,6 +656,18 @@ tbody tr:nth-child(even) td {
   }
   100% {
     background: transparent;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
   }
 }
 
