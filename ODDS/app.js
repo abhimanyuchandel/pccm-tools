@@ -557,7 +557,7 @@
         <span class="loading-spinner" aria-hidden="true"></span>
         <span class="calculation-status-copy">
           <strong>Calculating joint-model prediction</strong>
-          <span>The finalized JMbayes2 model is processing the submitted 6MWT history. Results may take 1-2 minutes.</span>
+          <span>Results may take 1-2 minutes.</span>
         </span>
       `
       : "";
