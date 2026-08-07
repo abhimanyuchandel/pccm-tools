@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/ODDS/api/*"],
+  "include": ["/ODDS/api/*", "/ODDS/model/*"],
   "exclude": []
 }
