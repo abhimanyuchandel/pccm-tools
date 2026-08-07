@@ -220,7 +220,6 @@
 
       let phase = "";
       let predictions = {};
-      let fallbackPredictions = {};
       let modelLabel = "";
       let error = "";
       let pendingJointModel = false;
@@ -231,19 +230,18 @@
         phase = oddsCount <= 1 ? "baseline" : "longitudinal";
         modelLabel = phase === "baseline"
           ? "Baseline ODDS score"
-          : "Serial ODDS fallback";
+          : "Joint model pending";
         if (phase === "longitudinal" && row.yearsComputed === null) {
           error = "Missing date";
-        } else {
-          fallbackPredictions = Object.fromEntries(
-            horizons.map((horizon) => [horizon, predictEfs(row, phase, horizon)])
-          );
-          predictions = fallbackPredictions;
-          if (phase === "longitudinal" && canUseJointEndpoint()) {
+        } else if (phase === "longitudinal") {
+          if (canUseJointEndpoint()) {
             pendingJointModel = true;
-            predictions = {};
             modelLabel = "Calculating JMbayes2 joint model";
           }
+        } else {
+          predictions = Object.fromEntries(
+            horizons.map((horizon) => [horizon, predictEfs(row, phase, horizon)])
+          );
         }
       }
 
@@ -256,7 +254,6 @@
         pendingJointModel,
         predictionIntervals: {},
         predictions,
-        fallbackPredictions,
         error
       };
     });
@@ -271,8 +268,9 @@
   }
 
   function refreshComputedMetadata(computed) {
+    const hasSerialRows = computed.rows.some((row) => row.phase === "longitudinal");
     computed.latest = [...computed.rows].reverse().find((row) => {
-      return row.pendingJointModel || Object.keys(row.predictions).length > 0;
+      return row.pendingJointModel || (Object.keys(row.predictions).length > 0 && (!hasSerialRows || row.phase === "longitudinal"));
     });
     computed.summary = predictionSummaryFor(computed.rows, computed.latest);
     computed.flags = dedupeFlags([...qualityFlags(computed.rows), ...(computed.backendFlags || [])]);
@@ -402,10 +400,10 @@
     if (serialRows.length === 0) return;
 
     if (!canUseJointEndpoint()) {
-      serialRows.forEach(applyFallbackPrediction);
+      serialRows.forEach(markJointUnavailable);
       computed.backendFlags = [{
         level: "warning",
-        message: "JMbayes2 joint-model predictions require the R backend. Static-file mode is showing time-updated Cox fallback estimates for serial visits."
+        message: "Serial joint-model predictions require the hosted calculator service and are unavailable in static-file mode."
       }];
       renderOutputs(refreshComputedMetadata(computed));
       return;
@@ -419,7 +417,7 @@
         let failures = 0;
         results.forEach((result, index) => {
           if (result.status !== "fulfilled") {
-            applyFallbackPrediction(serialRows[index]);
+            markJointUnavailable(serialRows[index]);
             failures += 1;
             return;
           }
@@ -427,7 +425,7 @@
           if (applyJointPrediction(row, result.value)) {
             successes += 1;
           } else {
-            applyFallbackPrediction(row);
+            markJointUnavailable(row);
             failures += 1;
           }
         });
@@ -457,7 +455,7 @@
         rows: history,
         horizons,
         nSamples: 500,
-        seed: 20260617
+        seed: 20260807
       })
     });
     const payload = await response.json().catch(() => null);
@@ -480,17 +478,17 @@
 
     row.predictions = nextPredictions;
     row.predictionIntervals = payload.intervals || {};
-    row.modelLabel = "JMbayes2 joint ODDS model";
+    row.modelLabel = "Joint ODDS model";
     row.jointModel = true;
     row.pendingJointModel = false;
     row.error = "";
     return true;
   }
 
-  function applyFallbackPrediction(row) {
-    row.predictions = row.fallbackPredictions || {};
+  function markJointUnavailable(row) {
+    row.predictions = {};
     row.predictionIntervals = {};
-    row.modelLabel = "Serial ODDS fallback";
+    row.modelLabel = "Joint model unavailable";
     row.jointModel = false;
     row.pendingJointModel = false;
   }
@@ -500,12 +498,12 @@
     if (successes > 0) {
       return [{
         level: "warning",
-        message: "Some serial visits could not be updated from the JMbayes2 joint model; fallback estimates remain for those rows."
+        message: "Some serial visits could not be estimated by the joint model; unavailable values are left blank."
       }];
     }
     return [{
       level: "warning",
-      message: "JMbayes2 joint-model endpoint is unavailable; serial visits are showing time-updated Cox fallback estimates."
+      message: "The joint-model service is unavailable, so serial event-free survival estimates are not displayed."
     }];
   }
 

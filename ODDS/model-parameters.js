@@ -3,7 +3,7 @@ window.IPF_6MWT_MODEL =
   "version": "2026-06-17",
   "generatedAt": "2026-06-17 16:27:47 EDT",
   "source": {
-    "derivedAnalysisData": "/Users/abhichandel/Documents/Research/ODDS score/ODDS score Full Analysis/analysis/ODDS_validation_recalibration/data/derived_analysis_data.rds",
+    "derivedAnalysisData": "Build-time aggregate parameter source; source dataset not deployed",
     "analysis": "analysis/ODDS_validation_recalibration/ODDS_validation_recalibration_analysis.Rmd",
     "endpoint": "death or lung transplantation",
     "population": "IPF ODDS validation analytic cohort",
