@@ -279,16 +279,16 @@ def verify_discovery_controls() -> None:
     if len(calculator_publication_links) != 1:
         fail("Calculator must contain exactly one reviewer-publication link")
     calculator_publication_link = calculator_publication_links[0]
-    if calculator_publication_link.get("href") != CANONICAL_JOINT_URL:
-        fail("Calculator may link only to the joint-model technical summary")
+    if calculator_publication_link.get("href") != EVIDENCE_URL:
+        fail("Calculator may link only to the comprehensive evidence report")
     if "nofollow" not in calculator_publication_link.get("rel", "").lower().split():
-        fail("Calculator joint-model link must use rel=nofollow")
-    if normalize_space(calculator_publication_link.text_content()) != "Joint-model technical summary":
-        fail("Calculator joint-model link label changed")
+        fail("Calculator evidence link must use rel=nofollow")
+    if normalize_space(calculator_publication_link.text_content()) != "Evidence and model validation":
+        fail("Calculator evidence link label changed")
     if not calculator_publication_link.xpath(
         'ancestor::details[contains(concat(" ", normalize-space(@class), " "), " about-tool ")]'
     ):
-        fail("Calculator joint-model link must remain inside the collapsed About section")
+        fail("Calculator evidence link must remain inside the collapsed About section")
 
     excluded_pages = {
         calculator_page.resolve(),
