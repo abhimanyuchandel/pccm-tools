@@ -603,6 +603,23 @@ tbody tr:nth-child(even) td {
   font-weight: 700;
 }
 
+.about-content .odds-copyright-notice {
+  max-width: 980px;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.about-content .odds-copyright-notice p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.about-content .odds-copyright-notice p + p {
+  margin-top: 5px;
+}
+
 .about-content .about-resource {
   margin-top: 4px;
 }

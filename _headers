@@ -1,0 +1,8 @@
+/ODDS/evidence/
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/ODDS/evidence/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/odds_joint_model.html
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet

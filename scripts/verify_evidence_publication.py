@@ -24,6 +24,14 @@ CANONICAL_JOINT_URL = "/odds_joint_model.html"
 CALCULATOR_URL = "/ODDS/"
 EVIDENCE_URL = "/ODDS/evidence/"
 LEGACY_JOINT_HTML = "ODDS_joint_model_public_summary.html"
+ROBOTS_DIRECTIVE = "noindex, nofollow, noarchive, nosnippet"
+COPYRIGHT_NOTICE_TITLE = "© 2026 The ODDS Study Authors. All rights reserved unless otherwise noted."
+COPYRIGHT_NOTICE_BODY = (
+    "This author-prepared expanded project report is provided to support research "
+    "evaluation and external validation of ODDS. It has not undergone external peer "
+    "review and is not a journal Version of Record. A related manuscript is being "
+    "considered for publication."
+)
 EXPECTED_SOURCE_TEXT_SHA256 = {
     "comprehensive": "9b30c0e5a72557734a85f8ccd01e4bf39fdb0c3be4215b6a1a622745fa7a7e4c",
     "joint": "2e83968fe072a2e2b5baa1e15b08195a4ed2d859a12b6d6187bf63ec74cb055a",
@@ -47,11 +55,41 @@ PUBLICATIONS = (
 )
 
 PROHIBITED_PUBLIC_EXTENSIONS = {".docx", ".xlsx", ".xls", ".csv", ".sav", ".dta"}
+PROHIBITED_PUBLIC_MODEL_EXTENSIONS = {".rds", ".rda", ".rdata", ".rmd", ".qmd", ".ipynb"}
 LOCAL_PATH_PATTERN = re.compile(r"(?:file://|/Users/|/private/var/|/var/folders/)", re.IGNORECASE)
 
 
 def fail(message: str) -> None:
     raise RuntimeError(message)
+
+
+def normalize_space(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def expected_copyright_text() -> str:
+    return f"{COPYRIGHT_NOTICE_TITLE} {COPYRIGHT_NOTICE_BODY}"
+
+
+def normalized_element_text(element) -> str:
+    return normalize_space(" ".join(element.itertext()))
+
+
+def is_publication_link(href: str) -> bool:
+    path = unquote(urlsplit(href).path).rstrip("/")
+    return path in {EVIDENCE_URL.rstrip("/"), CANONICAL_JOINT_URL}
+
+
+def parse_header_rules(raw: str) -> dict[str, list[str]]:
+    rules: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in raw.splitlines():
+        if line and not line[0].isspace():
+            current = line.strip()
+            rules[current] = []
+        elif current is not None and line.strip():
+            rules[current].append(line.strip())
+    return rules
 
 
 def resolve_local_link(page: Path, href: str) -> Path | None:
@@ -83,6 +121,22 @@ def verify_html(page: Path, expected_tables: int, expected_images: int, required
     if LEGACY_JOINT_HTML in raw:
         fail(f"Legacy joint-model URL found in {page.name}")
     root = lxml_html.fromstring(raw)
+    robots_meta = root.xpath(
+        '//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="robots"]/@content'
+    )
+    if robots_meta != [ROBOTS_DIRECTIVE]:
+        fail(f"{page.name}: missing exact robots meta directive")
+    copyright_nodes = root.xpath(
+        '//*[contains(concat(" ", normalize-space(@class), " "), " publication-copyright ")]'
+    )
+    if len(copyright_nodes) != 1:
+        fail(f"{page.name}: expected one publication copyright notice")
+    if normalized_element_text(copyright_nodes[0]) != expected_copyright_text():
+        fail(f"{page.name}: publication copyright wording changed")
+    if not root.xpath(
+        '//main/*[last()][self::footer and contains(concat(" ", normalize-space(@class), " "), " publication-footer ")]'
+    ):
+        fail(f"{page.name}: publication copyright footer is not the final page element")
     expected_canonical = (
         f"{PUBLIC_ORIGIN}{EVIDENCE_URL}"
         if page == EVIDENCE_DIR / "index.html"
@@ -192,6 +246,8 @@ def verify_pdf(path: Path, required_urls: set[str]) -> dict:
         fail(f"{path.name}: local file hyperlink found")
     if LOCAL_PATH_PATTERN.search(" ".join(extracted)):
         fail(f"{path.name}: local filesystem path in visible text")
+    if expected_copyright_text() not in normalize_space(extracted[-1]):
+        fail(f"{path.name}: copyright notice is missing from the final PDF page")
     if any(LEGACY_JOINT_HTML in uri for uri in uris):
         fail(f"{path.name}: legacy joint-model hyperlink found")
     normalized_uris = {urlsplit(uri).path for uri in uris}
@@ -206,11 +262,66 @@ def verify_pdf(path: Path, required_urls: set[str]) -> dict:
     }
 
 
+def verify_discovery_controls() -> None:
+    calculator_page = CALCULATOR_DIR / "index.html"
+    calculator_root = lxml_html.fromstring(calculator_page.read_text(encoding="utf-8"))
+    calculator_notices = calculator_root.xpath(
+        '//*[contains(concat(" ", normalize-space(@class), " "), " odds-copyright-notice ")]'
+    )
+    if len(calculator_notices) != 1:
+        fail("Calculator is missing its copyright notice")
+    if normalized_element_text(calculator_notices[0]) != expected_copyright_text():
+        fail("Calculator copyright wording changed")
+
+    excluded_pages = {(EVIDENCE_DIR / "index.html").resolve(), JOINT_PAGE.resolve()}
+    for page in APP_DIR.rglob("*.html"):
+        if page.resolve() in excluded_pages:
+            continue
+        root = lxml_html.fromstring(page.read_text(encoding="utf-8"))
+        links = [href for href in root.xpath("//a[@href]/@href") if is_publication_link(href)]
+        if links:
+            fail(f"Publicly indexed page links to reviewer publication: {page.relative_to(APP_DIR)}")
+
+    sitemap = APP_DIR / "sitemap.xml"
+    if sitemap.exists():
+        sitemap_text = sitemap.read_text(encoding="utf-8")
+        if EVIDENCE_URL in sitemap_text or CANONICAL_JOINT_URL in sitemap_text:
+            fail("Reviewer publication appears in sitemap.xml")
+
+    robots = APP_DIR / "robots.txt"
+    if robots.exists():
+        for line in robots.read_text(encoding="utf-8").splitlines():
+            normalized = line.strip().lower()
+            if normalized.startswith("disallow:") and (
+                EVIDENCE_URL.lower() in normalized or CANONICAL_JOINT_URL.lower() in normalized
+            ):
+                fail("robots.txt blocks a reviewer publication route")
+
+    if CALCULATOR_DIR != APP_DIR:
+        headers_path = APP_DIR / "_headers"
+        if not headers_path.exists():
+            fail("Cloudflare Pages _headers file is missing")
+        rules = parse_header_rules(headers_path.read_text(encoding="utf-8"))
+        expected_header = f"X-Robots-Tag: {ROBOTS_DIRECTIVE}"
+        for route in (EVIDENCE_URL, f"{EVIDENCE_URL}*", CANONICAL_JOINT_URL):
+            if expected_header not in rules.get(route, []):
+                fail(f"Missing X-Robots-Tag rule for {route}")
+
+        function_path = APP_DIR / "functions" / "odds_joint_model.html.js"
+        function_text = function_path.read_text(encoding="utf-8")
+        if "X-Robots-Tag" not in function_text or ROBOTS_DIRECTIVE not in function_text:
+            fail("Joint-model Pages Function is missing its X-Robots-Tag header")
+
+
 def main() -> None:
     manifest_path = EVIDENCE_DIR / "build-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not manifest.get("pdfs_generated"):
         fail("Build manifest does not record generated PDFs")
+    if manifest.get("robots_directive") != ROBOTS_DIRECTIVE:
+        fail("Build manifest does not record the robots directive")
+    if manifest.get("copyright_notice") != f"{COPYRIGHT_NOTICE_TITLE}\n{COPYRIGHT_NOTICE_BODY}":
+        fail("Build manifest does not record the exact copyright notice")
     if not all(item.get("wording_verified") for item in manifest.get("publications", [])):
         fail("Build manifest does not record verified source wording")
     manifest_urls = {item.get("public_url") for item in manifest.get("publications", [])}
@@ -230,11 +341,16 @@ def main() -> None:
         if not (APP_DIR / "functions" / "odds_joint_model.html.js").exists():
             fail("Canonical joint-model Pages Function is missing")
 
+    prohibited_extensions = set(PROHIBITED_PUBLIC_EXTENSIONS)
+    if CALCULATOR_DIR != APP_DIR:
+        prohibited_extensions.update(PROHIBITED_PUBLIC_MODEL_EXTENSIONS)
     prohibited = sorted(
-        path for path in APP_DIR.rglob("*") if path.is_file() and path.suffix.lower() in PROHIBITED_PUBLIC_EXTENSIONS
+        path for path in APP_DIR.rglob("*") if path.is_file() and path.suffix.lower() in prohibited_extensions
     )
     if prohibited:
         fail("Prohibited source files in public evidence bundle")
+
+    verify_discovery_controls()
 
     results = []
     pdf_links = {

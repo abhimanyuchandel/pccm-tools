@@ -27,5 +27,7 @@
       "figures": 2
     }
   ],
-  "pdfs_generated": true
+  "pdfs_generated": true,
+  "robots_directive": "noindex, nofollow, noarchive, nosnippet",
+  "copyright_notice": "\u00a9 2026 The ODDS Study Authors. All rights reserved unless otherwise noted.\nThis author-prepared expanded project report is provided to support research evaluation and external validation of ODDS. It has not undergone external peer review and is not a journal Version of Record. A related manuscript is being considered for publication."
 }
