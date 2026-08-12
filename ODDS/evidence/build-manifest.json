@@ -1,0 +1,31 @@
+{
+  "source_files_retained_outside_public_bundle": [
+    "ODDS_Comprehensive_Project_Report_editable_updated.docx",
+    "ODDS_joint_model_public_summary_editable.docx"
+  ],
+  "publications": [
+    {
+      "key": "comprehensive",
+      "source": "ODDS_Comprehensive_Project_Report_editable_updated.docx",
+      "source_sha256": "fbbf594e3bc2c37d4d96738c0c2ab4dd429e9d7f15cf478621e607badf1f80f1",
+      "html": "evidence/index.html",
+      "public_url": "/ODDS/evidence/",
+      "source_text_sha256": "098d3dd6cece01b9b9a61e93607f08983e165ae127b4769edc1ec84e776dcb8e",
+      "wording_verified": true,
+      "tables": 9,
+      "figures": 14
+    },
+    {
+      "key": "joint",
+      "source": "ODDS_joint_model_public_summary_editable.docx",
+      "source_sha256": "d5ece244a06e1213e6d6f82f3f307047141ff9a85c49fff1818a3464c6a70e0a",
+      "html": "odds_joint_model.html",
+      "public_url": "/odds_joint_model.html",
+      "source_text_sha256": "2e83968fe072a2e2b5baa1e15b08195a4ed2d859a12b6d6187bf63ec74cb055a",
+      "wording_verified": true,
+      "tables": 6,
+      "figures": 2
+    }
+  ],
+  "pdfs_generated": true
+}

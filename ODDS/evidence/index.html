@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Comprehensive methods, results, figures, tables, and model-validation information for the ODDS longitudinal prognostic study in idiopathic pulmonary fibrosis.">
+  <title>Serial multidomain six-minute walk assessment for dynamic risk prediction in idiopathic pulmonary fibrosis</title>
+  <link rel="canonical" href="https://pccmtools.org/ODDS/evidence/">
+  <link rel="stylesheet" href="evidence.css">
+  <script src="evidence.js" defer></script>
+</head>
+<body data-publication="comprehensive">
+  <a class="skip-link" href="#publication-content">Skip to main content</a>
+  <nav class="publication-bar" aria-label="Publication navigation">
+    <div class="publication-bar-inner"><a class="brand-link" href="/ODDS/">ODDS calculator</a><span class="nav-divider" aria-hidden="true"></span><span class="current-publication">Longitudinal application</span><a class="companion-link" href="/odds_joint_model.html">Joint-model summary</a></div>
+  </nav>
+  <div class="publication-shell">
+    <aside class="publication-sidebar" aria-label="Contents">
+      <button class="toc-toggle" type="button" aria-expanded="false" aria-controls="publication-toc">
+        <span>Contents</span><span class="toc-toggle-icon" aria-hidden="true"></span>
+      </button>
+      <nav id="publication-toc" class="publication-toc" aria-label="On this page">
+        <p class="toc-label">On this page</p>
+        <ol><li class="toc-h1"><a href="#introduction">Introduction</a></li>
+<li class="toc-h1"><a href="#methods">Methods</a></li>
+<li class="toc-h2"><a href="#study-design-data-sources-and-cohort-construction">Study design, data sources, and cohort construction</a></li>
+<li class="toc-h2"><a href="#odds-score-calculation">ODDS score calculation</a></li>
+<li class="toc-h2"><a href="#outcomes-and-antifibrotic-exposure">Outcomes and antifibrotic exposure</a></li>
+<li class="toc-h2"><a href="#primary-longitudinal-dynamic-prediction">Primary longitudinal dynamic prediction</a></li>
+<li class="toc-h2"><a href="#secondary-baseline-validation-calibration-and-recalibration">Secondary baseline validation, calibration, and recalibration</a></li>
+<li class="toc-h2"><a href="#individual-6mwt-component-analysis">Individual 6MWT component analysis</a></li>
+<li class="toc-h2"><a href="#sensitivity-analyses">Sensitivity analyses</a></li>
+<li class="toc-h2"><a href="#exploratory-trial-enrichment-analyses">Exploratory trial-enrichment analyses</a></li>
+<li class="toc-h2"><a href="#exploratory-candidate-longitudinal-thresholds">Exploratory candidate longitudinal thresholds</a></li>
+<li class="toc-h2"><a href="#software">Software</a></li>
+<li class="toc-h1"><a href="#results">Results</a></li>
+<li class="toc-h2"><a href="#cohort-assembly-and-observed-outcomes">Cohort assembly and observed outcomes</a></li>
+<li class="toc-h2"><a href="#baseline-characteristics">Baseline characteristics</a></li>
+<li class="toc-h2"><a href="#representativeness-of-the-longitudinal-cohort">Representativeness of the longitudinal cohort</a></li>
+<li class="toc-h2"><a href="#secondary-baseline-odds-validation">Secondary baseline ODDS validation</a></li>
+<li class="toc-h2"><a href="#primary-longitudinal-analyses">Primary longitudinal analyses</a></li>
+<li class="toc-h2"><a href="#sensitivity-analyses-2">Sensitivity analyses</a></li>
+<li class="toc-h2"><a href="#exploratory-enrichment-and-candidate-endpoint-analyses">Exploratory enrichment and candidate endpoint analyses</a></li>
+<li class="toc-h1"><a href="#discussion">Discussion</a></li>
+<li class="toc-h2"><a href="#principal-findings">Principal findings</a></li>
+<li class="toc-h2"><a href="#relation-to-prior-odds-research">Relation to prior ODDS research</a></li>
+<li class="toc-h2"><a href="#clinical-interpretation-of-the-multidomain-6mwt">Clinical interpretation of the multidomain 6MWT</a></li>
+<li class="toc-h2"><a href="#performance-across-the-functional-spectrum">Performance across the functional spectrum</a></li>
+<li class="toc-h2"><a href="#longitudinal-dynamic-prediction">Longitudinal dynamic prediction</a></li>
+<li class="toc-h2"><a href="#clinical-trial-implications">Clinical-trial implications</a></li>
+<li class="toc-h2"><a href="#limitations">Limitations</a></li>
+<li class="toc-h2"><a href="#conclusion">Conclusion</a></li>
+<li class="toc-h1"><a href="#references">References</a></li>
+<li class="toc-h1"><a href="#appendix-1-baseline-odds-survival-model-information">Appendix 1. Baseline ODDS survival model information</a></li>
+<li class="toc-h2"><a href="#baseline-hazard-values">Baseline hazard values</a></li>
+<li class="toc-h1"><a href="#appendix-2-joint-longitudinal-survival-model-information">Appendix 2. Joint longitudinal-survival model information</a></li></ol>
+      </nav>
+    </aside>
+    <main id="publication-content" class="publication-main">
+      <header class="publication-masthead"><p class="eyebrow">Longitudinal application</p><h1>Serial multidomain six-minute walk assessment for dynamic risk prediction in idiopathic pulmonary fibrosis</h1><div class="author-list" aria-label="Authors"><span class="author-name">Abhimanyu Chandel, MD, MAS</span>
+<span class="author-name">Stephanie Morgan, MD</span>
+<span class="author-name">Junad M. Chowdhury, MD</span>
+<span class="author-name">Zein Kattih, MD</span>
+<span class="author-name">Vikramjit Khangoora, MD</span>
+<span class="author-name">Christopher A. Thomas, MD</span>
+<span class="author-name">Christopher S. King, MD</span>
+<span class="author-name">Steven D. Nathan, MD</span></div><p class="research-status"><em>The contents of this document are intended for research purposes and have not been externally peer reviewed.</em></p><p class="publication-date">August 11, 2026</p><p class="source-site-link"><a href="/ODDS/">pccmtools.org/odds</a></p><div class="masthead-actions"><a class="action-link primary-action" href="/ODDS/">Open ODDS calculator</a><a class="action-link" href="downloads/comprehensive.pdf">Download PDF</a></div></header>
+      <article class="publication-article"><h1 id="introduction">Introduction</h1>
+
+<ul>
+<li><p>Idiopathic pulmonary fibrosis (IPF) is progressive, with a heterogeneous and often unpredictable clinical course. Accurate risk stratification supports clinical monitoring, transplant referral, and clinical trial design, yet predicting individual outcomes remains challenging.<sup><a href="#ref-1" class="citation-link" aria-label="Reference 1">1</a></sup></p></li>
+<li><p>The six-minute walk test (6MWT) is practical, standardized, and clinically interpretable. In addition to six-minute walk distance (6MWD), it captures oxygen requirement, exertional desaturation, and patient-reported dyspnea.<sup><a href="#ref-2" class="citation-link" aria-label="Reference 2-4">2-4</a></sup></p></li>
+<li><p>Gas-exchange impairment, patient-perceived dyspnea, and exertional oxygen requirements may convey prognostic information not fully reflected by distance alone.<sup><a href="#ref-5" class="citation-link" aria-label="Reference 5">5</a>,<a href="#ref-6" class="citation-link" aria-label="Reference 6">6</a></sup></p></li>
+<li><p>The Oxygen-Distance-Dyspnea-Saturation (ODDS) score integrates key 6MWT components and improved prognostic performance over individual 6MWT parameters in a clinical trial population.<sup><a href="#ref-7" class="citation-link" aria-label="Reference 7">7</a></sup></p></li>
+<li><p>We evaluated whether serial ODDS trajectory adds prognostic information beyond serial 6MWD for death or lung transplantation. Secondary analyses explored trial enrichment and ODDS as a candidate longitudinal clinical-trial endpoint.</p></li>
+</ul>
+
+<h1 id="methods">Methods</h1>
+
+<h2 id="study-design-data-sources-and-cohort-construction">Study design, data sources, and cohort construction</h2>
+
+<p>We performed a retrospective cohort study of adults with IPF who underwent 6MWTs as part of routine longitudinal care at the Inova Fairfax Hospital Advanced Lung Disease Program between 2011 and 2026. The analytic dataset included serial 6MWT records, clinical follow-up, vital status, lung transplantation status, respiratory hospitalization data, and antifibrotic prescription information. In this program, 6MWTs are generally obtained during protocolized longitudinal follow-up approximately every 3-6 months and are performed using a standardized protocol based on American Thoracic Society guidance. Pulse oximetry was assessed throughout the walk to capture exertional oxygen saturation, and Borg dyspnea scores were recorded using the Borg scale.<sup><a href="#ref-2" class="citation-link" aria-label="Reference 2">2</a>,<a href="#ref-3" class="citation-link" aria-label="Reference 3">3</a></sup></p>
+
+<p>The date of the first eligible 6MWT was defined as time zero. The baseline analytic cohort included patients with a valid baseline 6MWD, baseline ODDS score, and known death or transplantation status. Longitudinal analyses were restricted to patients in the baseline analytic cohort with at least two 6MWT assessments.</p>
+
+<p>Component values outside prespecified physiologic ranges and chronologically impossible values were treated as missing. For comparative modeling, 6MWD was reverse-coded so that higher standardized values represented worse status, matching the direction of the ODDS raw score.</p>
+
+<p>Baseline characteristics by endpoint status and characteristics of patients included in versus excluded from the analysis were summarized descriptively. Absolute standardized differences were used to describe the magnitude of between-group differences.</p>
+
+<h2 id="odds-score-calculation">ODDS score calculation</h2>
+
+<p>The primary analyses used the continuous ODDS raw score.</p>
+
+<p>For each 6MWT, the continuous ODDS raw score is calculated as:</p>
+
+<p><strong>ODDS raw = 0.180 x oxygen flow (L/min) - 0.004 x 6MWD (m) - 0.069 x nadir SpO2 (%) + 0.070 x Borg dyspnea score</strong></p>
+
+<p>More negative values indicate better status and less negative values indicate worse status. The score is often negative because the distance and nadir oxygen saturation terms are negative and numerically large. For example, a 6MWT performed on 2 L/min oxygen with 6MWD 200 m, nadir SpO2 92%, and Borg score 5 gives (0.180 x 2) - (0.004 x 200) - (0.069 x 92) + (0.070 x 5), or approximately -6.44. Longer walk distance and higher nadir SpO2 push the score downward, whereas higher oxygen requirement and greater Borg dyspnea push it upward. ODDS worsening over time is therefore represented by an increase in the raw score toward zero.</p>
+
+<h2 id="outcomes-and-antifibrotic-exposure">Outcomes and antifibrotic exposure</h2>
+
+<p>The primary endpoint was time to the first occurrence of death or lung transplantation. Patients without an event were censored at last available follow-up. Death alone (with transplantation treated as a censoring event) and time to respiratory hospitalization or death were evaluated as sensitivity endpoints.</p>
+
+<p>Antifibrotic therapy was summarized descriptively but were not included in primary models because reliable ascertainment of medication start dates, stop dates, adherence, and treatment interruptions was challenging in this retrospective cohort.</p>
+
+<h2 id="primary-longitudinal-dynamic-prediction">Primary longitudinal dynamic prediction</h2>
+
+<p>The primary analysis evaluated whether serial ODDS provided better dynamic prognostic information than serial 6MWD. Serial ODDS and serial 6MWD were modeled separately using joint longitudinal-survival models. Each joint model included two linked parts: a longitudinal submodel describing how the marker changed over time within each patient and a survival submodel relating the patient's current estimated marker value to the risk of death or lung transplantation.</p>
+
+<p>For the longitudinal submodel, the standardized marker was modeled with a Gaussian linear mixed-effects model containing linear time since the baseline 6MWT and correlated patient-specific random intercepts and slopes. The ODDS marker was standardized as (ODDS raw + 7.20477)/1.22839. For the comparison model, distance was reversed and standardized as (380.09623 - 6MWD in meters)/130.29415 so that higher values represented worsening in both models. The fitted current marker value was linked to a relative-risk survival submodel for death or lung transplantation. No additional clinical covariates were included. The log baseline hazard was represented by penalized quadratic B-splines with nine segments and a second-order difference penalty.</p>
+
+<p>Joint models were fit in JMbayes2 using four Markov chains of 20,000 iterations, including 5,000 burn-in iterations per chain, without thinning; 60,000 posterior draws were retained. The current-value association had a normal prior with mean 0 and standard deviation 2. Random-effect correlations used an LKJ prior with eta=3, and the baseline-hazard smoothing precision used a gamma prior with shape 5 and rate 0.5. Additional model details and assessments are provided in Appendix 2. Sampling was considered satisfactory when clinically important parameters and derived baseline survival had rank-normalized split R-hat &lt;=1.01 and effective sample size &gt;=300, supported by trace-plot review. Model fit was evaluated using posterior predictive checks of the longitudinal distribution, mean trajectory, variance, within-patient correlation, and event process.</p>
+
+<p>Dynamic predictions were evaluated at 0.5, 1.0, 1.5, and 2.0 years after baseline for subsequent 1-, 2-, and 3-year horizons. Discrimination was summarized using inverse-probability-of-censoring-weighted (IPCW) time-dependent AUC, and IPCW Brier score summarized overall prediction error. Calibration was evaluated after pooling predictions from all held-out patients. Censoring-aware calibration measures included calibration-in-the-large, calibration slope, integrated calibration index (ICI), and E50 and E90 (representing the median and 90th percentile absolute differences between predicted and observed risk along a flexible calibration curve).</p>
+
+<p>Primary dynamic performance was internally validated using patient-level five-fold cross-validation, with all observations from an individual retained in the same fold. Marker standardization and model fitting were repeated in each training fold before predictions were evaluated in the held-out patients. Fold-specific AUC and Brier estimates were combined using the number of test patients at risk. Calibration curves and summary measures were estimated from pooled out-of-fold predictions, with patient-level bootstrap intervals.</p>
+
+<p>Start-stop time-updated Cox models were performed in the full baseline cohort as a sensitivity analysis of the primary longitudinal modeling approach. To assess potential guarantee-time bias introduced by requiring at least two retained tests for the joint-model cohort, fixed landmark Cox sensitivity analyses were also constructed from the full baseline cohort at 0.5, 1.0, 1.5, and 2.0 years. At each landmark, patients were required only to be alive and event-free and under observation at that time; the most recent marker measured on or before the landmark was used, no future 6MWT was required, and endpoint follow-up began at the landmark. Landmark dynamic AUC and Brier scores were estimated using IPCW and internally validated using bootstrap optimism correction.</p>
+
+<h2 id="secondary-baseline-validation-calibration-and-recalibration">Secondary baseline validation, calibration, and recalibration</h2>
+
+<p>Baseline prognostic performance was evaluated as a secondary analysis using the first eligible 6MWT. ODDS raw score and 6MWD were compared in separate Cox proportional hazards models fit in the same baseline analytic cohort. Because 6MWD is one of the variables used to calculate ODDS- ODDS and 6MWD were not included together in the primary baseline comparison model. This approach facilitated the intended comparison between a multidomain 6MWT score and distance alone.</p>
+
+<p>Effects were reported per 1-standard-deviation worsening of each marker: higher/worse ODDS and lower/worse 6MWD. Discrimination was summarized using Harrell C-index and IPCW time-dependent AUC at 1, 2, and 3 years. The C-index provides an overall measure of risk ranking across follow-up, whereas time-dependent AUC evaluates discrimination at specific prediction horizons. Prediction error was summarized using IPCW Brier scores at the same horizons. Calibration was assessed using calibration-in-the-large, calibration slope, observed versus predicted risk by predicted-risk strata, and calibration belt testing.</p>
+
+<p>The previously published ODDS specification was retained as the primary baseline validation model. Local recalibration was evaluated with baseline-hazard and intercept updating and flexible spline updating. Because recalibration did not meaningfully improve model fit, calibration, or prediction error these recalibrated models were not subsequently used. Bootstrap resampling with 200 replicates was used for selected optimism-corrected performance estimates.</p>
+
+<h2 id="individual-6mwt-component-analysis">Individual 6MWT component analysis</h2>
+
+<p>To evaluate whether non-distance 6MWT information contributed prognostic value, we compared models using individual walk-test measures: 6MWD, oxygen requirement, nadir SpO2, exertional desaturation, and Borg dyspnea score. We also fit a model containing the individual ODDS inputs together: 6MWD, oxygen requirement, nadir SpO2, and Borg dyspnea score. This model was compared with the 6MWD-alone model using a likelihood-ratio test to determine whether the broader walk-test profile improved model fit beyond distance alone.</p>
+
+<h2 id="sensitivity-analyses">Sensitivity analyses</h2>
+
+<p>Sensitivity analyses evaluated the robustness of baseline and longitudinal findings across alternative cohorts, endpoints, and modeling strategies. These included analyses restricted to a contemporary era, patients with repeated 6MWTs, patients who received antifibrotic therapy, death-alone analyses with censoring at transplantation, time to respiratory hospitalization or death, multiple-imputation analyses for missing baseline predictors, start-stop time-updated Cox models, and bootstrap-corrected landmark Cox dynamic prediction.</p>
+
+<h2 id="exploratory-trial-enrichment-analyses">Exploratory trial-enrichment analyses</h2>
+
+<p>Exploratory hypothetical trial-enrichment analyses compared ODDS-only and 6MWD-only selection strategies. Enrichment rules were summarized by retained cohort fraction, Kaplan-Meier estimated 1-year death or transplantation risk, approximate sample-size implications under a hypothetical 25% relative risk reduction, and physiologic representativeness. Retention-matched enrichment analyses compared patients with worse ODDS values, defined using the median, top tertile, and top quartile, with the corresponding lowest 6MWD strata.</p>
+
+<h2 id="exploratory-candidate-longitudinal-thresholds">Exploratory candidate longitudinal thresholds</h2>
+
+<p>Candidate ODDS change thresholds were explored as potential longitudinal markers of disease worsening. First, ODDS changes at approximately 6 and 12 months were compared according to whether patients experienced a decline in 6MWD of at least 30 m or 45 m from baseline. These thresholds approximate historically cited minimally important 6MWD decline thresholds in IPF and allowed frequently cited clinical 6MWD worsening anchors to be translated into candidate ODDS worsening thresholds.<sup><a href="#ref-8" class="citation-link" aria-label="Reference 8">8</a>,<a href="#ref-9" class="citation-link" aria-label="Reference 9">9</a></sup></p>
+
+<p>Second, outcome-anchored ODDS change thresholds were estimated using Youden's index. This approach identified the ODDS change threshold that best balanced sensitivity and specificity for predicting death or lung transplantation during the subsequent 2 years. Patients were classified according to whether they exceeded the selected ODDS worsening threshold, and event-free survival was displayed using Kaplan-Meier curves with pointwise confidence intervals and risk tables.</p>
+
+<p>Because thresholds and performance were estimated in the same cohort, these ODDS change thresholds should be considered exploratory functional and prognostic thresholds rather than definitive minimally important differences or validated trial endpoints.</p>
+
+<h2 id="software">Software</h2>
+
+<p>Analyses were performed using R version 4.5.2. JMbayes2 version 0.6.0 was used for joint longitudinal-survival modeling.</p>
+
+<h1 id="results">Results</h1>
+
+<h2 id="cohort-assembly-and-observed-outcomes">Cohort assembly and observed outcomes</h2>
+
+<p>Seven hundred sixty-eight patient records were identified during the study period. After 13 duplicate records were consolidated, 755 unique patients were screened. A total of 139 patients were excluded before baseline analysis: 103 were missing baseline 6MWT components, 34 were missing follow-up, and 2 had undergone lung transplantation before the initial consultation. The baseline cohort therefore included 616 patients (Figure 1). Mean (SD) follow-up was 2.3 (2.4) years, and median (IQR) follow-up was 1.4 (0.5-3.2) years. During follow-up, 280 patients experienced death or lung transplantation; the first event was death in 179 patients and lung transplantation in 101. Post-baseline respiratory hospitalization occurred in 272 patients, with 820 total respiratory hospitalizations identified.</p>
+
+<figure>
+<img src="media/comprehensive-figure-01.png" title="Figure 1. Study flow diagram." alt="Figure 1. Study flow diagram." loading="lazy" decoding="async">
+<figcaption aria-hidden="true"><p><strong>Figure 1. Study flow diagram.</strong></p></figcaption>
+</figure>
+
+<h2 id="baseline-characteristics">Baseline characteristics</h2>
+
+<p>At baseline, median age was 70 years, 74% were male, and 75% were White/Caucasian. Median FVC was 65% predicted and median DLCO was 44% predicted. Baseline antifibrotic therapy at the time of initial consultation was uncommon (N=44, 7.1%), whereas antifibrotic were prescribed during follow up in 468 patients (76%). Patients who died or underwent lung transplantation had lower FVC and DLCO, more frequent oxygen use at rest, lower nadir oxygen saturation, greater exertional desaturation, and worse 6MWD and ODDS raw scores. Absolute standardized differences were largest for DLCO, FVC, nadir SpO2, exertional desaturation, and ODDS raw score (0.40-0.68; Table 1 and Figure 2).</p>
+
+<p><strong>Table 1. Baseline characteristics by outcome</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 1. Baseline characteristics by outcome"><table aria-label="Table 1. Baseline characteristics by outcome" class="publication-data-table featured-table featured-table-1">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 18%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr>
+<th scope="col"><strong>Characteristic</strong></th>
+<th style="text-align: center;" scope="col"><strong>Overall<br>
+N = 616</strong></th>
+<th style="text-align: center;" scope="col"><strong>No death/transplant<br>
+N = 336</strong></th>
+<th style="text-align: center;" scope="col"><strong>Death/transplant<br>
+N = 280</strong></th>
+<th style="text-align: center;" scope="col"><strong>Absolute standardized difference</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Age, years</td>
+<td style="text-align: center;">70 (64, 75)</td>
+<td style="text-align: center;">71 (66, 76)</td>
+<td style="text-align: center;">69 (63, 74)</td>
+<td style="text-align: center;">0.30</td>
+</tr>
+<tr class="category-row">
+<td>Sex</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">0.32</td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Female</p>
+</blockquote></td>
+<td style="text-align: center;">155 (25%)</td>
+<td style="text-align: center;">105 (31%)</td>
+<td style="text-align: center;">50 (18%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Male</p>
+</blockquote></td>
+<td style="text-align: center;">457 (74%)</td>
+<td style="text-align: center;">229 (68%)</td>
+<td style="text-align: center;">228 (81%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Other/unknown</p>
+</blockquote></td>
+<td style="text-align: center;">4 (0.6%)</td>
+<td style="text-align: center;">2 (0.6%)</td>
+<td style="text-align: center;">2 (0.7%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="category-row">
+<td>Race/ethnicity</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">0.06</td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>White/Caucasian</p>
+</blockquote></td>
+<td style="text-align: center;">464 (75%)</td>
+<td style="text-align: center;">254 (76%)</td>
+<td style="text-align: center;">210 (75%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Black/African American</p>
+</blockquote></td>
+<td style="text-align: center;">42 (6.8%)</td>
+<td style="text-align: center;">21 (6.3%)</td>
+<td style="text-align: center;">21 (7.5%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Asian</p>
+</blockquote></td>
+<td style="text-align: center;">42 (6.8%)</td>
+<td style="text-align: center;">24 (7.1%)</td>
+<td style="text-align: center;">18 (6.4%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Hispanic/Latino</p>
+</blockquote></td>
+<td style="text-align: center;">37 (6.0%)</td>
+<td style="text-align: center;">21 (6.3%)</td>
+<td style="text-align: center;">16 (5.7%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Other/unknown</p>
+</blockquote></td>
+<td style="text-align: center;">31 (5.0%)</td>
+<td style="text-align: center;">16 (4.8%)</td>
+<td style="text-align: center;">15 (5.4%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Body mass index, kg/m²</td>
+<td style="text-align: center;">27.9 (24.8, 31.7)</td>
+<td style="text-align: center;">28.0 (24.8, 31.9)</td>
+<td style="text-align: center;">27.9 (24.7, 31.5)</td>
+<td style="text-align: center;">0.02</td>
+</tr>
+<tr>
+<td>FVC, % predicted</td>
+<td style="text-align: center;">65 (52, 80)</td>
+<td style="text-align: center;">70 (57, 84)</td>
+<td style="text-align: center;">61 (49, 74)</td>
+<td style="text-align: center;">0.54</td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">24</td>
+<td style="text-align: center;">13</td>
+<td style="text-align: center;">11</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>DLCO, % predicted</td>
+<td style="text-align: center;">44 (33, 54)</td>
+<td style="text-align: center;">49 (39, 60)</td>
+<td style="text-align: center;">38 (29, 48)</td>
+<td style="text-align: center;">0.68</td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">206</td>
+<td style="text-align: center;">118</td>
+<td style="text-align: center;">88</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Oxygen use at rest</td>
+<td style="text-align: center;">143 (24%)</td>
+<td style="text-align: center;">63 (20%)</td>
+<td style="text-align: center;">80 (29%)</td>
+<td style="text-align: center;">0.22</td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">17</td>
+<td style="text-align: center;">14</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Baseline oxygen flow at rest, L/min (among oxygen users)</td>
+<td style="text-align: center;">4 (2, 6)</td>
+<td style="text-align: center;">4 (1, 6)</td>
+<td style="text-align: center;">4 (2, 6)</td>
+<td style="text-align: center;">0.08</td>
+</tr>
+<tr>
+<td>Baseline 6MWD, m</td>
+<td style="text-align: center;">355 (253, 444)</td>
+<td style="text-align: center;">360 (284, 443)</td>
+<td style="text-align: center;">339 (228, 444)</td>
+<td style="text-align: center;">0.21</td>
+</tr>
+<tr>
+<td>Resting SpO2, %</td>
+<td style="text-align: center;">99 (98, 100)</td>
+<td style="text-align: center;">99 (98, 100)</td>
+<td style="text-align: center;">99 (97, 100)</td>
+<td style="text-align: center;">0.16</td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Nadir SpO2, %</td>
+<td style="text-align: center;">91 (87, 95)</td>
+<td style="text-align: center;">93 (89, 96)</td>
+<td style="text-align: center;">89 (86, 94)</td>
+<td style="text-align: center;">0.51</td>
+</tr>
+<tr>
+<td>Desaturation, percentage points</td>
+<td style="text-align: center;">7 (3, 11)</td>
+<td style="text-align: center;">6 (3, 10)</td>
+<td style="text-align: center;">9 (6, 12)</td>
+<td style="text-align: center;">0.50</td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Borg dyspnea score</td>
+<td style="text-align: center;">3.0 (2.0, 4.0)</td>
+<td style="text-align: center;">3.0 (1.5, 4.0)</td>
+<td style="text-align: center;">3.0 (2.0, 4.5)</td>
+<td style="text-align: center;">0.17</td>
+</tr>
+<tr>
+<td>ODDS raw score</td>
+<td style="text-align: center;">-7.45 (-8.04, -6.44)</td>
+<td style="text-align: center;">-7.65 (-8.20, -6.87)</td>
+<td style="text-align: center;">-7.12 (-7.83, -6.13)</td>
+<td style="text-align: center;">0.40</td>
+</tr>
+<tr>
+<td>Antifibrotic baseline</td>
+<td style="text-align: center;">44 (7.1%)</td>
+<td style="text-align: center;">29 (8.6%)</td>
+<td style="text-align: center;">15 (5.4%)</td>
+<td style="text-align: center;">0.13</td>
+</tr>
+<tr>
+<td>Antifibrotic ever</td>
+<td style="text-align: center;">468 (76%)</td>
+<td style="text-align: center;">277 (82%)</td>
+<td style="text-align: center;">191 (68%)</td>
+<td style="text-align: center;">0.33</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Values are median (IQR) or n (%). Absolute standardized differences were calculated among nonmissing observations using pooled-variance standardization for continuous and binary variables and a generalized standardized difference for multicategory variables. Values closer to 0 indicate greater similarity; 0.10 is commonly used as a marker of a potentially meaningful difference.</p>
+
+<p>Oxygen flow is summarized only among baseline oxygen users (n = 143; missing = 0).</p>
+
+<p>6MWD = six-minute walk distance; DLCO = diffusing capacity; FVC = forced vital capacity; ODDS = Oxygen-Distance-Dyspnea-Saturation; SpO2 = peripheral oxygen saturation.</p>
+
+<figure><img src="media/comprehensive-figure-02.png" title="Figure 2. Baseline ODDS and 6MWD distributions by outcome." alt="Figure 2. Baseline ODDS and 6MWD distributions by outcome." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 2. Baseline ODDS and 6MWD distributions by outcome.</strong> Violin and box displays compare baseline 6MWD (left) and baseline ODDS raw score (right) among patients who did not versus did subsequently experience death or lung transplantation. Violin width reflects the concentration of observations and the embedded box plots show the median and interquartile range.</p>
+
+<h2 id="representativeness-of-the-longitudinal-cohort">Representativeness of the longitudinal cohort</h2>
+
+<p>Among the 616 patients in the baseline cohort, 449 had at least two retained assessments and entered the longitudinal cohort; 167 were excluded. Excluded patients generally had worse baseline physiologic status and substantially shorter observation (Table 2). In the longitudinal cohort, mean (SD) follow-up was 2.7 (2.5) years and median (IQR) follow-up was 2.0 (0.9-3.6) years and the corresponding values among excluded patients were 1.1 (1.9) years and 0.4 (0.1-1.1) years.</p>
+
+<p><strong>Table 2. Characteristics and observed outcomes of patients included in versus excluded from the longitudinal cohort</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 2. Characteristics and observed outcomes of patients included in versus excluded from the longitudinal cohort"><table aria-label="Table 2. Characteristics and observed outcomes of patients included in versus excluded from the longitudinal cohort" class="publication-data-table featured-table featured-table-2">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr>
+<th scope="col"><strong>Characteristic</strong></th>
+<th style="text-align: center;" scope="col"><strong>Included in longitudinal cohort<br>
+N = 449</strong></th>
+<th style="text-align: center;" scope="col"><strong>Excluded from longitudinal cohort<br>
+N = 167</strong></th>
+<th style="text-align: center;" scope="col"><strong>Absolute standardized difference</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="section-row">
+<td><strong>Demographics</strong></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Age, years</td>
+<td style="text-align: center;">70 [64, 75]</td>
+<td style="text-align: center;">70 [65, 76]</td>
+<td style="text-align: center;">0.04</td>
+</tr>
+<tr class="category-row">
+<td>Sex</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">0.17</td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Female</p>
+</blockquote></td>
+<td style="text-align: center;">107 (23.8%)</td>
+<td style="text-align: center;">48 (28.7%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Male</p>
+</blockquote></td>
+<td style="text-align: center;">338 (75.3%)</td>
+<td style="text-align: center;">119 (71.3%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Other/unknown</p>
+</blockquote></td>
+<td style="text-align: center;">4 (0.9%)</td>
+<td style="text-align: center;">0 (0.0%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">0 (0.0%)</td>
+<td style="text-align: center;">0 (0.0%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="category-row">
+<td>Race/ethnicity</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">0.14</td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>White/Caucasian</p>
+</blockquote></td>
+<td style="text-align: center;">338 (75.3%)</td>
+<td style="text-align: center;">126 (75.4%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Black/African American</p>
+</blockquote></td>
+<td style="text-align: center;">29 (6.5%)</td>
+<td style="text-align: center;">13 (7.8%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Asian</p>
+</blockquote></td>
+<td style="text-align: center;">31 (6.9%)</td>
+<td style="text-align: center;">11 (6.6%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Hispanic/Latino</p>
+</blockquote></td>
+<td style="text-align: center;">30 (6.7%)</td>
+<td style="text-align: center;">7 (4.2%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row">
+<td><blockquote>
+<p>Other/unknown</p>
+</blockquote></td>
+<td style="text-align: center;">18 (4.0%)</td>
+<td style="text-align: center;">9 (5.4%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="nested-row missing-row">
+<td><blockquote>
+<p><em>Missing</em></p>
+</blockquote></td>
+<td style="text-align: center;">3 (0.7%)</td>
+<td style="text-align: center;">1 (0.6%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>BMI, kg/m2</td>
+<td style="text-align: center;">28.1 [25.0, 31.7]</td>
+<td style="text-align: center;">27.3 [23.9, 31.5]</td>
+<td style="text-align: center;">0.04</td>
+</tr>
+<tr class="section-row">
+<td><strong>Baseline physiologic status</strong></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>FVC, % predicted</td>
+<td style="text-align: center;">67.0 [54.0, 81.0]</td>
+<td style="text-align: center;">61.5 [48.0, 74.2]</td>
+<td style="text-align: center;">0.29</td>
+</tr>
+<tr>
+<td>DLCO, % predicted</td>
+<td style="text-align: center;">44.0 [34.0, 55.0]</td>
+<td style="text-align: center;">44.0 [28.0, 52.2]</td>
+<td style="text-align: center;">0.19</td>
+</tr>
+<tr>
+<td>Oxygen use at rest</td>
+<td style="text-align: center;">83 (18.5%)</td>
+<td style="text-align: center;">60 (35.9%)</td>
+<td style="text-align: center;">0.43</td>
+</tr>
+<tr>
+<td>Baseline 6MWD, m</td>
+<td style="text-align: center;">382 [288, 454]</td>
+<td style="text-align: center;">302 [204, 374]</td>
+<td style="text-align: center;">0.62</td>
+</tr>
+<tr>
+<td>Baseline ODDS raw score</td>
+<td style="text-align: center;">-7.58 [-8.11, -6.75]</td>
+<td style="text-align: center;">-7.04 [-7.67, -5.86]</td>
+<td style="text-align: center;">0.53</td>
+</tr>
+<tr class="section-row">
+<td><strong>Observed follow-up and outcomes</strong></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Available follow-up, years</td>
+<td style="text-align: center;">2.0 [0.9, 3.6]</td>
+<td style="text-align: center;">0.4 [0.1, 1.1]</td>
+<td style="text-align: center;">0.72</td>
+</tr>
+<tr>
+<td>Any death recorded during available follow-up</td>
+<td style="text-align: center;">155 (34.5%)</td>
+<td style="text-align: center;">64 (38.3%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Lung transplantation after cohort entry</td>
+<td style="text-align: center;">88 (19.6%)</td>
+<td style="text-align: center;">13 (7.8%)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Death or lung transplantation (first event)</td>
+<td style="text-align: center;">208 (46.3%)</td>
+<td style="text-align: center;">72 (43.1%)</td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Values are median [IQR] or n (%). Absolute standardized differences were calculated among nonmissing observations for baseline characteristics and follow-up duration; values closer to 0 indicate greater similarity, and 0.10 is commonly used as a marker of a potentially meaningful difference.</p>
+
+<p>6MWD = six-minute walk distance; DLCO = diffusing capacity; FVC = forced vital capacity; ODDS = Oxygen-Distance-Dyspnea-Saturation.</p>
+
+<h2 id="secondary-baseline-odds-validation">Secondary baseline ODDS validation</h2>
+
+<p>Both baseline 6MWD and ODDS raw score were strongly associated with death or lung transplantation. Each 1-SD lower baseline 6MWD was associated with higher event risk (HR, 1.71; 95% CI, 1.50-1.95; P&lt;0.001). However, each 1-SD higher/worse ODDS raw score was associated with an even larger increase in risk (HR, 2.10; 95% CI, 1.88-2.35; P&lt;0.001).</p>
+
+<p>ODDS was associated with higher discrimination than 6MWD alone. The apparent Harrell C-index was 0.745 for ODDS compared with 0.658 for 6MWD. After bootstrap optimism correction, the C-index was 0.743 for ODDS and 0.657 for 6MWD, with an optimism-corrected difference of 0.086. Censoring-aware time-dependent AUCs favored ODDS at 1, 2, and 3 years: 0.816, 0.809, and 0.789 for ODDS versus 0.714, 0.703, and 0.675 for 6MWD (Figure 3). IPCW Brier scores were also lower for ODDS at each horizon: 0.123, 0.169, and 0.191 versus 0.136, 0.193, and 0.220 for 6MWD.</p>
+
+<figure><img src="media/comprehensive-figure-03.png" title="Figure 3. Baseline discrimination for ODDS versus 6MWD alone." alt="Figure 3. Baseline discrimination for ODDS versus 6MWD alone." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 3. Baseline discrimination for ODDS versus 6MWD alone.</strong> ODDS demonstrated higher (A) censoring-aware horizon-specific area under the curve at 1, 2, and 3 years and (B) overall Harrell C-index compared with 6MWD alone.</p>
+
+<h3 id="baseline-model-calibration">Baseline model calibration</h3>
+
+<p>The published ODDS score showed good cohort-level calibration. The mean predicted 1-year risk from the published ODDS survival estimate was 17.6%, closely approximating the observed 1-year death/transplant risk of 18.9%.<sup><a href="#ref-7" class="citation-link" aria-label="Reference 7">7</a></sup> Risk-stratified calibration plots showed broadly acceptable agreement between predicted and observed risk (Figure 4). Although predicted and observed risks were not perfectly aligned at every evaluated time point, calibration was generally acceptable and recalibration efforts did not substantially improve overall model performance. Therefore, the original ODDS score was retained for subsequent validation analysis.</p>
+
+<figure><img src="media/comprehensive-figure-04.png" title="Figure 4. Calibration by model risk decile at 1, 2, and 3 years." alt="Figure 4. Calibration by model risk decile at 1, 2, and 3 years." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 4. Calibration by model risk decile at 1, 2, and 3 years.</strong> Points show decile-level mean predicted risk versus Kaplan-Meier observed death or transplant risk for 6MWD alone and ODDS raw score alone. The dashed line indicates perfect calibration; vertical lines show selected 95% confidence intervals for observed risk.</p>
+
+<h3 id="component-level-analyses">Component-level analyses</h3>
+
+<p>Analyses of the individual 6MWT measures supported the value of using the full walk-test profile rather than distance alone. When evaluated one at a time, prognostic discrimination was modest for 6MWD alone (C-index 0.658), oxygen requirement (0.694), nadir SpO₂ (0.714), exertional desaturation (0.688), and Borg dyspnea (0.637). However, the full component model had a C-index of 0.753 and significantly improved fit compared with the model containing 6MWD alone (likelihood-ratio chi-square=77.9; P&lt;0.001). In this full model, 6MWD, oxygen requirement, and nadir SpO2 remained independently associated with death or lung transplantation, whereas Borg dyspnea did not (p&gt;0.05).</p>
+
+<h2 id="primary-longitudinal-analyses">Primary longitudinal analyses</h2>
+
+<p>The longitudinal cohort included 449 patients with at least two retained 6MWT assessments and evaluated a total of 2,341 6MWTs. In this cohort, 208 patients experienced death or lung transplantation with death as the first event in 120 patients and lung transplantation as the first event in 88. The median number of 6MWTs was 5 [IQR, 3-7] across a median observation span of 1.28 years [IQR, 0.56-2.43]. Median baseline-to-last 6MWD change was -19.8 m, whereas median baseline-to-last ODDS change was +0.42, both consistent with overall worsening (Figure 5).</p>
+
+<figure class="multi-panel-figure"><img src="media/comprehensive-figure-05.png" title="Figure 5. 6MWD and ODDS score trajectories across follow-up." alt="Figure 5. 6MWD and ODDS score trajectories across follow-up." loading="lazy" decoding="async"> <img src="media/comprehensive-figure-06.png" title="Figure 5. 6MWD and ODDS score trajectories across follow-up." alt="Figure 5. 6MWD and ODDS score trajectories across follow-up." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 5. 6MWD and ODDS score trajectories across follow-up.</strong> Spaghetti plots show patient-level 6MWD and ODDS raw-score trajectories through 5 years after the first 6MWT. The overlaid smooth curve summarizes the average trajectory with its confidence band.</p>
+
+<p>A 1-SD worse current modeled ODDS value was associated with a 2.28-fold higher instantaneous rate of death or transplantation (95% credible interval, 1.91-2.72), compared with a 1.82-fold higher rate for a 1-SD worse current modeled 6MWD value (1.49-2.20).</p>
+
+<p>Four-chain sampling was satisfactory for both models. Maximum R-hat values were 1.003 for ODDS and 1.005 for 6MWD, and the lowest effective sample sizes across key parameters and derived survival quantities were 1,079 and 587, respectively, both exceeding the prespecified threshold of 300. Posterior predictive checks showed no gross failure of either longitudinal or event submodel. Detailed prior distributions, sampling and convergence diagnostics, posterior predictive checks, cross-validation methods, and model-sensitivity analyses are provided in the separate <a href="/odds_joint_model.html"><u>ODDS joint-model summary</u></a>.</p>
+
+<p>The serial ODDS discrimination advantage persisted after patient-level five-fold internal validation (Figure 6). Across prediction start times and horizons, cross-validated AUC ranged from 0.76 to 0.83 for ODDS and from 0.61 to 0.72 for 6MWD. Among 328 patients at risk at the 1-year prediction start, ODDS AUCs for the subsequent 1, 2, and 3 years were 0.784, 0.774, and 0.761, respectively, compared with 0.707, 0.676, and 0.651 for 6MWD. Across all evaluated windows, IPCW Brier scores were lower for ODDS (0.113-0.214) than for 6MWD (0.116-0.244; Figure 7). Pooled out-of-fold ICI ranged from 0.025 to 0.075 for ODDS and from 0.014 to 0.061 for 6MWD; corresponding E50 ranges were 0.015-0.052 and 0.006-0.062, and E90 ranges were 0.043-0.145 and 0.033-0.126. Neither model showed a consistent direction of mean overprediction or underprediction. At the 1-year prediction start, ODDS ICI values were 0.025, 0.042, and 0.029 for the subsequent 1-, 2-, and 3-year horizons, and all three calibration-slope intervals included 1. Calibration slopes were below 1 for longer-horizon ODDS evaluations, indicating that these longer-term predictions warrant greater caution.</p>
+
+<p>To illustrate how serial ODDS measurements update patient-level prognosis, representative displays were generated for patients with worsening and improving ODDS trajectories (Figure 8) and for two patients with similar 6MWD profiles but divergent ODDS trajectories (Figure 9).</p>
+
+<figure><img src="media/comprehensive-figure-07.png" title="Figure 6. Patient-level cross-validated discrimination from the joint longitudinal-survival models." alt="Figure 6. Patient-level cross-validated discrimination from the joint longitudinal-survival models." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 6. Patient-level cross-validated discrimination from the joint longitudinal-survival models.</strong> Points and lines show weighted mean IPCW time-dependent AUC across five held-out patient folds using serial marker history available at prediction start times of 0.5, 1.0, 1.5, and 2.0 years. Panels show subsequent 1-, 2-, and 3-year prediction horizons.</p>
+
+<figure><img src="media/comprehensive-figure-08.png" title="Figure 7. Patient-level cross-validated prediction error and calibration from the joint longitudinal-survival models." alt="Figure 7. Patient-level cross-validated prediction error and calibration from the joint longitudinal-survival models." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 7. Patient-level cross-validated prediction error and calibration from the joint longitudinal-survival models.</strong> The upper row shows weighted mean IPCW Brier score across five held-out patient folds. The lower row shows ICI estimated after pooling out-of-fold predictions and fitting censoring-aware calibration curves. Lower values indicate less overall prediction error or calibration discrepancy.</p>
+
+<figure><img src="media/comprehensive-figure-09.png" title="Figure 8. Patient-level dynamic ODDS survival displays." alt="Figure 8. Patient-level dynamic ODDS survival displays." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 8. Patient-level dynamic ODDS survival displays.</strong> Two representative patients illustrate opposing serial ODDS trajectories. For each patient, the left panel shows observed ODDS raw scores, and the three right-hand panels show event-free survival estimated by the joint model after baseline, interim, and latest ODDS observations. Shaded regions are pointwise 95% intervals. Labels give estimated 2-year event-free survival after incorporating information through each highlighted visit.</p>
+
+<figure><img src="media/comprehensive-figure-10.png" title="Figure 9. 6MWD-matched patient dynamic survival comparison." alt="Figure 9. 6MWD-matched patient dynamic survival comparison." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 9. 6MWD-matched patient dynamic survival comparison.</strong> Two patients with similar baseline and final 6MWD were selected to illustrate how divergent ODDS trajectories can change prognosis. The left panel shows serial ODDS and the right panel shows 2-year event-free survival estimated by the joint model after each available 6MWT was incorporated. The table below the figure shows how individual ODDS components contributed to the divergent trajectories.</p>
+
+<h2 id="sensitivity-analyses-2">Sensitivity analyses</h2>
+
+<p>Results were consistent across major sensitivity analyses. For the ODDS joint model, tighter and more diffuse current-value association priors, a simpler baseline hazard, and independent random effects produced nearly identical association estimates and dynamic performance. The hazard ratio per 1-SD worse current ODDS value ranged from 2.27 to 2.29 across these supported alternatives, and apparent AUC at the 1-year prediction start for the subsequent 2 years ranged from 0.788 to 0.791. A more complex model that added an instantaneous ODDS-slope association did not meet the sampling criteria and was therefore not further developed.</p>
+
+<p>In time-updated Cox models using the full baseline cohort, both worse serial 6MWD and worse serial ODDS were associated with subsequent death or lung transplantation, with hazard ratios of 2.27 and 2.43, respectively. Fixed landmark analyses also used the full baseline cohort, began outcome follow-up at each landmark, and required no future 6MWT. Across 1-, 2-, and 3-year horizons, bootstrap-corrected landmark AUCs ranged from 0.76 to 0.80 for ODDS and 0.62 to 0.72 for 6MWD (Figure 10), providing directionally consistent results without the primary joint model's two-test inclusion requirement.</p>
+
+<p>In the baseline sensitivity restricted to 468 patients with antifibrotic exposure, ODDS retained higher discrimination than 6MWD (C-index 0.755 vs. 0.675). Within the 449-patient longitudinal cohort, the antifibrotic-exposed subgroup included 355 patients and 150 events and the time-updated hazard ratio per 1-SD worsening was 2.42 for ODDS and 2.09 for 6MWD. Findings were also robust in contemporary-era, multiple-imputation, death-alone, respiratory hospitalization/death, repeated-measure, and clinically relevant baseline 6MWD-stratum analyses (Tables 3 and 4).</p>
+
+<figure><img src="media/comprehensive-figure-11.png" title="Figure 10. Landmark Cox sensitivity analysis for serial ODDS versus serial 6MWD." alt="Figure 10. Landmark Cox sensitivity analysis for serial ODDS versus serial 6MWD." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 10. Landmark Cox sensitivity analysis for serial ODDS versus serial 6MWD.</strong> Landmark models were fit at 0.5, 1.0, 1.5, and 2.0 years for 1-, 2-, and 3-year horizons. Labels show inverse-probability-of-censoring-weighted dynamic AUC estimates; vertical bars show pointwise 95% confidence intervals.</p>
+
+<p><strong>Table 3. Baseline cohort sensitivity analyses</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 3. Baseline cohort sensitivity analyses"><table style="width:100%;" aria-label="Table 3. Baseline cohort sensitivity analyses">
+<colgroup>
+<col style="width: 31%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Analysis</strong></th>
+<th style="text-align: center;"><strong>6MWD</strong></th>
+<th style="text-align: center;"><strong>ODDS</strong></th>
+<th style="text-align: center;"><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contemporary cohort (n=275, events=72)</td>
+<td style="text-align: center;">C-index 0.660</td>
+<td style="text-align: center;">C-index 0.746</td>
+<td style="text-align: center;">Initial visit on or after January 1, 2020</td>
+</tr>
+<tr>
+<td>Antifibrotic exposure (n=468, events=191)</td>
+<td style="text-align: center;">C-index 0.675; HR 1.82 (1.55-2.15)</td>
+<td style="text-align: center;">C-index 0.755; HR 2.14 (1.87-2.45)</td>
+<td style="text-align: center;">Restricted to patients treated with an antifibrotic during the study period</td>
+</tr>
+<tr>
+<td>Repeated measures (n=449, events=208)</td>
+<td style="text-align: center;">C-index 0.589</td>
+<td style="text-align: center;">C-index 0.707</td>
+<td style="text-align: center;">Restricted to patients with repeated 6MWD and ODDS (longitudinal clinical follow up)</td>
+</tr>
+<tr>
+<td>Multiple-imputation baseline sensitivity</td>
+<td style="text-align: center;">C-index 0.658; HR 1.71 (1.50-1.95)</td>
+<td style="text-align: center;">C-index 0.745; HR 2.10 (1.88-2.35)</td>
+<td style="text-align: center;">Baseline predictor missingness addressed through imputation</td>
+</tr>
+<tr>
+<td>Baseline 6MWD stratum &gt;450 m (n=139, events=62)</td>
+<td style="text-align: center;">C-index 0.525</td>
+<td style="text-align: center;">C-index 0.758</td>
+<td style="text-align: center;">Restricted to patients with preserved walk distance</td>
+</tr>
+<tr>
+<td>Baseline 6MWD stratum 150-450 m (n=428, events=186)</td>
+<td style="text-align: center;">C-index 0.634</td>
+<td style="text-align: center;">C-index 0.722</td>
+<td style="text-align: center;">Restricted walk distance</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Baseline sensitivity analyses compare ODDS raw score alone with 6MWD alone across alternative cohorts and missing-data approaches. Higher C-index values indicate better discrimination.</p>
+
+<p><strong>Table 4. Longitudinal and alternate-endpoint sensitivity analyses</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 4. Longitudinal and alternate-endpoint sensitivity analyses"><table aria-label="Table 4. Longitudinal and alternate-endpoint sensitivity analyses">
+<colgroup>
+<col style="width: 32%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Analysis</strong></th>
+<th style="text-align: center;"><strong>6MWD result</strong></th>
+<th style="text-align: center;"><strong>ODDS result</strong></th>
+<th style="text-align: center;"><strong>Comment</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time-updated Cox, full baseline cohort (N=616; 280 events)</td>
+<td style="text-align: center;">HR 2.27 (1.99-2.58)</td>
+<td style="text-align: center;">HR 2.43 (2.16-2.74)</td>
+<td style="text-align: center;">Current marker value at each visit</td>
+</tr>
+<tr>
+<td>Landmark Cox dynamic prediction</td>
+<td style="text-align: center;">Corrected AUC 0.62-0.72</td>
+<td style="text-align: center;">Corrected AUC 0.76-0.80</td>
+<td style="text-align: center;">Full baseline cohort at fixed landmarks; no future test required; IPCW; 100 bootstrap resamples</td>
+</tr>
+<tr>
+<td>Antifibrotic-exposed longitudinal subgroup (N=355; 150 events)</td>
+<td style="text-align: center;">HR 2.09 (1.76-2.48)</td>
+<td style="text-align: center;">HR 2.42 (2.08-2.83)</td>
+<td style="text-align: center;">Restricted to longitudinal cohort</td>
+</tr>
+<tr>
+<td>Death alone; transplant censored (N=616; 179 deaths)</td>
+<td style="text-align: center;">C-index 0.733</td>
+<td style="text-align: center;">C-index 0.758</td>
+<td style="text-align: center;">Transplantation treated as censoring</td>
+</tr>
+<tr>
+<td>Respiratory hospitalization or death (N=612; 343 events)</td>
+<td style="text-align: center;">C-index 0.671</td>
+<td style="text-align: center;">C-index 0.731</td>
+<td style="text-align: center;">Alternate composite endpoint</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Hazard ratios are reported per 1-SD worsening. IPCW = inverse probability of censoring weighting.</p>
+
+<h2 id="exploratory-enrichment-and-candidate-endpoint-analyses">Exploratory enrichment and candidate endpoint analyses</h2>
+
+<h3 id="baseline-6mwt-based-trial-enrichment">Baseline 6MWT-based trial enrichment</h3>
+
+<p>Hypothetical ODDS-based clinical trial enrichment strategies were favored compared with retention-matched 6MWD strategies (Tables 5 and 6; Figure 11). Selecting patients with worse-than-median ODDS retained 50.0% of the cohort and yielded a 1-year death/transplant risk of 32.4%, compared with 30.4% when retaining the lowest half by 6MWD. ODDS top-tertile enrichment yielded a 40.0% risk compared with 34.5% for the lowest 6MWD tertile, and ODDS top-quartile enrichment yielded a 45.2% risk compared with 38.4% for the lowest 6MWD quartile. Under a hypothetical 25% relative risk reduction, estimated sample size per arm was 293 for the ODDS top quartile and 380 for the lowest 6MWD quartile.</p>
+
+<p><strong>Table 5. Clinical trial enrichment hypothetical exploratory analysis</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 5. Clinical trial enrichment hypothetical exploratory analysis"><table style="width:100%;" aria-label="Table 5. Clinical trial enrichment hypothetical exploratory analysis">
+<colgroup>
+<col style="width: 19%">
+<col style="width: 13%">
+<col style="width: 7%">
+<col style="width: 7%">
+<col style="width: 15%">
+<col style="width: 7%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Strategy</strong></th>
+<th style="text-align: center;"><strong>Threshold used</strong></th>
+<th style="text-align: center;"><strong>Retained, N</strong></th>
+<th style="text-align: center;"><strong>Retained, %</strong></th>
+<th style="text-align: center;"><strong>1-year endpoint rate (95% CI)</strong></th>
+<th style="text-align: center;"><strong>N per arm</strong></th>
+<th style="text-align: center;"><strong>Approx total screened</strong></th>
+<th style="text-align: center;"><strong>Median baseline 6MWD</strong></th>
+<th style="text-align: center;"><strong>Median baseline ODDS</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All eligible patients</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">616</td>
+<td style="text-align: center;">100.0%</td>
+<td style="text-align: center;">18.9% (95% CI 15.8%-22.5%)</td>
+<td style="text-align: center;">972</td>
+<td style="text-align: center;">1944</td>
+<td style="text-align: center;">355</td>
+<td style="text-align: center;">-7.45</td>
+</tr>
+<tr>
+<td>6MWD 150-450 m trial-style band</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">428</td>
+<td style="text-align: center;">69.5%</td>
+<td style="text-align: center;">17.1% (95% CI 13.6%-21.4%)</td>
+<td style="text-align: center;">1091</td>
+<td style="text-align: center;">3141</td>
+<td style="text-align: center;">334</td>
+<td style="text-align: center;">-7.3</td>
+</tr>
+<tr>
+<td>ODDS above median</td>
+<td style="text-align: center;">ODDS raw &gt;= -7.45</td>
+<td style="text-align: center;">308</td>
+<td style="text-align: center;">50.0%</td>
+<td style="text-align: center;">32.4% (95% CI 27.0%-38.5%)</td>
+<td style="text-align: center;">486</td>
+<td style="text-align: center;">1944</td>
+<td style="text-align: center;">258</td>
+<td style="text-align: center;">-6.44</td>
+</tr>
+<tr>
+<td>6MWD lowest half (median cut)</td>
+<td style="text-align: center;">6MWD &lt;= 355 m</td>
+<td style="text-align: center;">308</td>
+<td style="text-align: center;">50.0%</td>
+<td style="text-align: center;">30.4% (95% CI 25.1%-36.6%)</td>
+<td style="text-align: center;">529</td>
+<td style="text-align: center;">2116</td>
+<td style="text-align: center;">253</td>
+<td style="text-align: center;">-6.53</td>
+</tr>
+<tr>
+<td>ODDS top tertile</td>
+<td style="text-align: center;">ODDS raw &gt;= -6.91</td>
+<td style="text-align: center;">206</td>
+<td style="text-align: center;">33.4%</td>
+<td style="text-align: center;">40.0% (95% CI 33.0%-47.9%)</td>
+<td style="text-align: center;">356</td>
+<td style="text-align: center;">2130</td>
+<td style="text-align: center;">219</td>
+<td style="text-align: center;">-5.99</td>
+</tr>
+<tr>
+<td>6MWD lowest tertile</td>
+<td style="text-align: center;">6MWD &lt;= 302 m</td>
+<td style="text-align: center;">206</td>
+<td style="text-align: center;">33.4%</td>
+<td style="text-align: center;">34.5% (95% CI 27.9%-42.3%)</td>
+<td style="text-align: center;">443</td>
+<td style="text-align: center;">2650</td>
+<td style="text-align: center;">213</td>
+<td style="text-align: center;">-6.2</td>
+</tr>
+<tr>
+<td>ODDS top quartile</td>
+<td style="text-align: center;">ODDS raw &gt;= -6.44</td>
+<td style="text-align: center;">154</td>
+<td style="text-align: center;">25.0%</td>
+<td style="text-align: center;">45.2% (95% CI 36.8%-54.6%)</td>
+<td style="text-align: center;">293</td>
+<td style="text-align: center;">2344</td>
+<td style="text-align: center;">211</td>
+<td style="text-align: center;">-5.64</td>
+</tr>
+<tr>
+<td>6MWD lowest quartile</td>
+<td style="text-align: center;">6MWD &lt;= 253 m</td>
+<td style="text-align: center;">154</td>
+<td style="text-align: center;">25.0%</td>
+<td style="text-align: center;">38.4% (95% CI 30.4%-47.6%)</td>
+<td style="text-align: center;">380</td>
+<td style="text-align: center;">3040</td>
+<td style="text-align: center;">192</td>
+<td style="text-align: center;">-5.93</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Sample-size estimates assume a 1-year binary death/transplant endpoint, two-arm 1:1 allocation, two-sided alpha 0.05, 80% power, and 25% relative risk reduction.</p>
+
+<p><strong>Table 6. Retention-matched ODDS versus 6MWD enrichment comparisons (hypothetical)</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 6. Retention-matched ODDS versus 6MWD enrichment comparisons (hypothetical)"><table style="width:100%;" aria-label="Table 6. Retention-matched ODDS versus 6MWD enrichment comparisons (hypothetical)">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 12%">
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Selection fraction</strong></th>
+<th style="text-align: center;"><strong>ODDS rule</strong></th>
+<th style="text-align: center;"><strong>6MWD rule</strong></th>
+<th style="text-align: center;"><strong>ODDS retained, N (%)</strong></th>
+<th style="text-align: center;"><strong>6MWD retained, N (%)</strong></th>
+<th style="text-align: center;"><strong>ODDS 1-year endpoint rate</strong></th>
+<th style="text-align: center;"><strong>6MWD 1-year endpoint rate</strong></th>
+<th style="text-align: center;"><strong>1-year endpoint rate difference, percentage points</strong></th>
+<th style="text-align: center;"><strong>ODDS N per arm</strong></th>
+<th style="text-align: center;"><strong>6MWD N per arm</strong></th>
+<th style="text-align: center;"><strong>N per arm difference</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Median cut / highest-risk half</td>
+<td style="text-align: center;">ODDS above median</td>
+<td style="text-align: center;">6MWD lowest half (median cut)</td>
+<td style="text-align: center;">308 (50.0%)</td>
+<td style="text-align: center;">308 (50.0%)</td>
+<td style="text-align: center;">32.4% (95% CI 27.0%-38.5%)</td>
+<td style="text-align: center;">30.4% (95% CI 25.1%-36.6%)</td>
+<td style="text-align: center;">1.9</td>
+<td style="text-align: center;">486</td>
+<td style="text-align: center;">529</td>
+<td style="text-align: center;">-43</td>
+</tr>
+<tr>
+<td>Tertile cut / highest-risk third</td>
+<td style="text-align: center;">ODDS top tertile</td>
+<td style="text-align: center;">6MWD lowest tertile</td>
+<td style="text-align: center;">206 (33.4%)</td>
+<td style="text-align: center;">206 (33.4%)</td>
+<td style="text-align: center;">40.0% (95% CI 33.0%-47.9%)</td>
+<td style="text-align: center;">34.5% (95% CI 27.9%-42.3%)</td>
+<td style="text-align: center;">5.5</td>
+<td style="text-align: center;">356</td>
+<td style="text-align: center;">443</td>
+<td style="text-align: center;">-87</td>
+</tr>
+<tr>
+<td>Quartile cut / highest-risk quarter</td>
+<td style="text-align: center;">ODDS top quartile</td>
+<td style="text-align: center;">6MWD lowest quartile</td>
+<td style="text-align: center;">154 (25.0%)</td>
+<td style="text-align: center;">154 (25.0%)</td>
+<td style="text-align: center;">45.2% (95% CI 36.8%-54.6%)</td>
+<td style="text-align: center;">38.4% (95% CI 30.4%-47.6%)</td>
+<td style="text-align: center;">6.8</td>
+<td style="text-align: center;">293</td>
+<td style="text-align: center;">380</td>
+<td style="text-align: center;">-87</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>ODDS strata are compared with 6MWD strata that retain the same approximate fraction of patients.</p>
+
+<figure><img src="media/comprehensive-figure-12.png" title="Figure 11. Clinical trial enrichment tradeoff." alt="Figure 11. Clinical trial enrichment tradeoff." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 11. Clinical trial enrichment tradeoff.</strong> The left panel compares retained cohort fraction and the right panel compares Kaplan-Meier estimated 1-year death/transplant risk for ODDS-only and 6MWD-only selection rules. Median, tertile, and quartile rows provide retention-matched comparisons.</p>
+
+<h3 id="longitudinal-odds-change-as-a-candidate-endpoint">Longitudinal ODDS change as a candidate endpoint</h3>
+
+<p>At approximately 6 and 12 months, candidate ODDS thresholds anchored to 30 m and 45 m 6MWD decline ranged from 0.06 to 0.28, with AUCs from 0.76 to 0.86 (Figure 12). In the complementary outcome-anchored analysis, the ODDS worsening thresholds had moderate sensitivity and good specificity for subsequent 2-year death or transplantation: 63.2% sensitivity and 79.7% specificity for a 6-month increase of at least 0.25, and 60.8% sensitivity and 85.0% specificity for a 12-month increase of at least 0.41 (hazard ratios 2.95 and 4.50, respectively; Figure 13).</p>
+
+<figure><img src="media/comprehensive-figure-13.png" title="Figure 12. ODDS change distributions by 6MWD decline threshold." alt="Figure 12. ODDS change distributions by 6MWD decline threshold." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 12. ODDS change distributions by 6MWD decline threshold.</strong> Density plots show ODDS raw-score change at approximately 6 and 12 months, stratified by whether patients experienced at least 30 m or 45 m decline in 6MWD. Dashed lines show Youden-selected candidate ODDS thresholds, and labels report AUC.</p>
+
+<figure><img src="media/comprehensive-figure-14.png" title="Figure 13. Outcome-anchored ODDS change thresholds and subsequent event-free survival." alt="Figure 13. Outcome-anchored ODDS change thresholds and subsequent event-free survival." loading="lazy" decoding="async"></figure>
+<p><strong>Figure 13. Outcome-anchored ODDS change thresholds and subsequent event-free survival.</strong> The upper panel shows Youden-selected ODDS worsening thresholds and percentile bootstrap intervals for subsequent 2-year death or transplantation. Lower panels show Kaplan-Meier event-free survival after the 6- or 12-month assessment, with pointwise confidence intervals and numbers at risk. Thresholds are exploratory prognostic cut points, not validated minimal important differences or trial endpoints.</p>
+
+<h1 id="discussion">Discussion</h1>
+
+<h2 id="principal-findings">Principal findings</h2>
+
+<ul>
+<li><p>Serial ODDS provided more accurate dynamic prognostic information than serial 6MWD alone and more clearly identified patients at higher risk of death or lung transplantation.</p></li>
+<li><p>Repeated multidomain 6MWT information refined prognosis over time, supporting the premise that oxygen requirement, distance, desaturation, and dyspnea together capture clinically meaningful risk beyond distance alone.</p></li>
+</ul>
+
+<h2 id="relation-to-prior-odds-research">Relation to prior ODDS research</h2>
+
+<ul>
+<li><p>ODDS was developed using standardized 6MWTs from the ISABELA trials to predict short-term respiratory hospitalization or death. The present study extends that work with longer follow-up, a death or lung transplantation endpoint, censoring-aware performance assessment through 3 years, and longitudinal dynamic prediction.<sup><a href="#ref-7" class="citation-link" aria-label="Reference 7">7</a></sup></p></li>
+<li><p>Because the prior real-world validation cohort came from the same IPF program, the baseline findings should be viewed as confirmatory expanded temporal validation rather than wholly independent external validation. The longitudinal analysis is the principal new contribution.</p></li>
+</ul>
+
+<h2 id="clinical-interpretation-of-the-multidomain-6mwt">Clinical interpretation of the multidomain 6MWT</h2>
+
+<ul>
+<li><p>6MWD remains practical, familiar, and reproducible when testing is standardized. Both low baseline 6MWD and subsequent decline are associated with mortality in IPF.<sup><a href="#ref-2" class="citation-link" aria-label="Reference 2">2</a>,<a href="#ref-9" class="citation-link" aria-label="Reference 9">9</a>,<a href="#ref-10" class="citation-link" aria-label="Reference 10">10</a></sup></p></li>
+<li><p>Distance captures only one aspect of the 6MWT. Patients with similar distances may differ in oxygen requirement, exertional desaturation, and perceived dyspnea, and a stable distance can mask physiologic deterioration when more oxygen or greater symptoms are required. ODDS can capture this discordance (Figure 9).</p></li>
+<li><p>A model containing 6MWD, oxygen requirement, nadir SpO2, and Borg dyspnea improved fit over 6MWD alone. Distance, oxygen requirement, and nadir SpO2 remained independently associated with death or transplantation.</p></li>
+<li><p>Although Borg dyspnea was not independently significant, it captures patient-perceived symptom burden that may relate to health status and quality of life and aligns with regulatory emphasis on how patients feel and function.<sup><a href="#ref-11" class="citation-link" aria-label="Reference 11-13">11-13</a></sup></p></li>
+<li><p>ODDS is therefore best viewed as a practical summary of disease burden captured during a routine 6MWT, rather than as a measure of how much each component independently contributes to risk.</p></li>
+</ul>
+
+<h2 id="performance-across-the-functional-spectrum">Performance across the functional spectrum</h2>
+
+<ul>
+<li><p>Among patients walking more than 450 m, distance alone provided limited discrimination whereas ODDS continued to separate risk. ODDS also outperformed 6MWD within the 150-450 m range commonly used in clinical trials.<sup><a href="#ref-14" class="citation-link" aria-label="Reference 14-16">14-16</a></sup></p></li>
+<li><p>These findings are consistent with floor and ceiling limitations of distance alone and suggest that a multidomain score may characterize risk across a broader functional spectrum.</p></li>
+</ul>
+
+<h2 id="longitudinal-dynamic-prediction">Longitudinal dynamic prediction</h2>
+
+<ul>
+<li><p>Both serial ODDS and serial 6MWD were strongly associated with subsequent death or transplantation, but ODDS provided better dynamic discrimination across the evaluated horizons, including in held-out patients during five-fold internal validation.</p></li>
+<li><p>Joint longitudinal and time-to-event modeling estimates each patient's underlying trajectory, accounts for measurement error and irregularly timed tests, and reduces bias when longitudinal follow-up ends because of death or transplantation.<sup><a href="#ref-17" class="citation-link" aria-label="Reference 17">17</a></sup></p></li>
+<li><p>This framework updates prognosis as each new 6MWT becomes available, allowing ODDS to function as an evolving physiologic phenotype rather than relying on the most recent distance measurement alone.</p></li>
+<li><p>The ODDS association and predictive performance were stable across reasonable prior and model-structure alternatives. Pooled out-of-fold calibration showed no consistent mean overprediction or underprediction. Absolute-risk estimates still require prospective external validation and calibration assessment.</p></li>
+</ul>
+
+<h2 id="clinical-trial-implications">Clinical-trial implications</h2>
+
+<ul>
+<li><p>The 6- and 12-month ODDS change cutoffs were selected for the best combined sensitivity and specificity for subsequent 2-year death or transplantation and should be considered exploratory proposed prognostic thresholds.</p></li>
+<li><p>Prognostic responsiveness does not establish treatment responsiveness, a minimal important difference, or surrogacy for clinical benefit. Prospective studies must establish test-retest reliability, sensitivity to effective therapy, and anchor-based thresholds before ODDS could serve as a primary or regulatory endpoint.</p></li>
+</ul>
+
+<h2 id="limitations">Limitations</h2>
+
+<ul>
+<li><p>This was a retrospective, single-center cohort in which 6MWTs were obtained during routine care.</p></li>
+<li><p>The timing and availability of repeat 6MWTs may have depended on clinical deterioration, transplant evaluation, follow-up intensity, or the patient's ability to complete testing. Joint longitudinal-survival modeling helps address measurement error and outcome-related truncation of repeated measurements but it does not explicitly model this potentially informative testing process. If testing depended on unmeasured health status after accounting for observed marker history, trajectory and prediction estimates could remain biased.</p></li>
+<li><p>Requiring at least two retained 6MWTs for the primary joint-model cohort meant that patients had to survive and remain testable until a repeat assessment, creating potential survivor or guarantee-time selection. Fixed landmark sensitivity analyses began outcome follow-up at each landmark, included eligible members of the full baseline cohort, and required no future test. Their directionally consistent findings therefore reduces this concern. Nevertheless, these analyses condition on being alive and under observation at the landmark and cannot fully remove selection related to continued follow-up, so the primary longitudinal estimates may remain optimistic.</p></li>
+<li><p>There was partial overlap with the previously published baseline validation cohort. This limits the independence of the secondary baseline analysis.</p></li>
+<li><p>Antifibrotic start, stop, interruption, and adherence dates could not be reliably reconstructed. Although serial ODDS remained prognostic among patients who had ever received antifibrotic therapy, future model evaluation and updates in patients on current and future IPF treatments is critical.</p></li>
+<li><p>Lung transplantation is influenced not only by disease severity but also by referral, candidacy, organ availability, and center-level practices.</p></li>
+<li><p>Serial observations became sparse later in follow-up, and posterior predictive uncertainty widened accordingly. Model estimates based on long-term follow-up and over long-term prediction horizons should be interpreted cautiously.</p></li>
+</ul>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<ul>
+<li><p>Serial ODDS provided stronger dynamic prognostic performance than serial 6MWD alone for death or lung transplantation and supports interpreting the 6MWT as a multidomain assessment of function, gas exchange, and symptoms.</p></li>
+<li><p>Prospective evaluation is needed to establish external validity, reliability, and responsiveness to effective treatment.</p></li>
+</ul>
+
+<h1 id="references">References</h1>
+
+<p id="ref-1">1. Ley B, Collard HR, King TE, Jr. Clinical course and prediction of survival in idiopathic pulmonary fibrosis. <em>Am J Respir Crit Care Med</em>. Feb 15 2011;183(4):431-40. <a href="https://doi.org/10.1164/rccm.201006-0894CI" class="reference-link">doi:10.1164/rccm.201006-0894CI</a></p>
+
+<p id="ref-2">2. ATS statement: guidelines for the six-minute walk test. <em>Am J Respir Crit Care Med</em>. Jul 1 2002;166(1):111-7. <a href="https://doi.org/10.1164/ajrccm.166.1.at1102" class="reference-link">doi:10.1164/ajrccm.166.1.at1102</a></p>
+
+<p id="ref-3">3. Lancaster L, Fieuw A, Meulemans J, Ford P, Nathan SD. Standardization of the 6-min walk test in clinical trials of idiopathic pulmonary fibrosis. <em>Contemporary Clinical Trials</em>. 2021/01/01/ 2021;100:106227. doi:<a href="https://doi.org/10.1016/j.cct.2020.106227" class="reference-link">https://doi.org/10.1016/j.cct.2020.106227</a></p>
+
+<p id="ref-4">4. Holland AE, Spruit MA, Troosters T, et al. An official European Respiratory Society/American Thoracic Society technical standard: field walking tests in chronic respiratory disease. <em>European Respiratory Journal</em>. 2014;44(6):1428-1446. <a href="https://doi.org/10.1183/09031936.00150314" class="reference-link">doi:10.1183/09031936.00150314</a></p>
+
+<p id="ref-5">5. Lama VN, Flaherty KR, Toews GB, et al. Prognostic value of desaturation during a 6-minute walk test in idiopathic interstitial pneumonia. <em>Am J Respir Crit Care Med</em>. Nov 1 2003;168(9):1084-90. <a href="https://doi.org/10.1164/rccm.200302-219OC" class="reference-link">doi:10.1164/rccm.200302-219OC</a></p>
+
+<p id="ref-6">6. Nishiyama O, Taniguchi H, Kondoh Y, et al. A simple assessment of dyspnoea as a prognostic indicator in idiopathic pulmonary fibrosis. <em>Eur Respir J</em>. Nov 2010;36(5):1067-72. <a href="https://doi.org/10.1183/09031936.00152609" class="reference-link">doi:10.1183/09031936.00152609</a></p>
+
+<p id="ref-7">7. Nathan SD, Gao J, Kim HC, et al. Development and validation of a predictive 6-min walk score in patients with idiopathic pulmonary fibrosis. <em>Eur Respir J</em>. Nov 2025;66(5)<a href="https://doi.org/10.1183/13993003.02565-2024" class="reference-link">doi:10.1183/13993003.02565-2024</a></p>
+
+<p id="ref-8">8. Swigris JJ, Wamboldt FS, Behr J, et al. The 6 minute walk in idiopathic pulmonary fibrosis: longitudinal changes and minimum important difference. <em>Thorax</em>. Feb 2010;65(2):173-7. <a href="https://doi.org/10.1136/thx.2009.113498" class="reference-link">doi:10.1136/thx.2009.113498</a></p>
+
+<p id="ref-9">9. du Bois RM, Weycker D, Albera C, et al. Six-minute-walk test in idiopathic pulmonary fibrosis: test validation and minimal clinically important difference. <em>Am J Respir Crit Care Med</em>. May 1 2011;183(9):1231-7. <a href="https://doi.org/10.1164/rccm.201007-1179OC" class="reference-link">doi:10.1164/rccm.201007-1179OC</a></p>
+
+<p id="ref-10">10. du Bois RM, Albera C, Bradford WZ, et al. 6-Minute walk distance is an independent predictor of mortality in patients with idiopathic pulmonary fibrosis. <em>Eur Respir J</em>. May 2014;43(5):1421-9. <a href="https://doi.org/10.1183/09031936.00131813" class="reference-link">doi:10.1183/09031936.00131813</a></p>
+
+<p id="ref-11">11. Dyspnea. Mechanisms, assessment, and management: a consensus statement. American Thoracic Society. <em>Am J Respir Crit Care Med</em>. Jan 1999;159(1):321-40. <a href="https://doi.org/10.1164/ajrccm.159.1.ats898" class="reference-link">doi:10.1164/ajrccm.159.1.ats898</a></p>
+
+<p id="ref-12">12. Manali ED, Stathopoulos GT, Kollintza A, et al. The Medical Research Council chronic dyspnea score predicts the survival of patients with idiopathic pulmonary fibrosis. <em>Respir Med</em>. Apr 2008;102(4):586-92. <a href="https://doi.org/10.1016/j.rmed.2007.11.008" class="reference-link">doi:10.1016/j.rmed.2007.11.008</a></p>
+
+<p id="ref-13">13. Food US, Drug A. <em>Patient-Focused Drug Development: Selecting, Developing, or Modifying Fit-for-Purpose Clinical Outcome Assessments</em>. Guidance for Industry, Food and Drug Administration Staff, and Other Stakeholders. 2025. 2025/10//. Accessed 2026/06/26. <a href="https://www.fda.gov/media/159500/download" class="reference-link">https://www.fda.gov/media/159500/download</a></p>
+
+<p id="ref-14">14. King TE, Jr., Bradford WZ, Castro-Bernardini S, et al. A phase 3 trial of pirfenidone in patients with idiopathic pulmonary fibrosis. <em>N Engl J Med</em>. May 29 2014;370(22):2083-92. <a href="https://doi.org/10.1056/NEJMoa1402582" class="reference-link">doi:10.1056/NEJMoa1402582</a></p>
+
+<p id="ref-15">15. Maher TM, Ford P, Brown KK, et al. Ziritaxestat, a Novel Autotaxin Inhibitor, and Lung Function in Idiopathic Pulmonary Fibrosis: The ISABELA 1 and 2 Randomized Clinical Trials. <em>Jama</em>. May 9 2023;329(18):1567-1578. <a href="https://doi.org/10.1001/jama.2023.5355" class="reference-link">doi:10.1001/jama.2023.5355</a></p>
+
+<p id="ref-16">16. Waxman A, Restrepo-Jaramillo R, Thenappan T, et al. Inhaled Treprostinil in Pulmonary Hypertension Due to Interstitial Lung Disease. <em>N Engl J Med</em>. Jan 28 2021;384(4):325-334. <a href="https://doi.org/10.1056/NEJMoa2008470" class="reference-link">doi:10.1056/NEJMoa2008470</a></p>
+
+<p id="ref-17">17. Kurland BF, Johnson LL, Egleston BL, Diehr PH. Longitudinal Data with Follow-up Truncated by Death: Match the Analysis Method to Research Aims. <em>Stat Sci</em>. 2009;24(2):211. <a href="https://doi.org/10.1214/09-sts293" class="reference-link">doi:10.1214/09-sts293</a></p>
+
+<h1 id="appendix-1-baseline-odds-survival-model-information">Appendix 1. Baseline ODDS survival model information</h1>
+
+<p>The baseline survival model was intended to estimate death or transplantation risk from the continuous ODDS score. The following specifications support external validation and independent model refitting.</p>
+
+<p><strong>Table 7. Baseline Cox model specification</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 7. Baseline Cox model specification"><table aria-label="Table 7. Baseline Cox model specification">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 72%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Element</strong></th>
+<th style="text-align: center;"><strong>Specification</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Analytic cohort</td>
+<td style="text-align: center;">Baseline analytic cohort, n = 616; death/transplant events, n = 280</td>
+</tr>
+<tr>
+<td>Outcome</td>
+<td style="text-align: center;">Time from baseline 6MWT assessment to death or lung transplantation. Patients were censored at last follow-up</td>
+</tr>
+<tr>
+<td>Model form</td>
+<td style="text-align: center;">Cox proportional hazards model: Surv(follow_time_years, primary_event) ~ z_odds_raw</td>
+</tr>
+<tr>
+<td>Predictor</td>
+<td style="text-align: center;">z_odds_raw = (ODDS raw score - analytic-cohort mean ODDS raw score) / SD</td>
+</tr>
+<tr>
+<td>ODDS score mean</td>
+<td style="text-align: center;">-7.1724</td>
+</tr>
+<tr>
+<td>ODDS score SD</td>
+<td style="text-align: center;">1.1544</td>
+</tr>
+<tr>
+<td>Coefficient</td>
+<td style="text-align: center;">beta for z_odds_raw = 0.7420</td>
+</tr>
+<tr>
+<td>Hazard ratio</td>
+<td style="text-align: center;">HR per 1-SD higher ODDS raw score = 2.10 (95% CI, 1.88-2.35; P &lt; 0.001)</td>
+</tr>
+<tr>
+<td>Equivalent score effect</td>
+<td style="text-align: center;">beta per 1-unit higher ODDS raw score = 0.6428; HR per 1-unit higher ODDS score = 1.90</td>
+</tr>
+<tr>
+<td>Covariates</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td>Software implementation</td>
+<td style="text-align: center;">R survival::coxph was used with default Efron handling of tied event times</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="baseline-hazard-values">Baseline hazard values</h2>
+
+<p>The table reports baseline cumulative hazard H0(t), baseline survival S0(t) = exp[-H0(t)], and risk for a patient at z_odds_raw = 0, corresponding to the baseline analytic-cohort mean ODDS raw score (-7.1724).</p>
+
+<p><strong>Table 8. Baseline hazard values</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 8. Baseline hazard values"><table aria-label="Table 8. Baseline hazard values">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Horizon</strong></th>
+<th style="text-align: center;"><strong>H0(t)</strong></th>
+<th style="text-align: center;"><strong>S0(t)</strong></th>
+<th style="text-align: center;"><strong>Risk at z = 0</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 year</td>
+<td style="text-align: center;">0.1795</td>
+<td style="text-align: center;">0.8356</td>
+<td style="text-align: center;">16.4%</td>
+</tr>
+<tr>
+<td>2 years</td>
+<td style="text-align: center;">0.3908</td>
+<td style="text-align: center;">0.6765</td>
+<td style="text-align: center;">32.3%</td>
+</tr>
+<tr>
+<td>3 years</td>
+<td style="text-align: center;">0.6404</td>
+<td style="text-align: center;">0.5271</td>
+<td style="text-align: center;">47.3%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Exact Cox-model absolute risks require the full baseline cumulative-hazard step function or fitted model object, which is available from the study team upon reasonable request.</p>
+
+<h1 id="appendix-2-joint-longitudinal-survival-model-information">Appendix 2. Joint longitudinal-survival model information</h1>
+
+<p>Detailed prior distributions, sampling and convergence diagnostics, posterior predictive checks, cross-validation methods, and model-sensitivity analyses are provided in the separate <a href="/odds_joint_model.html"><u>ODDS joint-model summary</u></a>. Saved fitted model objects are available from the study team upon reasonable request.</p>
+
+<p><strong>Table 9. Joint longitudinal-survival model specification</strong></p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 9. Joint longitudinal-survival model specification"><table style="width:100%;" aria-label="Table 9. Joint longitudinal-survival model specification">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 73%">
+</colgroup>
+<thead>
+<tr>
+<th><strong>Model element</strong></th>
+<th style="text-align: center;"><strong>Final specification or result</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Analysis sample</td>
+<td style="text-align: center;">449 patients with 208 first death or lung transplantation events.</td>
+</tr>
+<tr>
+<td>Marker orientation and scaling</td>
+<td style="text-align: center;">ODDS z = (ODDS raw + 7.20477)/1.22839. Worse-oriented 6MWD z = (380.09623 - 6MWD in meters)/130.29415. Training-fold center and scale values were re-estimated within each cross-validation fold.</td>
+</tr>
+<tr>
+<td>Longitudinal submodel</td>
+<td style="text-align: center;">Gaussian linear mixed-effects model with linear time since the first retained 6MWT, a patient-specific random intercept, and a patient-specific random slope with estimated correlation.</td>
+</tr>
+<tr>
+<td>Event submodel and baseline hazard</td>
+<td style="text-align: center;">Relative-risk model for time to first death or lung transplantation, linked to the current fitted value of the standardized marker. No additional clinical covariates were included. The baseline hazard used penalized quadratic B-splines with nine segments and a second-order difference penalty.</td>
+</tr>
+<tr>
+<td>Bayesian estimation and model checks</td>
+<td style="text-align: center;">Four chains of 20,000 iterations, including 5,000 burn-in iterations per chain, yielded 60,000 retained draws. Prespecified convergence and effective-sample-size criteria were met for clinically important parameters and derived baseline survival. Posterior predictive checks showed no gross model failure.</td>
+</tr>
+<tr>
+<td>Current-value association</td>
+<td style="text-align: center;">ODDS hazard ratio 2.28 per 1-SD worsening (95% credible interval, 1.91-2.72). 6MWD hazard ratio 1.82 per 1-SD worsening (1.49-2.20).</td>
+</tr>
+<tr>
+<td>Internal validation</td>
+<td style="text-align: center;">Patient-level five-fold cross-validation kept all visits from each patient in one fold, repeated marker scaling and model fitting in each training sample, and evaluated IPCW AUC and Brier score in held-out patients. Censoring-aware calibration curves, ICI, E50, E90, calibration-in-the-large, and calibration slope were estimated from pooled out-of-fold predictions.</td>
+</tr>
+<tr>
+<td>Software</td>
+<td style="text-align: center;">R 4.5.2; JMbayes2 0.6.0; GLMMadaptive 0.9-7; nlme 3.1-168; survival 3.8-3; posterior 1.7.0; coda 0.19-4.1.</td>
+</tr>
+</tbody>
+</table>
+</div></article>
+      <footer class="publication-footer">
+        <a href="/ODDS/">ODDS calculator</a>
+        <a href="/ODDS/evidence/">Longitudinal application</a>
+        <a href="/odds_joint_model.html">Joint-model summary</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Technical summary of the reliability, internal validation, calibration, and specification of the serial ODDS joint longitudinal-survival model.">
+  <title>Serial ODDS Dynamic Joint Longitudinal-Survival Model Summary</title>
+  <link rel="canonical" href="https://pccmtools.org/odds_joint_model.html">
+  <link rel="stylesheet" href="/ODDS/evidence/evidence.css">
+  <script src="/ODDS/evidence/evidence.js" defer></script>
+</head>
+<body data-publication="joint">
+  <a class="skip-link" href="#publication-content">Skip to main content</a>
+  <nav class="publication-bar" aria-label="Publication navigation">
+    <div class="publication-bar-inner"><a class="brand-link" href="/ODDS/">ODDS calculator</a><span class="nav-divider" aria-hidden="true"></span><a class="companion-link back-link" href="/ODDS/evidence/">Longitudinal application</a><span class="current-publication">Joint-model summary</span></div>
+  </nav>
+  <div class="publication-shell">
+    <aside class="publication-sidebar" aria-label="Contents">
+      <button class="toc-toggle" type="button" aria-expanded="false" aria-controls="publication-toc">
+        <span>Contents</span><span class="toc-toggle-icon" aria-hidden="true"></span>
+      </button>
+      <nav id="publication-toc" class="publication-toc" aria-label="On this page">
+        <p class="toc-label">On this page</p>
+        <ol><li class="toc-h1"><a href="#1-summary">1 Summary</a></li>
+<li class="toc-h1"><a href="#2-why-use-a-joint-longitudinal-and-time-to-event-model">2 Why Use a Joint Longitudinal and Time-to-event Model?</a></li>
+<li class="toc-h1"><a href="#3-data-and-model">3 Data and Model</a></li>
+<li class="toc-h1"><a href="#4-reliability-checks">4 Reliability Checks</a></li>
+<li class="toc-h2"><a href="#4-1-sampling-quality">4.1 Sampling Quality</a></li>
+<li class="toc-h2"><a href="#4-2-model-fit-and-sensitivity">4.2 Model Fit and Sensitivity</a></li>
+<li class="toc-h1"><a href="#5-main-results">5 Main Results</a></li>
+<li class="toc-h2"><a href="#5-1-association-with-death-or-lung-transplantation">5.1 Association With Death or Lung Transplantation</a></li>
+<li class="toc-h2"><a href="#5-2-performance-in-patients-not-used-to-fit-each-fold">5.2 Performance in Patients Not Used to Fit Each Fold</a></li>
+<li class="toc-h2"><a href="#5-3-calibration-of-absolute-risk">5.3 Calibration of Absolute Risk</a></li>
+<li class="toc-h1"><a href="#6-robustness-to-modeling-choices">6 Robustness to Modeling Choices</a></li>
+<li class="toc-h1"><a href="#7-what-these-results-support">7 What These Results Support</a></li>
+<li class="toc-h1"><a href="#8-technical-specification">8 Technical Specification</a></li>
+<li class="toc-h1"><a href="#9-conclusion">9 Conclusion</a></li></ol>
+      </nav>
+    </aside>
+    <main id="publication-content" class="publication-main">
+      <header class="publication-masthead"><p class="eyebrow">Joint-model technical summary</p><h1>Serial ODDS Dynamic Joint Longitudinal-Survival Model Summary</h1><p class="publication-type">Technical summary of model reliability and validation</p><p class="print-resource-links"><a href="/ODDS/">ODDS calculator</a><a href="/ODDS/evidence/">Longitudinal application</a><a href="/odds_joint_model.html">Technical summary online</a></p><div class="masthead-actions"><a class="action-link primary-action" href="/ODDS/">Open ODDS calculator</a><a class="action-link" href="/ODDS/evidence/downloads/joint.pdf">Download PDF</a></div></header>
+      <article class="publication-article"><h1 id="1-summary">1 Summary</h1>
+
+<ul>
+<li>The serial ODDS joint longitudinal and time-to-event model uses repeated six-minute walk test information to update a patient’s estimated transplant-free survival as new visits become available.</li>
+<li>The analysis included 449 patients, 2,341 6MWTs, and 208 deaths or lung transplantations.</li>
+<li>At any follow-up time, a 1-SD worse modeled ODDS value was associated with a 2.28-fold higher instantaneous rate of death or transplantation.</li>
+<li>Patient-level five-fold cross-validation showed consistently better discrimination for serial ODDS than for serial 6MWD alone. At the 1-year prediction start, ODDS AUCs were 0.784, 0.774, and 0.761 for the next 1, 2, and 3 years, respectively.</li>
+<li>Across all evaluated windows, ODDS also had lower overall prediction error by Brier score (0.113 to 0.214) than 6MWD (0.116 to 0.244). Pooled ICI ranged from 0.025 to 0.075 for ODDS and from 0.014 to 0.061 for 6MWD, with no systematic mean overprediction or underprediction for either model.</li>
+<li>Results were stable after reasonable changes to the association prior, baseline-hazard flexibility, and random-effects correlation.</li>
+<li>The model is internally supported, but prospective external validation is still required to evaluate model accuracy and calibration in other hospital systems and across disease processes.</li>
+</ul>
+
+<p><strong>Clinical interpretation:</strong> serial ODDS appears to capture clinically important changes that are not represented by walk distance alone.</p>
+
+<h1 id="2-why-use-a-joint-longitudinal-and-time-to-event-model">2 Why Use a Joint Longitudinal and Time-to-event Model?</h1>
+
+<p>Repeated 6MWTs are not collected on a perfectly fixed schedule. Testing may stop because a patient becomes too ill, receives a transplant, dies, transfers care, or is otherwise lost to follow-up. This means that missing later measurements can be informative rather than random.</p>
+
+<p>The joint model analyzes two linked processes at the same time:</p>
+
+<ol type="1">
+<li><strong>Longitudinal process:</strong> estimates each patient’s underlying ODDS trajectory from all available visits, allowing the starting level and rate of change to differ between patients.</li>
+<li><strong>Time-to-event process:</strong> estimates the association between the patient’s current modeled ODDS value and subsequent death or lung transplantation.</li>
+<li><strong>Shared patient effects:</strong> connect these processes so that the estimated trajectory and event risk are informed by the same latent disease course.</li>
+</ol>
+
+<p><strong>In practical terms:</strong> the model asks whether the patient’s ODDS level is worsening over time and how that updated disease course changes anticipated event-free survival. Joint modeling can reduce bias from dropout related to the modeled disease trajectory, but it cannot correct every source of missingness or unmeasured confounding.</p>
+
+<h1 id="3-data-and-model">3 Data and Model</h1>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 1. Cohort and primary model overview"><table aria-label="Table 1. Cohort and primary model overview">
+<caption><p>Table 1. Cohort and primary model overview</p></caption>
+<colgroup>
+<col style="width: 31%">
+<col style="width: 68%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Item</strong></th>
+<th style="text-align: center;"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Patients</td>
+<td>449</td>
+</tr>
+<tr>
+<td>Primary endpoint events</td>
+<td>208 deaths or lung transplantations</td>
+</tr>
+<tr>
+<td>Serial 6MWT observations</td>
+<td>2,341</td>
+</tr>
+<tr>
+<td>Primary longitudinal model</td>
+<td>Linear time with a patient-specific random intercept and random slope</td>
+</tr>
+<tr>
+<td>Survival association</td>
+<td>Current fitted marker value linked to time to death or lung transplantation</td>
+</tr>
+<tr>
+<td>Internal validation</td>
+<td>Patient-level five-fold cross-validation; all visits from a patient remained in one fold</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Separate joint models were fit for ODDS and 6MWD. For the 6MWD comparison, distance was reversed before standardization so that a higher modeled value represented worsening in both models. The survival submodel contained the longitudinal marker but no additional clinical covariates. The log baseline hazard was represented with penalized quadratic B-splines.</p>
+
+<p>The primary survival association used the current fitted marker value.</p>
+
+<h1 id="4-reliability-checks">4 Reliability Checks</h1>
+
+<p>This summary focuses on checks that may affect confidence in the clinical interpretation.</p>
+
+<h2 id="4-1-sampling-quality">4.1 Sampling Quality</h2>
+
+<p>The primary models used 4 independent chains with 20,000 iterations per chain, including 5,000 burn-in iterations. This produced 60,000 retained posterior draws per model.</p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 2. Sampling-quality summary for the primary models"><table style="width:100%;" aria-label="Table 2. Sampling-quality summary for the primary models">
+<caption><p>Table 2. Sampling-quality summary for the primary models</p></caption>
+<colgroup>
+<col style="width: 11%">
+<col style="width: 33%">
+<col style="width: 26%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Model</strong></th>
+<th style="text-align: center;"><strong>Maximum key/derived R-hat</strong></th>
+<th style="text-align: center;"><strong>Minimum key/derived ESS</strong></th>
+<th style="text-align: center;"><strong>Result</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">ODDS</td>
+<td style="text-align: center;">1.003</td>
+<td style="text-align: center;">1079</td>
+<td style="text-align: center;">Satisfactory</td>
+</tr>
+<tr>
+<td style="text-align: center;">6MWD</td>
+<td style="text-align: center;">1.005</td>
+<td style="text-align: center;">587</td>
+<td style="text-align: center;">Satisfactory</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="technical-note">R-hat assesses whether independent chains converged to the same posterior distribution. Values near 1 are preferred. Effective sample size (ESS) reflects the amount of independent information in autocorrelated posterior draws. Larger values are preferred. Both primary models met the predefined criteria for the clinically important parameters and derived baseline survival.</p>
+
+<h2 id="4-2-model-fit-and-sensitivity">4.2 Model Fit and Sensitivity</h2>
+
+<ul>
+<li>Posterior predictive checks found no gross failure of the longitudinal or event submodels.</li>
+<li>The observed mean trajectories sometimes lay near the edge of the replicated range, and uncertainty widened late in follow-up as fewer observations remained. Late predictions (after long follow-up periods) should therefore be interpreted more cautiously.</li>
+<li>The ODDS association and prediction metrics changed very little with tighter or more diffuse association priors, a simpler baseline hazard, or independent random effects.</li>
+<li>All five ODDS cross-validation refits met the sampling criteria. Two 6MWD refits had weak estimation of the random-slope variance, while their survival associations and baseline-survival estimates remained stable.</li>
+</ul>
+
+<h1 id="5-main-results">5 Main Results</h1>
+
+<h2 id="5-1-association-with-death-or-lung-transplantation">5.1 Association With Death or Lung Transplantation</h2>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 3. Association between the modeled current marker value and death or lung transplantation"><table aria-label="Table 3. Association between the modeled current marker value and death or lung transplantation">
+<caption><p>Table 3. Association between the modeled current marker value and death or lung transplantation</p></caption>
+<colgroup>
+<col style="width: 10%">
+<col style="width: 42%">
+<col style="width: 47%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Model</strong></th>
+<th style="text-align: center;"><strong>Clinical worsening represented by 1 SD</strong></th>
+<th style="text-align: center;"><strong>Hazard ratio (95% credible interval)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ODDS</td>
+<td>Higher ODDS by 1.23 raw-score points</td>
+<td style="text-align: center;">2.28 (1.91 to 2.72)</td>
+</tr>
+<tr>
+<td>6MWD</td>
+<td>Lower 6MWD by 130 m</td>
+<td style="text-align: center;">1.82 (1.49 to 2.20)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For ODDS, one standard deviation corresponded to approximately 1.23 raw-score points. A higher ODDS score represents clinical worsening. For 6MWD, one standard deviation corresponded to approximately 130 m of shorter walk distance.</p>
+
+<h2 id="5-2-performance-in-patients-not-used-to-fit-each-fold">5.2 Performance in Patients Not Used to Fit Each Fold</h2>
+
+<p>Patients, rather than visits, were assigned to five folds. Every visit from a patient stayed in the same fold, and marker standardization was estimated within each training fold. This prevented a patient’s measurements from contributing to both model fitting and testing in the same fold.</p>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 4. Five-fold cross-validated performance for predictions beginning 1 year after baseline"><table aria-label="Table 4. Five-fold cross-validated performance for predictions beginning 1 year after baseline">
+<caption><p>Table 4. Five-fold cross-validated performance for predictions beginning 1 year after baseline</p></caption>
+<colgroup>
+<col style="width: 8%">
+<col style="width: 16%">
+<col style="width: 12%">
+<col style="width: 10%">
+<col style="width: 8%">
+<col style="width: 10%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Model</strong></th>
+<th style="text-align: center;"><strong>Prediction horizon</strong></th>
+<th style="text-align: center;"><strong>Target time from baseline</strong></th>
+<th style="text-align: center;"><strong>At risk at year 1</strong></th>
+<th style="text-align: center;"><strong>AUC</strong></th>
+<th style="text-align: center;"><strong>Brier score</strong></th>
+<th style="text-align: center;"><strong>Pooled out-of-fold ICI</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">ODDS</td>
+<td style="text-align: center;">Next 1 year</td>
+<td style="text-align: center;">Year 2</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.784</td>
+<td style="text-align: center;">0.116</td>
+<td style="text-align: center;">0.025</td>
+</tr>
+<tr>
+<td style="text-align: center;">6MWD</td>
+<td style="text-align: center;">Next 1 year</td>
+<td style="text-align: center;">Year 2</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.707</td>
+<td style="text-align: center;">0.128</td>
+<td style="text-align: center;">0.014</td>
+</tr>
+<tr>
+<td style="text-align: center;">ODDS</td>
+<td style="text-align: center;">Next 2 years</td>
+<td style="text-align: center;">Year 3</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.774</td>
+<td style="text-align: center;">0.178</td>
+<td style="text-align: center;">0.042</td>
+</tr>
+<tr>
+<td style="text-align: center;">6MWD</td>
+<td style="text-align: center;">Next 2 years</td>
+<td style="text-align: center;">Year 3</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.676</td>
+<td style="text-align: center;">0.200</td>
+<td style="text-align: center;">0.030</td>
+</tr>
+<tr>
+<td style="text-align: center;">ODDS</td>
+<td style="text-align: center;">Next 3 years</td>
+<td style="text-align: center;">Year 4</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.761</td>
+<td style="text-align: center;">0.206</td>
+<td style="text-align: center;">0.029</td>
+</tr>
+<tr>
+<td style="text-align: center;">6MWD</td>
+<td style="text-align: center;">Next 3 years</td>
+<td style="text-align: center;">Year 4</td>
+<td style="text-align: center;">328</td>
+<td style="text-align: center;">0.651</td>
+<td style="text-align: center;">0.232</td>
+<td style="text-align: center;">0.055</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong>AUC</strong> measures ranking: whether patients who experience an event are assigned higher risk than those who remain event free. A value of 0.5 is no better than chance and a higher value is better.</li>
+<li><strong>Brier score</strong> measures overall probability error, combining discrimination and calibration. Lower is better.</li>
+<li><strong>ICI</strong> is the average absolute difference between predicted and observed risk along a flexible calibration curve. Here, predictions from all held-out patients were pooled before the calibration curve was fitted. Lower is better.</li>
+</ul>
+
+<p>Across the held-out folds, 328 patients remained alive and transplant free at the 1-year prediction start. The “next 1 year” prediction therefore targets year 2 from baseline, while the “next 3 years” prediction targets year 4 from baseline.</p>
+
+<figure><img src="/ODDS/evidence/media/joint-figure-01.png" title="Cross-validated time-dependent AUC for serial ODDS and serial 6MWD across prediction starts and horizons." alt="Cross-validated time-dependent AUC for serial ODDS and serial 6MWD across prediction starts and horizons." loading="lazy" decoding="async"></figure>
+<p>Figure 1. Patient-level cross-validated discrimination for serial ODDS and serial 6MWD.</p>
+
+<p>Points and lines show the weighted mean IPCW time-dependent AUC across five held-out patient folds. Prediction start time is the point at which the patient’s available longitudinal history is used. Each panel shows the subsequent prediction horizon.</p>
+
+<h2 id="5-3-calibration-of-absolute-risk">5.3 Calibration of Absolute Risk</h2>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 5. Pooled out-of-fold calibration across all prediction starts and horizons"><table aria-label="Table 5. Pooled out-of-fold calibration across all prediction starts and horizons">
+<caption><p>Table 5. Pooled out-of-fold calibration across all prediction starts and horizons</p></caption>
+<colgroup>
+<col style="width: 10%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 43%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Model</strong></th>
+<th style="text-align: center;"><strong>Pooled ICI range</strong></th>
+<th style="text-align: center;"><strong>E50 range</strong></th>
+<th style="text-align: center;"><strong>E90 range</strong></th>
+<th style="text-align: center;"><strong>Interpretation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ODDS</td>
+<td>0.025 to 0.075</td>
+<td style="text-align: center;">0.015 to 0.052</td>
+<td style="text-align: center;">0.043 to 0.145</td>
+<td style="text-align: center;">No clear overprediction or underprediction</td>
+</tr>
+<tr>
+<td>6MWD</td>
+<td>0.014 to 0.061</td>
+<td style="text-align: center;">0.006 to 0.062</td>
+<td style="text-align: center;">0.033 to 0.126</td>
+<td style="text-align: center;">No clear overprediction or underprediction</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The Brier and ICI findings describe different properties. Serial ODDS had better discrimination and lower overall prediction error, while 6MWD had numerically lower pooled ICI. A model can therefore rank patients less accurately but still have average predicted probabilities that align closely with average observed risk.</p>
+
+<ul>
+<li><strong>E50</strong> is the median absolute difference between predicted and observed risk along the calibration curve.</li>
+<li><strong>E90</strong> is the 90th percentile of that difference and describes calibration error toward the less well-calibrated end of the prediction range.</li>
+</ul>
+
+<p>At the 1-year prediction start, pooled ODDS ICI was 0.025, 0.042, 0.029 for the subsequent 1-, 2-, and 3-year horizons, respectively. Mean predicted and observed risks did not differ systematically, and all three calibration-slope intervals included the target value of 1.</p>
+
+<figure><img src="/ODDS/evidence/media/joint-figure-02.png" title="Pooled out-of-fold calibration curves for serial ODDS predictions beginning one year after baseline." alt="Pooled out-of-fold calibration curves for serial ODDS predictions beginning one year after baseline." loading="lazy" decoding="async"></figure>
+<p>Figure 2. Pooled out-of-fold calibration of serial ODDS predictions beginning 1 year after baseline.</p>
+
+<p>Solid lines compare predicted and observed death/transplant risk for the subsequent 1, 2, and 3 years. Grey regions are pointwise 95% intervals around observed risk, conditional on the saved held-out predictions. Dashed diagonals represent perfect agreement. Curves are displayed over the central prediction range used by the calibration model.</p>
+
+<p>Across all 12 evaluations, pooled ODDS ICI ranged from 0.025 to 0.075 and E90 ranged from 0.043 to 0.145. There was no clear overall direction of mean calibration error. However, calibration slopes were below 1 in longer-horizon evaluations, indicating that these later probabilities warrant greater caution.</p>
+
+<h1 id="6-robustness-to-modeling-choices">6 Robustness to Modeling Choices</h1>
+
+<div class="table-scroll" role="region" tabindex="0" aria-label="Table 6. Supported ODDS sensitivity analyses at a 1-year prediction start with a 2-year horizon"><table aria-label="Table 6. Supported ODDS sensitivity analyses at a 1-year prediction start with a 2-year horizon">
+<caption><p>Table 6. Supported ODDS sensitivity analyses at a 1-year prediction start with a 2-year horizon</p></caption>
+<colgroup>
+<col style="width: 32%">
+<col style="width: 26%">
+<col style="width: 11%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Analysis</strong></th>
+<th style="text-align: center;"><strong>ODDS hazard ratio (95% credible interval)</strong></th>
+<th style="text-align: center;"><strong>Apparent AUC</strong></th>
+<th style="text-align: center;"><strong>Apparent Brier</strong></th>
+<th style="text-align: center;"><strong>Apparent ICI</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary model</td>
+<td>2.28 (1.91 to 2.72)</td>
+<td style="text-align: center;">0.789</td>
+<td style="text-align: center;">0.177</td>
+<td style="text-align: center;">0.042</td>
+</tr>
+<tr>
+<td>Tighter association prior</td>
+<td>2.27 (1.91 to 2.69)</td>
+<td style="text-align: center;">0.791</td>
+<td style="text-align: center;">0.177</td>
+<td style="text-align: center;">0.039</td>
+</tr>
+<tr>
+<td>More diffuse association prior</td>
+<td>2.28 (1.92 to 2.71)</td>
+<td style="text-align: center;">0.790</td>
+<td style="text-align: center;">0.178</td>
+<td style="text-align: center;">0.041</td>
+</tr>
+<tr>
+<td>Simpler baseline hazard</td>
+<td>2.28 (1.95 to 2.65)</td>
+<td style="text-align: center;">0.789</td>
+<td style="text-align: center;">0.177</td>
+<td style="text-align: center;">0.041</td>
+</tr>
+<tr>
+<td>Independent random intercept and slope</td>
+<td>2.29 (1.92 to 2.71)</td>
+<td style="text-align: center;">0.788</td>
+<td style="text-align: center;">0.176</td>
+<td style="text-align: center;">0.031</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The estimated ODDS association remained approximately 2.27 to 2.29 across supported alternatives. Apparent AUC, Brier score, and ICI were also nearly unchanged. This stability indicates that the principal finding was not dependent on one narrow prior choice, the exact number of baseline-hazard spline segments, or estimation of the random intercept-slope correlation.</p>
+
+<h1 id="7-what-these-results-support">7 What These Results Support</h1>
+
+<p>Supported by the current analysis</p>
+
+<ul>
+<li>Serial ODDS is strongly associated with subsequent death or lung transplantation.</li>
+<li>Serial ODDS provides better internally validated risk ranking than serial 6MWD alone.</li>
+<li>Serial ODDS has lower cross-validated overall prediction error.</li>
+<li>Pooled calibration shows no systematic mean overprediction or underprediction, but some later, longer-horizon ODDS probabilities may be too extreme.</li>
+<li>The primary current-value joint model has satisfactory sampling diagnostics and no evidence of gross model failure.</li>
+<li>The main association and dynamic performance are stable across several modeling choices.</li>
+</ul>
+
+<p>Not yet established</p>
+
+<ul>
+<li>External validity in a different health system or diagnosis (i.e., other fibrotic lung diseases or pulmonary disorders).</li>
+<li>Reliable performance far into follow-up or when serial testing becomes sparse.</li>
+</ul>
+
+<h1 id="8-technical-specification">8 Technical Specification</h1>
+
+<p>The longitudinal submodel was a Gaussian linear mixed-effects model with linear time, a patient-specific random intercept, and a patient-specific random slope. The event submodel was a relative-risk survival model for death or lung transplantation with a penalized quadratic B-spline baseline hazard and a current-value association with the fitted longitudinal marker.</p>
+
+<p>The primary marker transformations were:</p>
+
+<ul>
+<li><strong>ODDS:</strong> standardized marker = <code>(ODDS raw + 7.20477) / 1.22839</code>.</li>
+<li><p><strong>6MWD comparison:</strong> standardized worsening marker = <code>(380.09623 - distance in meters) / 130.29415</code>.</p></li>
+</ul>
+
+<p>The primary current-value association prior was normal with mean 0 and SD 2. The random intercept-slope correlation used an LKJ prior with eta 3, and the baseline-hazard smoothing precision used a gamma prior with shape 5 and rate 0.5.</p>
+
+<p>The analysis used R version 4.5.2 (2025-10-31) and <code>JMbayes2</code> version 0.6.0. Dynamic AUC and prediction error used IPCW. Internal validation used the same patient folds for ODDS and 6MWD, with marker scaling re-estimated in each training fold. Calibration curves pooled predictions from all held-out patients and accounted for censoring through survival calibration models. Calibration-in-the-large used IPCW complementary-log-log models, and horizon-specific calibration slopes used Cox models. Patient-level bootstrap intervals resampled the pooled held-out predictions without refitting every fold model.</p>
+
+<p>Exact patient-level dynamic prediction requires the fitted joint-model object or equivalent posterior draws together with the same preprocessing definitions. Saved fitted model objects are retained and can be made available upon reasonable request.</p>
+
+<h1 id="9-conclusion">9 Conclusion</h1>
+
+<p>The serial ODDS joint model passed convergence, model-fit, sensitivity, and patient-level internal-validation checks. A worse current ODDS trajectory was strongly associated with death or lung transplantation and serial ODDS ranked future risk more accurately and had lower overall prediction error than serial 6MWD alone. At the 1-year prediction start, estimated and observed absolute risks were closely aligned, but ODDS model predictions may be too extreme in longer-horizon evaluations. Prospective external validation remains necessary to further assess model performance in other health systems and disease processes.</p>
+</article>
+      <footer class="publication-footer">
+        <a href="/ODDS/">ODDS calculator</a>
+        <a href="/ODDS/evidence/">Longitudinal application</a>
+        <a href="/odds_joint_model.html">Joint-model summary</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

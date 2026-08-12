@@ -159,6 +159,38 @@ h1 {
   line-height: 1.5;
 }
 
+.app-header-nav {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  border-top: 1px solid rgba(159, 177, 197, 0.65);
+  padding-top: 14px;
+}
+
+.app-header-nav a {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--blue);
+  padding: 8px 15px;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.app-header-nav a:hover {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.app-header-nav a:focus-visible {
+  outline: 3px solid rgba(36, 95, 133, 0.22);
+  outline-offset: 3px;
+}
+
 h2 {
   font-size: 1.02rem;
   line-height: 1.25;
@@ -698,6 +730,10 @@ tbody tr:nth-child(even) td {
   .app-header > div {
     padding: 18px;
     text-align: left;
+  }
+
+  .app-header-nav {
+    justify-content: flex-start;
   }
 
   .panel-heading {
