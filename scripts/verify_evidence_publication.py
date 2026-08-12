@@ -273,7 +273,28 @@ def verify_discovery_controls() -> None:
     if normalized_element_text(calculator_notices[0]) != expected_copyright_text():
         fail("Calculator copyright wording changed")
 
-    excluded_pages = {(EVIDENCE_DIR / "index.html").resolve(), JOINT_PAGE.resolve()}
+    calculator_publication_links = [
+        link for link in calculator_root.xpath("//a[@href]") if is_publication_link(link.get("href", ""))
+    ]
+    if len(calculator_publication_links) != 1:
+        fail("Calculator must contain exactly one reviewer-publication link")
+    calculator_publication_link = calculator_publication_links[0]
+    if calculator_publication_link.get("href") != CANONICAL_JOINT_URL:
+        fail("Calculator may link only to the joint-model technical summary")
+    if "nofollow" not in calculator_publication_link.get("rel", "").lower().split():
+        fail("Calculator joint-model link must use rel=nofollow")
+    if normalize_space(calculator_publication_link.text_content()) != "Joint-model technical summary":
+        fail("Calculator joint-model link label changed")
+    if not calculator_publication_link.xpath(
+        'ancestor::details[contains(concat(" ", normalize-space(@class), " "), " about-tool ")]'
+    ):
+        fail("Calculator joint-model link must remain inside the collapsed About section")
+
+    excluded_pages = {
+        calculator_page.resolve(),
+        (EVIDENCE_DIR / "index.html").resolve(),
+        JOINT_PAGE.resolve(),
+    }
     for page in APP_DIR.rglob("*.html"):
         if page.resolve() in excluded_pages:
             continue
