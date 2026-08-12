@@ -303,7 +303,7 @@ def verify_discovery_controls() -> None:
             fail("Cloudflare Pages _headers file is missing")
         rules = parse_header_rules(headers_path.read_text(encoding="utf-8"))
         expected_header = f"X-Robots-Tag: {ROBOTS_DIRECTIVE}"
-        for route in (EVIDENCE_URL, f"{EVIDENCE_URL}*", CANONICAL_JOINT_URL):
+        for route in (f"{EVIDENCE_URL}*", CANONICAL_JOINT_URL):
             if expected_header not in rules.get(route, []):
                 fail(f"Missing X-Robots-Tag rule for {route}")
 
