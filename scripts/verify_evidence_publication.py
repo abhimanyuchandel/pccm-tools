@@ -25,7 +25,7 @@ CALCULATOR_URL = "/ODDS/"
 EVIDENCE_URL = "/ODDS/evidence/"
 LEGACY_JOINT_HTML = "ODDS_joint_model_public_summary.html"
 EXPECTED_SOURCE_TEXT_SHA256 = {
-    "comprehensive": "098d3dd6cece01b9b9a61e93607f08983e165ae127b4769edc1ec84e776dcb8e",
+    "comprehensive": "9b30c0e5a72557734a85f8ccd01e4bf39fdb0c3be4215b6a1a622745fa7a7e4c",
     "joint": "2e83968fe072a2e2b5baa1e15b08195a4ed2d859a12b6d6187bf63ec74cb055a",
 }
 
@@ -144,6 +144,13 @@ def verify_html(page: Path, expected_tables: int, expected_images: int, required
     citation_links = root.xpath('//a[contains(concat(" ", normalize-space(@class), " "), " citation-link ")]')
     reference_links = root.xpath('//a[contains(concat(" ", normalize-space(@class), " "), " reference-link ")]')
     if page == EVIDENCE_DIR / "index.html":
+        if root.xpath('//p[contains(concat(" ", normalize-space(@class), " "), " source-site-link ")]'):
+            fail("Comprehensive report still displays the removed source-site link")
+        publication_date = root.xpath(
+            'string(//p[contains(concat(" ", normalize-space(@class), " "), " publication-date ")])'
+        ).strip()
+        if publication_date != "August 12, 2026":
+            fail("Comprehensive report does not display the August 12, 2026 publication date")
         if len(citation_links) < 17 or len(reference_links) < 17:
             fail("Comprehensive report is missing expected citation links")
         if any(urlsplit(link.get("href", "")).scheme not in {"http", "https"} for link in reference_links):
@@ -231,7 +238,7 @@ def main() -> None:
 
     results = []
     pdf_links = {
-        "comprehensive.pdf": {CALCULATOR_URL, CANONICAL_JOINT_URL},
+        "comprehensive.pdf": {CANONICAL_JOINT_URL},
         "joint.pdf": {CALCULATOR_URL, EVIDENCE_URL, CANONICAL_JOINT_URL},
     }
     for page, table_count, figure_count, pdf_name, required_links in PUBLICATIONS:
