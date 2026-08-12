@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/ODDS/api/*", "/ODDS/model/*"],
+  "include": ["/ODDS/api/*", "/ODDS/model/*", "/odds_joint_model.html"],
   "exclude": []
 }

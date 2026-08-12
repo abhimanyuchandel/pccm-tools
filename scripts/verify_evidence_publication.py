@@ -215,6 +215,14 @@ def main() -> None:
     if (EVIDENCE_DIR / LEGACY_JOINT_HTML).exists() or (APP_DIR / LEGACY_JOINT_HTML).exists():
         fail("Legacy joint-model HTML remains in the deployment bundle")
 
+    routes_path = APP_DIR / "_routes.json"
+    if routes_path.exists():
+        routes = json.loads(routes_path.read_text(encoding="utf-8"))
+        if CANONICAL_JOINT_URL not in routes.get("include", []):
+            fail("Canonical joint-model URL is not included in Pages Function routes")
+        if not (APP_DIR / "functions" / "odds_joint_model.html.js").exists():
+            fail("Canonical joint-model Pages Function is missing")
+
     prohibited = sorted(
         path for path in APP_DIR.rglob("*") if path.is_file() and path.suffix.lower() in PROHIBITED_PUBLIC_EXTENSIONS
     )
