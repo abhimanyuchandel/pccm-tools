@@ -523,6 +523,10 @@ tbody tr:last-child td {
   font-weight: 750;
 }
 
+.featured-table .category-row td:last-child {
+  font-weight: 400;
+}
+
 .featured-table .nested-row td:first-child {
   padding-left: 26px;
   color: #313934;
