@@ -1,0 +1,906 @@
+{
+  "hypothetical_inputs": true,
+  "source_model_sha256": "38cccb14a81e40793f4e18f21a8eeba8e05903aeb1285af5565d385b3e9de2a5",
+  "rows": [
+    {
+      "inputs": {
+        "age": 18,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 0,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.03201749644617177
+    },
+    {
+      "inputs": {
+        "age": 80,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 0,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.01828967876407107
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 29.999999,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.136830397080137
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 30,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.39603256207308146
+    },
+    {
+      "inputs": {
+        "age": 18,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 30.000001,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.14492183715137041
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 30.000001,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.06594259398949194
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 56.999999,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.10632998185019944
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 57,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.053046198561883785
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 57,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.058018109574314206
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 57.000001,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.09662973856389827
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 89.999999,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.0527877433438757
+    },
+    {
+      "inputs": {
+        "age": 34,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 90,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.03758927681534982
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 90,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.04762849288307637
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 90.000001,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.09046572276264905
+    },
+    {
+      "inputs": {
+        "age": 55.4,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 350,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 0
+      },
+      "expected": 0.04916168870531907
+    },
+    {
+      "inputs": {
+        "age": 34,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 0,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.23803258316430623
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 0,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.14686857385741772
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 29.999999,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.11847630831228878
+    },
+    {
+      "inputs": {
+        "age": 55.4,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 30,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.20711505028183075
+    },
+    {
+      "inputs": {
+        "age": 34,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 30.000001,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.3277634463559904
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 30.000001,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.02967458994869103
+    },
+    {
+      "inputs": {
+        "age": 69.2,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 56.999999,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.08672055103966536
+    },
+    {
+      "inputs": {
+        "age": 55.4,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 57,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.3132700714224514
+    },
+    {
+      "inputs": {
+        "age": 34,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 57.000001,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.41491451308274857
+    },
+    {
+      "inputs": {
+        "age": 90,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 57.000001,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.043791965134104584
+    },
+    {
+      "inputs": {
+        "age": 69.2,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 89.999999,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.07027527613137768
+    },
+    {
+      "inputs": {
+        "age": 55.4,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 90,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.29371364863565474
+    },
+    {
+      "inputs": {
+        "age": 33.999999,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 90.000001,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.13024337319555815
+    },
+    {
+      "inputs": {
+        "age": 90,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 90.000001,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.07623141922574589
+    },
+    {
+      "inputs": {
+        "age": 69.2,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 350,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 1
+      },
+      "expected": 0.16875781004065252
+    },
+    {
+      "inputs": {
+        "age": 55.399999,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 0,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.09849746424565774
+    },
+    {
+      "inputs": {
+        "age": 33.999999,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 29.999999,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.2569222843977857
+    },
+    {
+      "inputs": {
+        "age": 90,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 29.999999,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.1426461416034674
+    },
+    {
+      "inputs": {
+        "age": 69.199999,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 30,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.5840554837762254
+    },
+    {
+      "inputs": {
+        "age": 55.399999,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 30.000001,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.31242038390237925
+    },
+    {
+      "inputs": {
+        "age": 33.999999,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 56.999999,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.3345561917116208
+    },
+    {
+      "inputs": {
+        "age": 80,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 56.999999,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.2382603740274437
+    },
+    {
+      "inputs": {
+        "age": 69.199999,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 57,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.10710884322303355
+    },
+    {
+      "inputs": {
+        "age": 55.399999,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 57.000001,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.22946656666930748
+    },
+    {
+      "inputs": {
+        "age": 18,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 89.999999,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.46202827524398266
+    },
+    {
+      "inputs": {
+        "age": 80,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 89.999999,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.05218566649264957
+    },
+    {
+      "inputs": {
+        "age": 69.199999,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 90,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.22563352170244305
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 90.000001,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.21205061591677846
+    },
+    {
+      "inputs": {
+        "age": 18,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 350,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.08969726243079561
+    },
+    {
+      "inputs": {
+        "age": 80,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 350,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 2
+      },
+      "expected": 0.052582083586621
+    },
+    {
+      "inputs": {
+        "age": 69.199999,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 1,
+        "cpr_minutes": 0,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.20610448465363337
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 29.999999,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.499766347743097
+    },
+    {
+      "inputs": {
+        "age": 18,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 0,
+        "cpr_minutes": 30,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.13226128984138832
+    },
+    {
+      "inputs": {
+        "age": 80,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 0,
+        "cpr_minutes": 30,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.09344797872329029
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 100,
+        "cpr_minutes": 30.000001,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.22531383598682156
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 56.999999,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.15902596482970716
+    },
+    {
+      "inputs": {
+        "age": 18,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 100,
+        "cpr_minutes": 57,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.2022118907516671
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 20,
+        "cpr_minutes": 57,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.25739988788823315
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 57.000001,
+        "rosc": 0,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.10085151766958096
+    },
+    {
+      "inputs": {
+        "age": 34.000001,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 20,
+        "cpr_minutes": 89.999999,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.14215112830567003
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 89.999999,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.0857371947395217
+    },
+    {
+      "inputs": {
+        "age": 69.200001,
+        "location": 0,
+        "multiple_arrests": 1,
+        "initial_rhythm": 1,
+        "shocks": 5,
+        "cpr_minutes": 90,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 0,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.15719229542691435
+    },
+    {
+      "inputs": {
+        "age": 55.400000999999996,
+        "location": 0,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 5,
+        "cpr_minutes": 90.000001,
+        "rosc": 1,
+        "signs_of_life": 0,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.09276442940552644
+    },
+    {
+      "inputs": {
+        "age": 34,
+        "location": 1,
+        "multiple_arrests": 0,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 350,
+        "rosc": 0,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.22541343415842474
+    },
+    {
+      "inputs": {
+        "age": 120,
+        "location": 1,
+        "multiple_arrests": 1,
+        "initial_rhythm": 0,
+        "shocks": 1,
+        "cpr_minutes": 350,
+        "rosc": 1,
+        "signs_of_life": 1,
+        "pulse": 1,
+        "cannulation_rhythm": 3
+      },
+      "expected": 0.13820581680912
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+/* Calculator-only refinements. Shared site styling is unchanged. */
+.site-calc [hidden] { display: none !important; }
+.site-calc .hdr { gap: 10px; }
+.site-calc .sub { margin-bottom: 0; max-width: 770px; }
+.site-calc .updated { margin: 0; font-size: 14px; color: var(--muted); }
+.entryNote { margin: 24px 0 14px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.site-calc .grid { row-gap: 18px; column-gap: 24px; }
+.site-calc .field > span,
+.site-calc .labelRow label {
+  display: flex;
+  align-items: center;
+  min-height: var(--labelRowMin);
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: left;
+  justify-content: flex-start;
+}
+.site-calc .labelRow label { padding-right: 42px; }
+.site-calc .helpBtn {
+  min-height: 32px;
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  right: 0;
+}
+.site-calc .actions { flex-direction: row; justify-content: center; margin-top: 24px; }
+.site-calc .actions .primary { width: 300px; }
+.site-calc .actions .secondary { width: 140px; }
+.formError, .previewNotice { padding: 12px 16px; border: 1px solid #b45309; border-radius: 10px; background: #fff7ed; color: #7c3d08; line-height: 1.5; }
+.previewNotice { margin: 0 0 18px; text-align: center; font-size: 14px; }
+.formError { margin-bottom: 0; }
+.site-calc [aria-invalid="true"] { border-color: #b91c1c; }
+.site-calc button:focus-visible, .site-calc summary:focus-visible { outline: 3px solid #2776b8; outline-offset: 3px; }
+.bandNote { margin-bottom: 0; }
+.useNote { margin: 14px auto 20px; max-width: 760px; font-size: 14px; line-height: 1.5; color: var(--muted); text-align: center; }
+@media (max-width: 640px) {
+  .site-calc .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .site-calc .card { padding: 20px 16px; }
+  .site-calc .hdr h1 { font-size: 24px; }
+  .site-calc .sub { font-size: 15px; }
+  .site-calc .actions .primary { flex: 2; }
+  .site-calc .actions .secondary { flex: 1; }
+  .site-calc .actions button { width: auto; min-width: 0; }
+  .site-calc input, .site-calc select { font-size: 16px; padding-inline: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-calc *, .site-calc *::before, .site-calc *::after { transition: none !important; }
+}

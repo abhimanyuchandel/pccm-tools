@@ -3,18 +3,25 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PCCM Tools | OHCA ECPR Calculator</title>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ND4PN2RZTR"></script>
+    <title>PCCM Tools | ELSO-derived ECPR Calculator</title>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag("js", new Date());
-      gtag("config", "G-ND4PN2RZTR");
+      // Keep preview traffic out of production analytics. Never send form values.
+      if (["pccmtools.org", "www.pccmtools.org", "pulmapps.org", "www.pulmapps.org"].includes(location.hostname)) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag("js", new Date());
+        gtag("config", "G-ND4PN2RZTR");
+        const analytics = document.createElement("script");
+        analytics.async = true;
+        analytics.src = "https://www.googletagmanager.com/gtag/js?id=G-ND4PN2RZTR";
+        document.head.append(analytics);
+      }
     </script>
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
     <link rel="stylesheet" href="/style.css?v=20260408-5">
+    <link rel="stylesheet" href="./calculator.css?v=20260921">
   </head>
   <body class="site-calc">
     <main class="siteShell">
@@ -24,123 +31,146 @@
       </header>
 
       <div class="card">
+        <p class="previewNotice" id="previewNotice" hidden>Preview for review only. The live calculator has not been updated.</p>
         <header class="hdr">
-          <h1>Out-of-hospital ECPR Favorable Cerebral Performance Category (CPC) Calculator</h1>
+          <h1>ELSO-derived ECPR Calculator</h1>
           <p class="sub">
-            Predicts the probability of survival to hospital discharge with a favorable CPC (CPC 1-2) after
-            out-of-hospital cardiac arrest prior to extracorporeal cardiopulmonary resuscitation (ECPR). Requires all
-            fields.
+            Estimates the probability of survival to hospital discharge with a favorable neurologic outcome
+            (Cerebral Performance Category [CPC] 1–2) in adults with out-of-hospital cardiac arrest supported
+            with extracorporeal cardiopulmonary resuscitation (ECPR).
           </p>
+          <p class="updated">Last updated: <time datetime="2026-09-21">September 21, 2026</time></p>
         </header>
 
-        <section class="grid">
-          <label class="field">
-            <span>Location of cardiac arrest</span>
-            <select id="la_out_of_hospital" required>
-              <option value="" selected disabled>Choose...</option>
-              <option value="Home / Other">Home / Other</option>
-              <option value="Public / Healthcare–EMS">Public, Outpatient healthcare facility, or EMS</option>
-            </select>
-          </label>
+        <form id="calculator" novalidate autocomplete="off">
+        <p class="entryNote" id="entryNote">Complete all 10 fields using information available at cannulation. Do not enter an unknown value as zero or “No.”</p>
+        <section class="grid" aria-label="Clinical inputs" aria-describedby="entryNote">
+          <div class="field has-help">
+            <div class="labelRow">
+              <label for="age">Age (years)</label>
+              <button type="button" class="helpBtn" data-help="ageHelp" aria-controls="ageHelp" aria-expanded="false" aria-label="Age entry guidance">?</button>
+            </div>
+            <input id="age" name="age" type="number" inputmode="decimal" step="any" min="18" max="120" placeholder="e.g., 55" required aria-describedby="ageHelp">
+            <div class="helpText" id="ageHelp" hidden>For adults aged 18 years or older. Ages of 80 years or older are calculated as 80, consistent with age recording in the registry.</div>
+          </div>
 
           <label class="field">
-            <span>Witnessed arrest</span>
-            <select id="witnessed_arrest" required>
+            <span>Location of cardiac arrest</span>
+            <select id="la_out_of_hospital" name="location" required>
               <option value="" selected disabled>Choose...</option>
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
+              <option value="0">Home / other</option>
+              <option value="1">Public place / outpatient healthcare / ambulance</option>
             </select>
           </label>
 
           <label class="field">
             <span>Initial cardiac arrest rhythm</span>
-            <select id="initial_rhythm" required>
+            <select id="initial_rhythm" name="initial_rhythm" required>
               <option value="" selected disabled>Choose...</option>
-              <option value="Non-shockable">Non-shockable</option>
-              <option value="Shockable">Shockable</option>
+              <option value="0">Non-shockable (asystole / PEA)</option>
+              <option value="1">Shockable (VF / pulseless VT)</option>
             </select>
           </label>
 
           <label class="field">
             <span>Number of defibrillation shocks</span>
-            <input id="number_of_shocks" type="number" inputmode="numeric" step="1" min="0" max="50" placeholder="e.g., 3" required>
+            <input id="number_of_shocks" name="shocks" type="number" inputmode="numeric" step="1" min="0" max="100" placeholder="e.g., 3" required>
           </label>
 
-          <label class="field has-help">
+          <div class="field has-help">
             <div class="labelRow">
-              <span>ROSC before cannulation</span>
-              <button type="button" class="helpBtn" data-help="roscHelp" aria-label="ROSC definition">?</button>
+              <label for="rosc_before_cannulation">ROSC before cannulation</label>
+              <button type="button" class="helpBtn" data-help="roscHelp" aria-controls="roscHelp" aria-expanded="false" aria-label="ROSC definition">?</button>
             </div>
-            <select id="rosc_before_cannulation" required>
+            <select id="rosc_before_cannulation" name="rosc" required aria-describedby="roscHelp">
               <option value="" selected disabled>Choose...</option>
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
             </select>
             <div class="helpText" id="roscHelp" hidden>
               <strong>ROSC before cannulation</strong>: Return of spontaneous circulation (for at least 30 seconds)
               achieved at any point <em>before</em> ECMO cannulation.
             </div>
-          </label>
+          </div>
 
-          <label class="field has-help">
+          <div class="field has-help">
             <div class="labelRow">
-              <span>Multiple cardiac arrests</span>
-              <button type="button" class="helpBtn" data-help="multiHelp" aria-label="Multiple arrest definition">?</button>
+              <label for="multiple_cpa">Multiple cardiac arrests</label>
+              <button type="button" class="helpBtn" data-help="multiHelp" aria-controls="multiHelp" aria-expanded="false" aria-label="Multiple arrest definition">?</button>
             </div>
-            <select id="multiple_cpa" required>
+            <select id="multiple_cpa" name="multiple_arrests" required aria-describedby="multiHelp">
               <option value="" selected disabled>Choose...</option>
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
             </select>
             <div class="helpText" id="multiHelp" hidden>
               <strong>Multiple cardiac arrests</strong>: More than one distinct arrest episode during the event/course
               (i.e., re-arrest after ROSC).
             </div>
-          </label>
+          </div>
 
-          <label class="field has-help">
+          <div class="field has-help">
             <div class="labelRow">
-              <span>Signs of life prior to cannulation</span>
-              <button type="button" class="helpBtn" data-help="solHelp" aria-label="Signs of life definition">?</button>
+              <label for="signs_of_life_pre_ecls">Signs of life prior to cannulation</label>
+              <button type="button" class="helpBtn" data-help="solHelp" aria-controls="solHelp" aria-expanded="false" aria-label="Signs of life definition">?</button>
             </div>
-            <select id="signs_of_life_pre_ecls" required>
+            <select id="signs_of_life_pre_ecls" name="signs_of_life" required aria-describedby="solHelp">
               <option value="" selected disabled>Choose...</option>
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
             </select>
             <div class="helpText" id="solHelp" hidden>
               <strong>Signs of life</strong>: Any evidence of physiologic/neurologic activity before cannulation
               (e.g., movement, gasping, respiratory effort).
             </div>
-          </label>
+          </div>
 
           <label class="field">
             <span>Total CPR duration (minutes)</span>
-            <input id="total_cpr_time" type="number" inputmode="numeric" step="1" min="0" max="400" placeholder="e.g., 42" required>
+            <input id="total_cpr_time" name="cpr_minutes" type="number" inputmode="decimal" step="any" min="0" max="350" placeholder="e.g., 42" required>
           </label>
 
-          <label class="field field-wide">
-            <span>Rhythm at time of cannulation</span>
-            <select id="cannulation_rhythm_collapsed" required>
+          <div class="field has-help">
+            <div class="labelRow">
+              <label for="pulse_at_cannulation">Pulse at cannulation</label>
+              <button type="button" class="helpBtn" data-help="pulseHelp" aria-controls="pulseHelp" aria-expanded="false" aria-label="Pulse at cannulation definition">?</button>
+            </div>
+            <select id="pulse_at_cannulation" name="pulse" required aria-describedby="pulseHelp">
               <option value="" selected disabled>Choose...</option>
-              <option value="Asystole">Asystole</option>
-              <option value="PEA">PEA</option>
-              <option value="VF / VT">VF / VT</option>
-              <option value="Other perfusing rhythm">Other perfusing rhythm</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+            <div class="helpText" id="pulseHelp" hidden>Was a pulse present at the time of cannulation? This is separate from any earlier return of spontaneous circulation (ROSC). An organized rhythm does not necessarily indicate a pulse.</div>
+          </div>
+
+          <label class="field">
+            <span>Rhythm at time of cannulation</span>
+            <select id="cannulation_rhythm_collapsed" name="cannulation_rhythm" required>
+              <option value="" selected disabled>Choose...</option>
+              <option value="0">Asystole</option>
+              <option value="1">Pulseless electrical activity (PEA)</option>
+              <option value="2">Ventricular fibrillation / tachycardia (VF / VT)</option>
+              <option value="3">Other organized rhythm</option>
             </select>
           </label>
         </section>
+        <p class="formError" id="formError" role="alert" hidden></p>
 
         <section class="actions">
-          <button id="calcBtn" class="primary" disabled>Calculate</button>
-          <button id="resetBtn" class="secondary">Reset</button>
+          <button id="calcBtn" type="submit" class="primary" disabled>Calculate</button>
+          <button id="resetBtn" type="reset" class="secondary">Reset</button>
         </section>
+        </form>
+        <noscript><p class="formError">JavaScript is required to calculate a probability. No result is available while JavaScript is disabled.</p></noscript>
 
-        <section class="result" id="resultCard" aria-live="polite" data-band="none">
+        <section class="result" id="resultCard" aria-live="polite" aria-atomic="true" data-band="none">
           <div class="pill" id="bandPill">Enter all fields to calculate</div>
           <div class="big" id="riskOut">-</div>
           <div class="small" id="noteOut">Predicted probability of survival with a favorable CPC (CPC 1-2)</div>
+          <p class="small" id="ageNote" hidden>Age was entered as 80 years or older and is calculated as 80.</p>
+          <p class="fine bandNote" id="bandNote" hidden>Probability bands (&lt;5%, 5–&lt;20%, ≥20%) are descriptive, not validated treatment thresholds.</p>
         </section>
+        <p class="useNote">Research and education only. Independent external validation is required before clinical use. This estimates prognosis among ECPR recipients, not the benefit of ECPR or whether treatment should be withheld.</p>
 
         <details class="about">
           <summary>About this calculator</summary>
@@ -156,10 +186,17 @@
 
             <p>
               <strong>Model development.</strong><br>
-              This calculator was developed and validated using data from adult patients supported with extracorporeal
+              This calculator was developed using data from adult patients supported with extracorporeal
               cardiopulmonary resuscitation (ECPR). These data were derived from the Extracorporeal Life Support
               Organization (ELSO) patient registry, which maintains a comprehensive registry of patients undergoing
               extracorporeal life support at centers worldwide.
+            </p>
+
+            <p>
+              The model uses 10 clinical inputs and was developed in 2,184 adults from 205 registry centers
+              during 2020–2025. It was evaluated by withholding entire centers from model development.
+              Independent external validation remains necessary. Missing neurologic outcomes among 264 survivors
+              were estimated during the analysis, which introduces uncertainty.
             </p>
 
             <p>
@@ -180,6 +217,13 @@
               life-sustaining therapy.
             </p>
 
+            <p>
+              <strong>Using the result.</strong><br>
+              The percentage is a continuous estimate. The accompanying bands below 5%, 5% to below 20%,
+              and 20% or greater aid interpretation but do not establish treatment cutoffs. All inputs must be known.
+              Calculations run in your browser without sending the entered values to a server.
+            </p>
+
             <p class="fine">
               A link to the associated manuscript will be added here when it becomes available.
             </p>
@@ -192,6 +236,6 @@
         </details>
       </div>
     </main>
-    <script src="/script.js"></script>
+    <script type="module" src="./app.mjs?v=20260921"></script>
   </body>
 </html>
