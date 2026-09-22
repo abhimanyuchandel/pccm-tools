@@ -52,6 +52,8 @@ assert.doesNotMatch(html, /witnessed_arrest|Other perfusing|developed and valida
 assert.match(html, /datetime="2026-09-21"/);
 assert.match(html, /This calculator was developed using data from adult patients supported with extracorporeal/);
 assert.doesNotMatch(html, /ageHelp|Age entry guidance|The model uses 10 clinical inputs and was developed|Missing neurologic outcomes among 264 survivors/);
+assert.doesNotMatch(html, /probability bands?|bandPill|bandNote|Using the result|The accompanying bands/i);
+assert.match(readFileSync(new URL('./calculator.css', import.meta.url), 'utf8'), /\.entryNote\s*\{[^}]*text-align:\s*center/);
 const ids = [...html.matchAll(/\bid="([^"]*)"/g)].map(m => m[1]);
 assert.equal(new Set(ids).size, ids.length);
 const fields = {};
@@ -87,6 +89,8 @@ const sandbox = vm.createContext({
   location: {hostname:'localhost'}, console
 });
 const app = readFileSync(new URL('./app.mjs', import.meta.url), 'utf8');
+assert.doesNotMatch(app, /bandPill|bandNote|band\.label/);
+assert.doesNotMatch(readFileSync(new URL('./presentation.mjs', import.meta.url), 'utf8'), /Probability band:/);
 assert.doesNotMatch(app, /\b(fetch|localStorage|sessionStorage|XMLHttpRequest|WebSocket|gtag)\b/);
 new vm.Script(app.replace(/^import .+;\n/gm, ''), {filename:'app.mjs'}).runInContext(sandbox);
 assert.equal(nodes.calcBtn.disabled, true);

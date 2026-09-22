@@ -23,11 +23,9 @@ function readInputs() {
 
 function clearResult() {
   el('resultCard').dataset.band = 'none';
-  el('bandPill').textContent = 'Enter all fields to calculate';
   el('riskOut').textContent = '—';
   el('noteOut').textContent = resultLabel;
   el('ageNote').hidden = true;
-  el('bandNote').hidden = true;
   el('formError').hidden = true;
   el('formError').textContent = '';
   fields.forEach(field => field.removeAttribute('aria-invalid'));
@@ -55,10 +53,8 @@ form.addEventListener('submit', event => {
     const result = predictFavorableOutcome(frozenModel, readInputs());
     const band = bandFor(result.probability);
     el('resultCard').dataset.band = band.band;
-    el('bandPill').textContent = band.label;
     el('riskOut').textContent = formatProbability(result.probability);
     el('ageNote').hidden = !result.ageTopcoded;
-    el('bandNote').hidden = false;
   } catch (error) {
     el('formError').textContent = error.message;
     el('formError').hidden = false;

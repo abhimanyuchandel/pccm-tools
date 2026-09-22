@@ -3,7 +3,7 @@
 .site-calc .hdr { gap: 10px; }
 .site-calc .sub { margin-bottom: 0; max-width: 770px; }
 .site-calc .updated { margin: 0; font-size: 14px; color: var(--muted); }
-.entryNote { margin: 24px 0 14px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.entryNote { margin: 24px 0 14px; font-size: 15px; line-height: 1.5; color: var(--muted); text-align: center; }
 .site-calc .grid { row-gap: 18px; column-gap: 24px; }
 .site-calc .field > span,
 .site-calc .labelRow label {
@@ -34,7 +34,6 @@
 .formError { margin-bottom: 0; }
 .site-calc [aria-invalid="true"] { border-color: #b91c1c; }
 .site-calc button:focus-visible, .site-calc summary:focus-visible { outline: 3px solid #2776b8; outline-offset: 3px; }
-.bandNote { margin-bottom: 0; }
 .useNote { margin: 14px auto 20px; max-width: 760px; font-size: 14px; line-height: 1.5; color: var(--muted); text-align: center; }
 @media (max-width: 640px) {
   .site-calc .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }

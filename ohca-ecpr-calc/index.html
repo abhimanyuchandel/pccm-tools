@@ -21,7 +21,7 @@
     <link rel="icon" type="image/png" href="/assets/pccmapps.png">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
     <link rel="stylesheet" href="/style.css?v=20260408-5">
-    <link rel="stylesheet" href="./calculator.css?v=20260921">
+    <link rel="stylesheet" href="./calculator.css?v=20260921-3">
   </head>
   <body class="site-calc">
     <main class="siteShell">
@@ -160,11 +160,9 @@
         <noscript><p class="formError">JavaScript is required to calculate a probability. No result is available while JavaScript is disabled.</p></noscript>
 
         <section class="result" id="resultCard" aria-live="polite" aria-atomic="true" data-band="none">
-          <div class="pill" id="bandPill">Enter all fields to calculate</div>
           <div class="big" id="riskOut">-</div>
           <div class="small" id="noteOut">Predicted probability of survival with a favorable CPC (CPC 1-2)</div>
           <p class="small" id="ageNote" hidden>Age was entered as 80 years or older and is calculated as 80.</p>
-          <p class="fine bandNote" id="bandNote" hidden>Probability bands (&lt;5%, 5–&lt;20%, ≥20%) are descriptive, not validated treatment thresholds.</p>
         </section>
         <p class="useNote">Research and education only. Independent external validation is required before clinical use. This estimates prognosis among ECPR recipients, not the benefit of ECPR or whether treatment should be withheld.</p>
 
@@ -206,13 +204,6 @@
               life-sustaining therapy.
             </p>
 
-            <p>
-              <strong>Using the result.</strong><br>
-              The percentage is a continuous estimate. The accompanying bands below 5%, 5% to below 20%,
-              and 20% or greater aid interpretation but do not establish treatment cutoffs. All inputs must be known.
-              Calculations run in your browser without sending the entered values to a server.
-            </p>
-
             <p class="fine">
               A link to the associated manuscript will be added here when it becomes available.
             </p>
@@ -225,6 +216,6 @@
         </details>
       </div>
     </main>
-    <script type="module" src="./app.mjs?v=20260921"></script>
+    <script type="module" src="./app.mjs?v=20260921-3"></script>
   </body>
 </html>

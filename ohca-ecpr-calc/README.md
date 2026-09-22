@@ -6,7 +6,7 @@ The September 21, 2026 revision uses the frozen ten-input, pH-free ridge model w
 
 - `model.mjs`: frozen coefficients, spline knots and factor definitions. The original equation SHA-256 is recorded in its header.
 - `predict.mjs`: complete-entry equation, with the existing verified R-to-JavaScript adapter unchanged. Age is capped at 80, age and CPR duration use three-knot restricted cubic splines, and shocks use `log(1 + shocks)`.
-- `presentation.mjs`: descriptive bands below 5%, 5% to below 20%, and 20% or greater. Band assignment uses the unrounded probability. These are not validated treatment thresholds.
+- `presentation.mjs`: red, yellow, and green result-card colors using the unchanged thresholds of 5% and 20%. Color assignment uses the unrounded probability. The page shows only the continuous estimate, without category labels. Colors do not establish treatment thresholds.
 - `app.mjs`: form checks and result display. Any input change clears the previous result. Entered values are not stored or transmitted.
 - `calculator.css`: route-specific styling that preserves the site's shared layout and colors.
 - `fixtures.json`: 60 hypothetical examples generated from the frozen R fit. No patient records are included.
