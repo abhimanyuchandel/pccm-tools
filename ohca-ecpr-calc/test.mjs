@@ -51,6 +51,7 @@ const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 assert.doesNotMatch(html, /witnessed_arrest|Other perfusing|developed and validated|src="\/script.js"/);
 assert.match(html, /datetime="2026-09-21"/);
 assert.match(html, /This calculator was developed using data from adult patients supported with extracorporeal/);
+assert.doesNotMatch(html, /ageHelp|Age entry guidance|The model uses 10 clinical inputs and was developed|Missing neurologic outcomes among 264 survivors/);
 const ids = [...html.matchAll(/\bid="([^"]*)"/g)].map(m => m[1]);
 assert.equal(new Set(ids).size, ids.length);
 const fields = {};

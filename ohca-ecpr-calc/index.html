@@ -45,14 +45,10 @@
         <form id="calculator" novalidate autocomplete="off">
         <p class="entryNote" id="entryNote">Complete all 10 fields using information available at cannulation. Do not enter an unknown value as zero or “No.”</p>
         <section class="grid" aria-label="Clinical inputs" aria-describedby="entryNote">
-          <div class="field has-help">
-            <div class="labelRow">
-              <label for="age">Age (years)</label>
-              <button type="button" class="helpBtn" data-help="ageHelp" aria-controls="ageHelp" aria-expanded="false" aria-label="Age entry guidance">?</button>
-            </div>
-            <input id="age" name="age" type="number" inputmode="decimal" step="any" min="18" max="120" placeholder="e.g., 55" required aria-describedby="ageHelp">
-            <div class="helpText" id="ageHelp" hidden>For adults aged 18 years or older. Ages of 80 years or older are calculated as 80, consistent with age recording in the registry.</div>
-          </div>
+          <label class="field">
+            <span>Age (years)</span>
+            <input id="age" name="age" type="number" inputmode="decimal" step="any" min="18" max="120" placeholder="e.g., 55" required>
+          </label>
 
           <label class="field">
             <span>Location of cardiac arrest</span>
@@ -190,13 +186,6 @@
               cardiopulmonary resuscitation (ECPR). These data were derived from the Extracorporeal Life Support
               Organization (ELSO) patient registry, which maintains a comprehensive registry of patients undergoing
               extracorporeal life support at centers worldwide.
-            </p>
-
-            <p>
-              The model uses 10 clinical inputs and was developed in 2,184 adults from 205 registry centers
-              during 2020–2025. It was evaluated by withholding entire centers from model development.
-              Independent external validation remains necessary. Missing neurologic outcomes among 264 survivors
-              were estimated during the analysis, which introduces uncertainty.
             </p>
 
             <p>
