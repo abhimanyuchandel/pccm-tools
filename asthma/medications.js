@@ -237,6 +237,25 @@
     }
   };
 
+  // Concise schedules shared by the retrospective note and the full prescribing references.
+  const NOTE_SCHEDULES = {
+    air: "Budesonide-formoterol 160/4.5 mcg, 1 inhalation as needed for symptoms or before exercise; maximum 12 total inhalations/day. Guideline-supported AIR use is off-label in the U.S.",
+    smartLow: "Budesonide-formoterol 160/4.5 mcg, 1 inhalation twice daily plus 1 as needed; maximum 12 total maintenance/reliever inhalations/day. U.S. SMART use is off-label.",
+    smartMedium: "Budesonide-formoterol 160/4.5 mcg, 2 inhalations twice daily plus 1 as needed; maximum 12 total maintenance/reliever inhalations/day. U.S. reliever use is off-label.",
+    highDose: "Fluticasone propionate/salmeterol 500/50 mcg, 1 inhalation twice daily, maximum 2/day, with a separate albuterol or albuterol-budesonide reliever; not ICS-formoterol relief with salmeterol. A higher-ICS trial would be monitored over 3-6 months and reduced if there were no meaningful benefit.",
+    airsupra: "Albuterol-budesonide 90/80 mcg, 2 inhalations as needed; maximum 6 doses or 12 inhalations/day, with the indicated maintenance controller.",
+    tiotropium: "Tiotropium Respimat 1.25 mcg/actuation, 2 inhalations once daily (2.5 mcg/day), without duplicate LAMA treatment; not for acute relief.",
+    azithromycin: "A studied off-label regimen was azithromycin 500 mg orally 3 times weekly, after mycobacterial screening, ECG/QTc and medication/hearing review; repeat ECG at 1 month and response assessment over at least 6 months were recommended.",
+    omalizumab: "Omalizumab dosing would follow the supported adult asthma-table cell using pretreatment IgE and verified weight, with perennial aeroallergen sensitization and anaphylaxis precautions confirmed before prescribing.",
+    mepolizumab: "Mepolizumab 100 mg SC every 4 weeks for severe eosinophilic asthma, with continued ICS-containing therapy and supervised OCS reduction when appropriate.",
+    benralizumab: "Benralizumab 30 mg SC every 4 weeks for the first 3 doses, then every 8 weeks for severe eosinophilic asthma.",
+    reslizumab: "Reslizumab 3 mg/kg IV every 4 weeks over 20-50 minutes, with anaphylaxis precautions and post-infusion observation.",
+    dupilumab: "Dupilumab 400 mg SC loading dose followed by 200 mg every 2 weeks, or 600 mg loading followed by 300 mg every 2 weeks for qualifying OCS dependence or comorbidity.",
+    tezepelumab: "Tezepelumab 210 mg SC every 4 weeks, with continued ICS-containing therapy and supervised steroid reduction when appropriate.",
+    depemokimab: "Depemokimab 100 mg SC every 6 months, administered by a healthcare professional, with initial response assessment after at least 6 months."
+  };
+  Object.entries(NOTE_SCHEDULES).forEach(([id, schedule]) => { MEDICATIONS[id].noteSchedule = schedule; });
+
   // U.S. asthma Table 1 (age >=12): intervals are cell-specific, including within a row.
   // IgE upper bounds: 100, 200, 300, 400, 500, 600, 700 IU/mL.
   // Weight upper bounds: 60, 70, 90, 150 kg. Null cells have no recommended dose.

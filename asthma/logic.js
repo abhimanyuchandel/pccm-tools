@@ -6,10 +6,20 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function (catalog) {
   "use strict";
 
-  const NUMBERS = "age biologicMonths maintenanceOcsDose fev1Pre fev1Post fvcPre fvcPost fev1Predicted fvcPredicted pefVariability airUsesPerWeek sabaCanisters ocsExacerbations hospitalExacerbations stableMonths eosinophils historicalEosinophils feno totalIge weightKg heartRate respiratoryRate spo2 systolicBp diastolicBp temperature acuteLungFunctionPercent postTreatmentSpo2 postTreatmentRespiratoryRate postTreatmentLungFunctionPercent observationMinutes".split(" ");
+  const NUMBERS = "age biologicMonths maintenanceOcsDose fev1Pre fev1Post fvcPre fvcPost fev1Predicted fvcPredicted pefVariability airUsesPerWeek sabaCanisters ocsExacerbations hospitalExacerbations stableMonths eosinophils historicalEosinophils feno totalIge weightKg respiratoryRate spo2 acuteLungFunctionPercent postTreatmentSpo2 postTreatmentRespiratoryRate postTreatmentLungFunctionPercent observationMinutes".split(" ");
   const BOOLEANS = "lamaAddon maintenanceOcs accessBarrier optimizedTherapy severeAsthmaEstablished icsSideEffects typicalSymptoms icsObjectiveResponse clinicalIcsResponse bronchodilatorHeld activityLimitation recentExacerbation priorIcu persistentExacerbations lungFunctionStable pregnant respiratoryInfection travelling allergenDriven perennialSensitization igePretreatment nasalPolyps atopicDermatitis endemicExposure urgentRedFlags acuteCanLieDown acuteCannotDrink acuteUnableToLieDown acuteCyanosis roomAir postTreatmentRoomAir postTreatmentMildFeatures homeSupport".split(" ");
   const HISTORY = "dxBd dxIcsObjective dxChallenge dxPef".split(" ");
-  const TEXT = "currentMedicationText exposureText hpi exam clinicianContext counselingDocumented acuteHistory acuteTreatmentGiven".split(" ");
+  const REVIEW_FLAGS = ["treatmentReviewed", "riskReviewed", "phenotypeReviewed", "acuteReassessmentAvailable"];
+  const REVIEW_DEFAULTS = {
+    treatmentReviewed: { lamaAddon: false, maintenanceOcs: false, accessBarrier: false, icsSideEffects: false, adherence: "adequate", technique: "correct", currentBiologic: "none" },
+    riskReviewed: { activityLimitation: false, recentExacerbation: false, priorIcu: false, persistentExacerbations: false, pregnant: false, respiratoryInfection: false, travelling: false },
+    phenotypeReviewed: { allergenDriven: false, nasalPolyps: false, atopicDermatitis: false, endemicExposure: false }
+  };
+  const TREATMENT_PRESETS = {
+    air: { controller: "none", reliever: "ics-formoterol", icsDose: "unknown", labaType: "unknown" },
+    smartLow: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "low", labaType: "formoterol" },
+    smartMedium: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol" }
+  };
   const ENUMS = {
     managementPhase: ["initial", "followup"], controller: ["unknown", "none", "saba-only", "ics", "ics-formoterol", "ics-laba", "triple"],
     icsDose: ["unknown", "low", "medium", "high"], labaType: ["unknown", "formoterol", "non-formoterol"],
@@ -29,7 +39,7 @@
     NUMBERS.forEach(key => { data[key] = null; });
     BOOLEANS.forEach(key => { data[key] = null; });
     HISTORY.forEach(key => { data[key] = false; });
-    TEXT.forEach(key => { data[key] = ""; });
+    REVIEW_FLAGS.forEach(key => { data[key] = false; });
     Object.keys(ENUMS).forEach(key => { data[key] = ENUMS[key][0]; });
     return data;
   }
@@ -42,8 +52,15 @@
     });
     BOOLEANS.forEach(key => { data[key] = input[key] === true || input[key] === "yes" ? true : input[key] === false || input[key] === "no" ? false : null; });
     HISTORY.forEach(key => { data[key] = input[key] === true; });
-    TEXT.forEach(key => { data[key] = typeof input[key] === "string" ? input[key].trim() : ""; });
+    REVIEW_FLAGS.forEach(key => { data[key] = input[key] === true; });
     Object.keys(ENUMS).forEach(key => { if (ENUMS[key].includes(input[key])) data[key] = input[key]; });
+    // A reviewed group confirms only its routine exceptions, never testing or optimization.
+    Object.entries(REVIEW_DEFAULTS).forEach(([flag, defaults]) => {
+      if (data[flag]) Object.entries(defaults).forEach(([key, value]) => {
+        if (data[key] === null || data[key] === "unknown") data[key] = value;
+      });
+    });
+    if (data.acutePresentation === "recent") data.recentExacerbation = true;
     return data;
   }
 
@@ -55,7 +72,6 @@
     for (const key of ["spo2", "postTreatmentSpo2"]) if (d[key] !== null && d[key] > 100) errors.push("Oxygen saturation cannot exceed 100%.");
     for (const key of ["fev1Pre", "fev1Post", "fvcPre", "fvcPost", "weightKg"]) if (d[key] === 0) errors.push(`${key}: a zero value is not usable; verify or leave blank.`);
     if ((d.fev1Pre !== null && d.fvcPre !== null && d.fev1Pre > d.fvcPre) || (d.fev1Post !== null && d.fvcPost !== null && d.fev1Post > d.fvcPost)) errors.push("FEV1 exceeds FVC in the same spirometry phase; verify the measurements.");
-    if (d.systolicBp !== null && d.diastolicBp !== null && d.diastolicBp >= d.systolicBp) errors.push("Diastolic BP must be lower than systolic BP; verify the measurements.");
     if (d.eosinophils !== null && d.eosinophils >= 1500 || d.historicalEosinophils !== null && d.historicalEosinophils >= 1500) warnings.push("Marked eosinophilia warrants evaluation for alternative causes, including EGPA and hypereosinophilic disease; do not attribute it to asthma alone.");
     if (d.bronchodilatorHeld === false) warnings.push("Bronchodilators were not withheld before testing; a negative reversibility result may be less informative. Follow laboratory washout instructions if repeating diagnostic testing.");
     if (d.endemicExposure === true && (d.eosinophils >= 300 || d.historicalEosinophils >= 300)) warnings.push("Consider parasitic infection evaluation before systemic corticosteroids or biologic treatment when exposure and eosinophilia are present.");
@@ -203,7 +219,7 @@
       add("benralizumab", `Eosinophilic phenotype; every-8-week asthma maintenance after loading${d.egpa === "confirmed" ? "; confirmed EGPA requires its separate dosing schedule" : ""}`);
       add("depemokimab", "Eosinophilic phenotype; twice-yearly healthcare-professional-administered asthma treatment", d.historicalEosinophils !== null && d.eosinophils === null ? ["Confirm qualifying historical eosinophils were measured within the past 12 months"] : []);
     }
-    if (d.eosinophils !== null && d.eosinophils >= 400) add("reslizumab", "Adult eosinophilic asthma; weight-based IV therapy when an infusion approach is suitable");
+    if (d.eosinophils !== null && d.eosinophils >= 400) add("reslizumab", "Adult eosinophilic asthma; weight-based IV therapy when an infusion approach is suitable", d.weightKg === null ? ["Verify weight before finalizing the 3 mg/kg IV dose"] : []);
     const dup = getDupilumabEvidenceFlag(d);
     if ((eosSignal || d.feno >= 25 || d.maintenanceOcs === true) && !dup.above1500 && !["suspected", "confirmed"].includes(d.egpa)) add("dupilumab", `Type 2 / OCS-dependent asthma${d.feno >= 25 ? "; elevated FeNO" : ""}${d.nasalPolyps === true ? "; nasal polyposis" : ""}${d.atopicDermatitis === true ? "; atopic dermatitis" : ""}`);
     if (f.risk.anyExacerbation === true || d.persistentExacerbations === true || d.maintenanceOcs === true) add("tezepelumab", `Severe asthma option without a required Type 2 biomarker threshold${d.nasalPolyps === true ? "; also has a U.S. nasal-polyposis indication" : ""}`);
@@ -211,25 +227,24 @@
   }
 
   function assessAcutePresentation(input) {
-    const d = normalizeState(input), active = ["active", "recent"].includes(d.acutePresentation), triggers = [];
+    const d = normalizeState(input), active = d.acutePresentation === "active", triggers = [];
     if (d.urgentRedFlags === true) triggers.push("urgent red-flag features");
     if (d.acuteCyanosis === true || ["drowsy", "confused"].includes(d.acuteMentalStatus)) triggers.push("life-threatening clinical features");
     if (d.spo2 !== null && d.spo2 < 92 || d.postTreatmentSpo2 !== null && d.postTreatmentSpo2 < 92) triggers.push("SpO2 below 92%");
     if (d.respiratoryRate > 30 || d.postTreatmentRespiratoryRate > 30) triggers.push("respiratory rate above 30/min");
-    if (active) {
-      if (d.acuteSpeech === "unable" || d.acuteCannotDrink === true || d.acuteUnableToLieDown === true) triggers.push("unable to speak, drink, or lie down");
-      if (d.acuteAirEntry === "silent") triggers.push("silent chest");
-      if (d.acuteLungFunctionPercent !== null && d.acuteLungFunctionPercent < 50 || d.postTreatmentLungFunctionPercent !== null && d.postTreatmentLungFunctionPercent < 50) triggers.push("PEF / FEV1 below 50% of reference");
-      if (d.acuteResponse === "worsening" || d.acuteResponse === "unchanged") triggers.push(d.acuteResponse === "worsening" ? "deterioration after treatment" : "no improvement after initial treatment");
-    }
+    // Switching encounter context must not discard recorded urgent observations.
+    if (d.acuteSpeech === "unable" || d.acuteCannotDrink === true || d.acuteUnableToLieDown === true) triggers.push("unable to speak, drink, or lie down");
+    if (d.acuteAirEntry === "silent") triggers.push("silent chest");
+    if (d.acuteLungFunctionPercent !== null && d.acuteLungFunctionPercent < 50 || d.postTreatmentLungFunctionPercent !== null && d.postTreatmentLungFunctionPercent < 50) triggers.push("PEF / FEV1 below 50% of reference");
+    if (d.acuteResponse === "worsening" || d.acuteResponse === "unchanged") triggers.push(d.acuteResponse === "worsening" ? "deterioration after treatment" : "no improvement after initial treatment");
     const emergency = triggers.length > 0, lifeThreatening = d.acuteCyanosis === true || ["drowsy", "confused"].includes(d.acuteMentalStatus);
     const complete = active && ["acuteSpeech", "acuteMentalStatus", "acuteRespiratoryEffort", "acuteAccessoryMuscles", "acuteAirEntry", "acuteWheeze", "acuteLungFunctionType", "acuteLungFunctionReference"].every(key => d[key] !== "unknown") && ["acuteCanLieDown", "acuteCannotDrink", "acuteUnableToLieDown", "acuteCyanosis", "urgentRedFlags"].every(key => d[key] !== null) && d.spo2 !== null && d.respiratoryRate !== null && d.roomAir === true && d.acuteLungFunctionPercent !== null;
     const mild = complete && !emergency && d.acuteSpeech === "sentences" && d.acuteCanLieDown === true && d.acuteMentalStatus === "normal" && d.acuteRespiratoryEffort === "normal-mild" && d.respiratoryRate <= 20 && d.acuteAccessoryMuscles === "none-mild" && d.acuteAirEntry === "normal" && d.acuteWheeze === "none-mild" && d.spo2 >= 94 && d.acuteLungFunctionPercent > 70;
     const moderateFeature = d.acuteSpeech === "phrases" || d.acuteCanLieDown === false || d.acuteMentalStatus === "agitated" || d.acuteRespiratoryEffort === "increased" || d.respiratoryRate > 20 || d.acuteAccessoryMuscles === "marked" || d.acuteAirEntry === "reduced" || d.acuteWheeze === "expiratory" || d.spo2 !== null && d.spo2 < 94 || d.acuteLungFunctionPercent !== null && d.acuteLungFunctionPercent <= 70;
     const classification = emergency ? lifeThreatening ? "life-threatening features" : "severe features / inadequate response" : !active ? "no active exacerbation assessed" : mild ? "mild" : moderateFeature || complete ? "moderate" : "severity incompletely assessed";
     // These data support reassessment, not an automatic disposition decision.
-    const dischargeCriteriaDocumented = active && complete && !emergency && d.acuteResponse === "improving" && d.postTreatmentMildFeatures === true && d.postTreatmentSpo2 >= 92 && d.postTreatmentRoomAir === true && d.postTreatmentRespiratoryRate !== null && d.postTreatmentRespiratoryRate <= 20 && d.postTreatmentLungFunctionPercent > 70 && d.observationMinutes >= 60 && d.homeSupport === true;
-    return { active, emergency, lifeThreatening, complete, mild, moderateFeature, classification, triggers, dischargeCriteriaDocumented,
+    const dischargeCriteriaDocumented = active && d.acuteReassessmentAvailable && complete && !emergency && d.acuteResponse === "improving" && d.postTreatmentMildFeatures === true && d.postTreatmentSpo2 >= 92 && d.postTreatmentRoomAir === true && d.postTreatmentRespiratoryRate !== null && d.postTreatmentRespiratoryRate <= 20 && d.postTreatmentLungFunctionPercent > 70 && d.observationMinutes >= 60 && d.homeSupport === true;
+    return { active, recentResolved: d.acutePresentation === "recent", reassessmentAvailable: d.acuteReassessmentAvailable, emergency, lifeThreatening, complete, mild, moderateFeature, classification, triggers, dischargeCriteriaDocumented,
       summary: emergency ? `Urgent escalation: ${triggers.join("; ")}. Use the most severe documented feature.` : active ? `Acute exacerbation: ${classification}${complete ? "." : "; assessment is incomplete and outpatient safety / discharge readiness cannot be established."}` : "No active exacerbation was characterized." };
   }
 
@@ -351,7 +366,7 @@
     if (phenotypeNeeded) {
       sourceIds.add("severe");
       const phenotypeAvailable = d.eosinophils !== null || d.historicalEosinophils !== null || d.feno !== null || d.perennialSensitization === true;
-      if (!phenotypeAvailable) action("phenotype-testing", "Prioritize blood eosinophils, FeNO, total IgE, and allergic phenotype testing now so subsequent Step 5 add-on decisions can be made efficiently if control remains inadequate on optimized high-dose ICS-LABA.", "testing");
+      if (!phenotypeAvailable) action("phenotype-testing", "Prioritize blood eosinophils, FeNO, and clinically relevant allergic phenotype testing now so subsequent Step 5 add-on decisions can be made efficiently if control remains inadequate on optimized high-dose ICS-LABA. Obtain pretreatment total IgE when considering omalizumab dosing.", "testing");
       else if (!severe.established) action("future-biologic", `If control remains inadequate after optimized high-dose ICS-LABA, consider phenotype-matched biologic therapy at follow-up${result.biologicCandidates.length ? `; current data support reviewing ${result.biologicCandidates.map(item => item.name.split(" (")[0]).join(", ")}` : "; expand targeted testing to clarify suitable options"}. Current findings do not by themselves establish immediate severe-asthma eligibility.`, "management");
       else action("biologic-review", "The phenotype and optimized high-dose treatment context support considering a suitable biologic. Review individual eligibility, dosing, comorbidities, route / interval, patient preference, and payer requirements; document the selected treatment before ordering.", "management");
       if (severe.established && d.eosinophils !== null && d.eosinophils < 150 && d.feno !== null && d.feno < 25 && d.perennialSensitization === false) action("azithromycin-review", "For persistent symptoms despite optimized high-dose ICS-LABA, consider a monitored long-term azithromycin trial when appropriate, after mycobacterial screening, ECG/QTc, hearing and drug-interaction review, and discussion of antimicrobial resistance. This is not routine antibiotic treatment for exacerbations.", "management", ["azithromycin"], ["severe"]);
@@ -367,7 +382,7 @@
         action("biologic-monitor", selected.id === "depemokimab" ? "Review clinical response to depemokimab over about 6 months, including control, exacerbations, lung function, and steroid exposure; its long dosing interval requires an appropriate assessment window." : "Review biologic response after about 4 months using symptoms, exacerbations, lung function, and steroid burden; extend the trial to 6-12 months if benefit remains uncertain before declaring failure.", "monitoring", [], ["severe"]);
       }
     }
-    if (!acute.active) action("routine-followup", poor || treatment.effectivePhase === "initial" ? "Arrange follow-up in about 4-6 weeks after treatment initiation / adjustment, sooner for deterioration; reassess symptoms, exacerbations, adherence, technique, adverse effects, and lung function as appropriate." : "Arrange routine follow-up in about 3 months; use an earlier 4-8-week review after step-down or another treatment change.", "followup");
+    if (!acute.active) action("routine-followup", acute.recentResolved ? "Individualize follow-up according to recovery and current control after the resolved exacerbation. Confirm an initial post-exacerbation review within 2-7 days of the episode if not already completed; review sooner for incomplete recovery or deterioration." : poor || treatment.effectivePhase === "initial" ? "Arrange follow-up in about 4-6 weeks after treatment initiation / adjustment, sooner for deterioration; reassess symptoms, exacerbations, adherence, technique, adverse effects, and lung function as appropriate." : "Arrange routine follow-up in about 3 months; use an earlier 4-8-week review after step-down or another treatment change.", "followup");
     action("technique-counsel", "Review inhaler technique with demonstration / teach-back, adherence, access, and spacer use where appropriate.", "counseling");
     action("action-plan", "Provide or update a written asthma action plan describing usual treatment, early worsening treatment, reliever limits, and when to return to the prior regimen or seek urgent care. Seek emergency care for severe breathlessness, inability to speak, cyanosis, altered mental status, or poor response to rescue treatment.", "counseling");
     action("nonpharmacologic", `Discuss exposure reduction and regular activity as tolerated; address relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors${d.smoking === "current" ? "; offer smoking cessation counseling and pharmacotherapy" : ""}.`, "counseling");
@@ -386,5 +401,5 @@
     return finish();
   }
 
-  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
+  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, REVIEW_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
 });

@@ -738,6 +738,175 @@ input.numeric-alert:focus {
   line-height: 1.4;
 }
 
+.asthma-page .choice-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.asthma-page .choice-field legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.asthma-page .choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.asthma-page .choice-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  background: #fbfdff;
+  cursor: pointer;
+}
+
+.asthma-page .choice-option:has(input:checked) {
+  border-color: #527599;
+  background: #edf4fb;
+  color: var(--accent);
+}
+
+.asthma-page .choice-option input {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.asthma-page .checkbox-row > .field-label {
+  flex: 1;
+}
+
+.asthma-page .checkbox-row:has(.hint) {
+  flex-wrap: wrap;
+}
+
+.asthma-page .checkbox-row .hint {
+  flex-basis: 100%;
+  margin-left: 28px;
+}
+
+.asthma-page .review-confirmation {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #b2c5db;
+  border-radius: 12px;
+  background: #f1f6fc;
+}
+
+.asthma-page .review-confirmation .checkbox-row {
+  min-height: 28px;
+  margin: 0;
+}
+
+.asthma-page .treatment-shortcuts {
+  margin: 14px 0;
+}
+
+.asthma-page .shortcut-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.asthma-page .shortcut-buttons .ghost-btn {
+  min-height: 42px;
+  padding: 9px 14px;
+  font-size: 14px;
+}
+
+.asthma-page .biologic-dosing {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: #f6f9fd;
+}
+
+.asthma-page .biologic-dosing > .secondary-btn {
+  margin-top: 16px;
+}
+
+.asthma-page .vaccine-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.asthma-page .vaccine-table :is(th, td) {
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line-soft);
+  overflow-wrap: anywhere;
+}
+
+.asthma-page .vaccine-table th:first-child {
+  width: 19%;
+}
+
+.asthma-page .vaccine-table thead th:nth-child(2) {
+  width: 28%;
+}
+
+.asthma-page .vaccine-table a {
+  display: block;
+  margin-top: 6px;
+}
+
+@media (max-width: 600px) {
+  .asthma-page .vaccine-table :is(tbody, tr, th, td) {
+    display: block;
+    width: 100%;
+  }
+  .asthma-page .vaccine-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .asthma-page .vaccine-table tr {
+    margin-top: 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .asthma-page .vaccine-table th:first-child {
+    width: 100%;
+    background: #edf4fb;
+  }
+  .asthma-page .vaccine-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .asthma-page .vaccine-table td:last-child {
+    border-bottom: 0;
+  }
+}
+
 .asthma-page .checkbox-row {
   cursor: pointer;
   align-items: flex-start;

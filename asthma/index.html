@@ -14,12 +14,12 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-1">
-  <script src="/asthma/input-schema.js?v=20261012-1" defer></script>
-  <script src="/asthma/medications.js?v=20261012-1" defer></script>
-  <script src="/asthma/logic.js?v=20261012-1" defer></script>
-  <script src="/asthma/notes.js?v=20261012-1" defer></script>
-  <script src="/asthma/app.js?v=20261012-1" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-2">
+  <script src="/asthma/input-schema.js?v=20261012-2" defer></script>
+  <script src="/asthma/medications.js?v=20261012-2" defer></script>
+  <script src="/asthma/logic.js?v=20261012-2" defer></script>
+  <script src="/asthma/notes.js?v=20261012-2" defer></script>
+  <script src="/asthma/app.js?v=20261012-2" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -45,15 +45,22 @@
 
       <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
-        <p id="form-instructions" class="form-instructions">Document what is known. Leave unassessed findings as <strong>Not assessed / not documented</strong>. Optional sections can be expanded as needed.</p>
+        <p id="form-instructions" class="form-instructions">Enter the clinical essentials. Check exceptions, then confirm any routine group you have reviewed. Unreviewed findings and blank numbers remain unknown; documentation can be completed in your EMR.</p>
 
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
           <div class="grid" data-fields="managementPhase age"></div>
+          <div class="treatment-shortcuts" aria-label="Common treatment shortcuts">
+            <span class="hint">Optional current-treatment shortcuts</span>
+            <div class="shortcut-buttons">
+              <button type="button" class="ghost-btn" data-treatment-preset="air">AIR Only</button>
+              <button type="button" class="ghost-btn" data-treatment-preset="smartLow">Low-Dose SMART</button>
+              <button type="button" class="ghost-btn" data-treatment-preset="smartMedium">Medium-Dose SMART</button>
+            </div>
+          </div>
           <div class="grid" data-fields="controller reliever"></div>
           <div id="ics-dose-fields" class="grid hidden" data-fields="icsDose"></div>
           <div id="laba-type-fields" class="grid hidden" data-fields="labaType"></div>
-          <div class="grid full-width" data-fields="currentMedicationText"></div>
           <details class="clinical-drawer">
             <summary>Add-ons and treatment optimization</summary>
             <div class="drawer-body">
@@ -61,7 +68,10 @@
               <div id="biologic-duration-fields" class="grid hidden" data-fields="biologicMonths"></div>
               <div class="grid" data-fields="maintenanceOcs"></div>
               <div id="ocs-dose-fields" class="grid hidden" data-fields="maintenanceOcsDose"></div>
-              <div class="grid" data-fields="adherence technique accessBarrier optimizedTherapy severeAsthmaEstablished icsSideEffects"></div>
+              <div class="grid checkbox-grid" data-fields="adherence technique accessBarrier icsSideEffects"></div>
+              <div class="review-confirmation" data-fields="treatmentReviewed"></div>
+              <p class="hint">Group review confirms no unchecked treatment or barrier concern, including no current biologic when none is specified. Longitudinal optimization remains a separate confirmation.</p>
+              <div class="grid checkbox-grid" data-fields="optimizedTherapy severeAsthmaEstablished"></div>
             </div>
           </details>
         </section>
@@ -102,7 +112,7 @@
                       <tr><th scope="row">LAMA</th><td>36-48 h</td></tr>
                     </tbody>
                   </table>
-                  <p class="hint">ICS and leukotriene modifiers usually do not need to be withheld. For combination inhalers, use the longest-acting component and follow local lab protocol.</p>
+                  <p class="hint">Standalone inhaled corticosteroids (ICS) and leukotriene modifiers such as montelukast can be continued for spirometry with bronchodilator-response testing. Do not stop them solely for the short washout in this table. For ICS-containing combination inhalers, follow the LABA/LAMA withholding interval for the whole inhaler. Follow laboratory instructions; methacholine and other bronchoprovocation tests have different preparation requirements.</p>
                   <a class="hint" href="https://doi.org/10.1164/rccm.201908-1590ST" target="_blank" rel="noopener noreferrer">ATS/ERS spirometry standard</a>
                 </div>
               </details>
@@ -137,33 +147,34 @@
               <div class="grid" data-fields="stableMonths lungFunctionStable pregnant respiratoryInfection travelling"></div>
             </div>
           </details>
+          <div class="review-confirmation" data-fields="riskReviewed"></div>
+          <p class="hint">Review covers unchecked activity, exacerbation-history and stability flags. It does not turn blank exacerbation counts into zero or confirm stable lung function.</p>
         </section>
 
         <section class="panel" aria-labelledby="acute-heading">
-          <h2 id="acute-heading">4) Acute Exacerbation Assessment</h2>
+          <h2 id="acute-heading">4) Exacerbation Context</h2>
           <div class="grid" data-fields="acutePresentation urgentRedFlags"></div>
           <div id="acute-fields" class="hidden">
+            <p id="acute-retained-warning" class="clinical-callout hidden">Previously entered urgent observations still require assessment, even outside active-exacerbation mode. Review or update them if they no longer represent the current encounter.</p>
             <p class="clinical-callout">Assess the most severe feature and response to treatment. Incomplete observations do not establish safe outpatient management or discharge readiness.</p>
-            <div class="grid" data-fields="acuteHistory acuteTreatmentGiven"></div>
-            <div id="acute-vitals-slot"></div>
+            <div class="grid" data-fields="respiratoryRate spo2 roomAir"></div>
             <div class="grid" data-fields="acuteSpeech acuteCanLieDown acuteUnableToLieDown acuteCannotDrink acuteCyanosis acuteMentalStatus acuteRespiratoryEffort acuteAccessoryMuscles acuteAirEntry acuteWheeze"></div>
             <div class="grid" data-fields="acuteLungFunctionPercent acuteLungFunctionType acuteLungFunctionReference"></div>
-            <details class="clinical-drawer">
-              <summary>Actual reassessment after treatment</summary>
-              <div class="drawer-body">
-                <p class="hint">Enter observed findings and actual treatment response. Leave unavailable observations blank.</p>
-                <div class="grid" data-fields="acuteResponse observationMinutes postTreatmentSpo2 postTreatmentRoomAir postTreatmentRespiratoryRate postTreatmentLungFunctionPercent postTreatmentMildFeatures homeSupport"></div>
-              </div>
-            </details>
+            <div class="review-confirmation" data-fields="acuteReassessmentAvailable"></div>
+            <div id="acute-reassessment-fields" class="clinical-callout hidden">
+              <p class="hint">Actual reassessment only. Missing observations cannot establish discharge readiness.</p>
+              <div class="grid" data-fields="acuteResponse observationMinutes postTreatmentSpo2 postTreatmentRoomAir postTreatmentRespiratoryRate postTreatmentLungFunctionPercent postTreatmentMildFeatures homeSupport"></div>
+            </div>
           </div>
         </section>
 
         <details class="panel panel-drawer">
           <summary><span class="drawer-title">5) Phenotype and Modifiers</span><span class="hint">Biomarkers, comorbidities, and relevant exposures</span></summary>
           <div class="drawer-body">
-            <div class="grid" data-fields="eosinophils historicalEosinophils feno totalIge igePretreatment weightKg"></div>
+            <div class="grid" data-fields="eosinophils historicalEosinophils feno"></div>
             <div class="grid" data-fields="allergenDriven perennialSensitization nasalPolyps atopicDermatitis egpa endemicExposure smoking"></div>
-            <div class="grid full-width" data-fields="exposureText"></div>
+            <div class="review-confirmation" data-fields="phenotypeReviewed"></div>
+            <p class="hint">Sensitization, EGPA status and smoking history still require an explicit assessment. Biologic-specific dosing inputs appear with the selected agent.</p>
           </div>
         </details>
 
@@ -171,22 +182,23 @@
           <summary><span class="drawer-title">6) Preventive Care Status</span><span class="hint">Documented vaccine history; unknown does not mean incomplete</span></summary>
           <div class="drawer-body">
             <div class="grid" data-fields="pneumococcal rsv zoster tdap flu covid"></div>
-          </div>
-        </details>
-
-        <details id="encounter-details" class="panel panel-drawer">
-          <summary><span class="drawer-title">7) Optional Encounter Documentation</span><span class="hint">Interval history, vitals, examination, and completed counseling</span></summary>
-          <div class="drawer-body">
-            <div class="grid full-width" data-fields="hpi"></div>
-            <div id="encounter-vitals-slot">
-              <fieldset id="visit-vitals" class="vitals-fieldset">
-                <legend>Encounter Vitals</legend>
-                <p class="hint">Enter measured values. These same vitals are used for acute assessment when an exacerbation is documented.</p>
-                <div class="grid grid-three" data-fields="heartRate respiratoryRate spo2 systolicBp diastolicBp temperature"></div>
-                <div class="grid" data-fields="roomAir"></div>
-              </fieldset>
-            </div>
-            <div class="grid full-width" data-fields="exam clinicianContext counselingDocumented"></div>
+            <details class="clinical-drawer vaccine-reference">
+              <summary>Adult asthma vaccine quick reference</summary>
+              <div class="drawer-body">
+                <p class="hint">General guidance, not a record of vaccination. Prior products, immune status and local protocols affect the individual schedule.</p>
+                <table class="vaccine-table">
+                  <caption class="sr-only">General CDC adult vaccination guidance relevant to asthma</caption>
+                  <thead><tr><th scope="col">Vaccine</th><th scope="col">Who</th><th scope="col">Product and schedule</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Pneumococcal</th><td data-label="Who">Adults 19-49 with asthma; all adults 50 or older.</td><td data-label="Product and schedule">PCV20 (Prevnar 20) or PCV21 (Capvaxive) alone, or PCV15 (Vaxneuvance) followed ordinarily 1 year later by PPSV23 (Pneumovax 23). Previous vaccination changes the schedule; not an annual vaccine. <a href="https://www.cdc.gov/pneumococcal/hcp/vaccine-recommendations/index.html" target="_blank" rel="noopener noreferrer">CDC pneumococcal guidance</a></td></tr>
+                    <tr><th scope="row">RSV</th><td data-label="Who">Adults 50-74 with asthma; all adults 75 or older.</td><td data-label="Product and schedule">One dose of Arexvy, Abrysvo, or mResvia. Not annual; no routine repeat after a previous dose. <a href="https://www.cdc.gov/rsv/hcp/vaccine-clinical-guidance/adults.html" target="_blank" rel="noopener noreferrer">CDC RSV guidance</a></td></tr>
+                    <tr><th scope="row">Zoster</th><td data-label="Who">Adults 50 or older; immunocompromised adults 19 or older. Asthma alone does not establish the younger-age indication.</td><td data-label="Product and schedule">Shingrix: 2 doses, usually 2-6 months apart. Selected immunocompromised patients may use 1-2 months. No routine booster after the completed series. <a href="https://www.cdc.gov/shingles/hcp/vaccine-considerations/index.html" target="_blank" rel="noopener noreferrer">CDC zoster guidance</a></td></tr>
+                    <tr><th scope="row">Tdap / Td</th><td data-label="Who">Adults according to primary-series and prior Tdap history; not asthma-specific.</td><td data-label="Product and schedule">Tdap when indicated, then Td or Tdap every 10 years. Incomplete primary series: Tdap, Td/Tdap at least 4 weeks later, then Td/Tdap 6-12 months later. Tdap during each pregnancy, preferably at 27-36 weeks. <a href="https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html" target="_blank" rel="noopener noreferrer">CDC adult schedule</a></td></tr>
+                  </tbody>
+                </table>
+                <p class="hint">Pneumococcal intervals may shorten to 8 weeks for qualifying immunocompromise, CSF leak, or cochlear implant, not asthma alone. Wound-care tetanus schedules differ. Maternal RSV prevention uses Abrysvo at 32-36 weeks under seasonal obstetric guidance. For age 18, consult the CDC adolescent schedule. Do not restart a vaccine series solely because an interval was prolonged.</p>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -226,6 +238,13 @@
               <div id="biologic-additional-options" class="drawer-body"></div>
             </details>
           </fieldset>
+          <div id="biologic-dosing" class="biologic-dosing hidden">
+            <h3 id="biologic-dosing-heading" class="result-subtitle">Drug-specific dosing check</h3>
+            <p class="hint">Optional for discussing an option; required before finalizing a patient-specific dose. Changing these inputs requires regeneration. Information is retained only in this page.</p>
+            <div class="grid" data-fields="weightKg"></div>
+            <div id="omalizumab-dosing-fields" class="grid hidden" data-fields="totalIge igePretreatment"></div>
+            <button type="submit" form="asthma-form" class="secondary-btn">Regenerate With Dosing Inputs</button>
+          </div>
         </article>
         <article id="prevention-card" class="result-card hidden">
           <h2>Preventive Care and Vaccination</h2>
@@ -251,6 +270,7 @@
             <h2 id="note-heading" class="note-title">Copy/Paste Clinical Note</h2>
             <button type="button" id="copy-note-btn" class="secondary-btn" disabled>Copy SOAP Note</button>
           </div>
+          <p class="hint">Editable clinical draft: complete the *** placeholders and verify the facts and plan in your EMR. The note records recommendations, not confirmation that treatment or counseling occurred.</p>
           <p id="copy-note-status" class="hint" role="status" aria-live="polite" aria-atomic="true"></p>
           <textarea id="note-output" class="note-output" readonly aria-labelledby="note-heading" aria-describedby="copy-note-status" spellcheck="false"></textarea>
         </article>

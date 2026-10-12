@@ -14,7 +14,6 @@
   let inputWarnings = [];
   let stale = false;
   let copying = false;
-  let movingVitals = false;
   let revision = 0;
 
   function element(tag, className, text) {
@@ -31,28 +30,45 @@
   function createField(key) {
     const definition = schema[key];
     if (!definition) throw new Error(`Unknown form field: ${key}`);
-    const label = element("label", definition.type === "history" ? "checkbox-row" : "clinical-field");
     const id = fieldId(key);
+    if (definition.type === "boolean" || definition.compact) {
+      const group = element("fieldset", "clinical-field choice-field");
+      group.append(element("legend", "field-label", definition.label));
+      const choices = element("div", "choice-options");
+      const options = definition.type === "boolean" ? [["unknown", "Not assessed"], ["yes", "Yes"], ["no", "No"]] : definition.options.map(([value, title]) => [value, value === "unknown" ? "Not assessed" : title]);
+      options.forEach(([value, title]) => {
+        const label = element("label", "choice-option");
+        const input = element("input");
+        input.type = "radio"; input.name = key; input.value = value; input.id = `${id}-${value}`;
+        input.setAttribute("form", "asthma-form");
+        input.checked = value === (definition.defaultValue || "unknown");
+        label.append(input, element("span", "", title));
+        choices.append(label);
+      });
+      group.append(choices);
+      if (definition.hint) {
+        const hint = element("p", "hint", definition.hint); hint.id = `${id}-help`;
+        group.setAttribute("aria-describedby", hint.id); group.append(hint);
+      }
+      return group;
+    }
+    const checkbox = ["history", "exception", "confirmation", "review"].includes(definition.type);
+    const label = element("label", checkbox ? "checkbox-row" : "clinical-field");
     label.htmlFor = id;
     const title = element("span", "field-label", definition.label);
     let input;
-    if (definition.type === "enum" || definition.type === "boolean") {
+    if (definition.type === "enum") {
       input = element("select");
-      const options = definition.type === "boolean"
-        ? [["unknown", "Not assessed / not documented"], ["yes", "Yes"], ["no", "No"]]
-        : definition.options;
+      const options = definition.options;
       options.forEach(([value, text]) => {
         const option = element("option", "", text);
         option.value = value;
         input.append(option);
       });
       input.value = definition.defaultValue || "unknown";
-    } else if (definition.type === "textarea") {
-      input = element("textarea");
-      input.rows = definition.rows;
     } else {
       input = element("input");
-      input.type = definition.type === "history" ? "checkbox" : definition.type;
+      input.type = checkbox ? "checkbox" : definition.type;
       if (definition.type === "number") {
         input.min = definition.min;
         if (definition.max !== undefined) input.max = definition.max;
@@ -62,7 +78,8 @@
     }
     input.id = id;
     input.name = key;
-    if (definition.type === "history") label.append(input, title);
+    input.setAttribute("form", "asthma-form");
+    if (checkbox) label.append(input, title);
     else label.append(title, input);
     const describedBy = [];
     if (definition.hint) {
@@ -83,7 +100,7 @@
 
   function buildForm() {
     const rendered = new Set();
-    form.querySelectorAll("[data-fields]").forEach((container) => {
+    document.querySelectorAll("[data-fields]").forEach((container) => {
       const fields = container.dataset.fields.trim().split(/\s+/);
       fields.forEach((key) => {
         if (rendered.has(key)) throw new Error(`Duplicate form field: ${key}`);
@@ -96,11 +113,36 @@
   }
 
   function control(key) {
-    return form.elements.namedItem(key);
+    return document.querySelector(`[name="${key}"]`);
   }
 
   function value(key) {
-    return control(key).value;
+    const field = control(key), definition = schema[key];
+    if (["history", "confirmation", "review"].includes(definition.type)) return field.checked ? true : definition.type === "review" ? false : null;
+    if (definition.type === "exception") return field.checked ? definition.checkedValue : field.dataset.explicitNo === "true" ? false : ["adherence", "technique"].includes(key) ? "unknown" : null;
+    return form.elements.namedItem(key).value;
+  }
+
+  function setValue(key, next) {
+    const field = control(key);
+    if (field.type === "checkbox") {
+      field.checked = next === true || next === schema[key].checkedValue;
+      if (next === false && schema[key].type === "exception") field.dataset.explicitNo = "true";
+      else delete field.dataset.explicitNo;
+    } else form.elements.namedItem(key).value = typeof next === "boolean" ? next ? "yes" : "no" : next;
+  }
+
+  function retainedField(key) {
+    return ["weightKg", "totalIge", "igePretreatment", "respiratoryRate", "spo2", "roomAir", "observationMinutes", "homeSupport"].includes(key) || key.startsWith("acute") || key.startsWith("postTreatment");
+  }
+
+  function rawClinicalState() {
+    const data = window.asthmaLogic.createEmptyState();
+    Object.entries(schema).forEach(([key, definition]) => {
+      const raw = value(key);
+      data[key] = definition.type === "number" ? raw.trim() === "" ? null : Number(raw) : raw;
+    });
+    return data;
   }
 
   function show(id, visible) {
@@ -113,19 +155,16 @@
     show("ics-dose-fields", ["ics", "ics-formoterol", "ics-laba", "triple"].includes(controller));
     show("laba-type-fields", ["ics-laba", "triple"].includes(controller));
     show("biologic-duration-fields", !["unknown", "none"].includes(value("currentBiologic")));
-    show("ocs-dose-fields", value("maintenanceOcs") === "yes");
+    show("ocs-dose-fields", value("maintenanceOcs") === true);
     show("saba-control-fields", reliever === "saba");
     show("air-use-fields", ["ics-formoterol", "ics-saba"].includes(reliever));
-    const acute = ["active", "recent"].includes(value("acutePresentation"));
-    show("acute-fields", acute);
-    // Reuse measured vitals rather than maintain competing copies of the same values.
-    const slot = document.getElementById(acute ? "acute-vitals-slot" : "encounter-vitals-slot");
-    const vitals = document.getElementById("visit-vitals");
-    if (vitals.parentElement !== slot && !movingVitals) {
-      // Moving a focused field may synchronously dispatch its pending change event.
-      movingVitals = true;
-      try { slot.append(vitals); } finally { movingVitals = false; }
-    }
+    const acute = value("acutePresentation") === "active";
+    const retainedUrgency = !acute && window.asthmaLogic.assessAcutePresentation(rawClinicalState()).emergency;
+    show("acute-fields", acute || retainedUrgency);
+    show("acute-retained-warning", retainedUrgency);
+    show("acute-reassessment-fields", value("acuteReassessmentAvailable") === true);
+    show("biologic-dosing", ["omalizumab", "reslizumab"].includes(selectedBiologicId));
+    show("omalizumab-dosing-fields", selectedBiologicId === "omalizumab");
     Object.keys(schema).filter((key) => schema[key].type === "number").forEach(validateNumber);
   }
 
@@ -137,7 +176,7 @@
     let error = "";
     let warning = "";
     let parsed = raw === "" ? null : Number(raw);
-    const inactive = Boolean(field.closest(".hidden"));
+    const inactive = Boolean(field.closest(".hidden")) && !retainedField(key);
     if (inactive) parsed = null;
     else if (field.validity.badInput || (raw !== "" && !Number.isFinite(parsed))) {
       error = "Enter a valid numeric value or leave blank if unavailable.";
@@ -171,7 +210,6 @@
 
   function emptyFieldValue(definition) {
     if (definition.type === "enum") return definition.defaultValue || "unknown";
-    if (definition.type === "textarea") return "";
     return null;
   }
 
@@ -186,15 +224,15 @@
         data[key] = result.value;
         if (result.error) errors.push({ text: result.error, field });
         if (result.warning) warnings.push(result.warning);
-      } else if (field.closest(".hidden")) {
+      } else if (field.closest(".hidden") && !retainedField(key)) {
         data[key] = emptyFieldValue(definition);
       } else if (definition.type === "boolean") {
-        data[key] = field.value === "yes" ? true : field.value === "no" ? false : null;
-      } else if (definition.type === "history") {
-        data[key] = field.checked ? true : null;
+        data[key] = value(key) === "yes" ? true : value(key) === "no" ? false : null;
+      } else if (["history", "exception", "confirmation", "review"].includes(definition.type)) {
+        data[key] = value(key);
       } else if (definition.type === "enum") {
-        const valid = definition.options.some(([option]) => option === field.value);
-        data[key] = valid ? field.value : emptyFieldValue(definition);
+        const valid = definition.options.some(([option]) => option === value(key));
+        data[key] = valid ? value(key) : emptyFieldValue(definition);
         if (!valid) errors.push({ text: `${definition.label}: choose an available option.`, field });
       } else {
         data[key] = field.value.trim();
@@ -207,7 +245,8 @@
   function updateInputSummaries() {
     const symptomKeys = ["symptomDays", "nightWaking", "activityLimitation"];
     if (value("reliever") === "saba") symptomKeys.push("sabaFrequency");
-    const documented = symptomKeys.filter((key) => value(key) !== "unknown").length;
+    const state = window.asthmaLogic.normalizeState(rawClinicalState());
+    const documented = symptomKeys.filter((key) => state[key] !== "unknown" && state[key] !== null).length;
     document.getElementById("control-input-summary").textContent = documented
       ? `${documented} of ${symptomKeys.length} applicable symptom inputs documented. Control and risk will be assessed separately when recommendations are generated.`
       : "Symptom control is not yet assessed.";
@@ -237,6 +276,7 @@
     let parent = field.parentElement;
     while (parent) {
       if (parent.tagName === "DETAILS") parent.open = true;
+      if (parent.classList.contains("hidden")) parent.classList.remove("hidden");
       parent = parent.parentElement;
     }
     field.focus();
@@ -385,11 +425,13 @@
     primary.replaceChildren();
     additional.replaceChildren();
     primary.append(biologicOption(null));
-    options.slice(0, 3).forEach((candidate) => primary.append(biologicOption(candidate)));
-    options.slice(3).forEach((candidate) => additional.append(biologicOption(candidate)));
-    show("biologic-more-options", options.length > 3);
-    document.getElementById("biologic-more-summary").textContent = `Additional options (${Math.max(0, options.length - 3)})`;
-    if (options.slice(3).some((candidate) => candidate.id === selectedBiologicId)) document.getElementById("biologic-more-options").open = true;
+    const main = options.filter(candidate => !["omalizumab", "reslizumab"].includes(candidate.id));
+    const more = [...main.slice(3), ...options.filter(candidate => ["omalizumab", "reslizumab"].includes(candidate.id))];
+    main.slice(0, 3).forEach((candidate) => primary.append(biologicOption(candidate)));
+    more.forEach((candidate) => additional.append(biologicOption(candidate)));
+    show("biologic-more-options", more.length > 0);
+    document.getElementById("biologic-more-summary").textContent = `Additional Biologic Options (${more.length})`;
+    if (more.some((candidate) => candidate.id === selectedBiologicId)) document.getElementById("biologic-more-options").open = true;
     document.getElementById("biologic-options").disabled = stale || rec.invalid === true;
   }
 
@@ -435,6 +477,7 @@
         : "Urgent assessment or higher-level care is recommended. Review the clinical safety and acute management steps before routine outpatient planning."
       : "";
     renderBiologics(rec);
+    updateConditionalFields();
     noteOutput.value = note;
     noteOutput.placeholder = rec.invalid ? "Correct the data-quality errors and regenerate recommendations to create a SOAP note." : "";
     results.classList.remove("hidden", "is-stale");
@@ -586,18 +629,21 @@
     updateInputSummaries();
     const onInput = (event) => {
       if (!event.target.name || !schema[event.target.name]) return;
+      delete event.target.dataset.explicitNo;
+      if (event.target.name === "acutePresentation" && value("acutePresentation") === "recent") setValue("recentExacerbation", true);
       markStale();
       updateConditionalFields();
       if (event.target.name === "diagnosisContext" && value("diagnosisContext") === "suspected") document.getElementById("testing-details").open = true;
       updateInputSummaries();
     };
-    form.addEventListener("input", onInput);
-    form.addEventListener("change", onInput);
+    // Dosing controls are associated with the form but sit beside the biologic selection.
+    document.querySelector(".app-shell").addEventListener("input", onInput);
+    document.querySelector(".app-shell").addEventListener("change", onInput);
     document.getElementById("set-symptoms-negative-btn").addEventListener("click", () => {
-      control("symptomDays").value = "none";
-      control("nightWaking").value = "none";
-      control("activityLimitation").value = "no";
-      if (value("reliever") === "saba") control("sabaFrequency").value = "none";
+      setValue("symptomDays", "none");
+      setValue("nightWaking", "none");
+      setValue("activityLimitation", false);
+      if (value("reliever") === "saba") setValue("sabaFrequency", "none");
       markStale();
       updateInputSummaries();
       if (!stale) status.textContent = "No current symptoms documented using the shortcut. Other findings remain as entered.";
@@ -611,6 +657,12 @@
       if (!stale) status.textContent = "Both 12-month exacerbation counts documented as zero. Other risk findings remain as entered.";
     });
     document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
+    document.querySelectorAll("[data-treatment-preset]").forEach(button => button.addEventListener("click", () => {
+      const preset = window.asthmaLogic.TREATMENT_PRESETS[button.dataset.treatmentPreset];
+      Object.entries(preset).forEach(([key, next]) => setValue(key, next));
+      markStale(); updateConditionalFields(); updateInputSummaries();
+      if (!stale) status.textContent = `${button.textContent} applied to current treatment. Other clinical findings were preserved.`;
+    }));
     copyButton.addEventListener("click", copyNote);
   } catch (error) {
     document.getElementById("generate-btn").disabled = true;
