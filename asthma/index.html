@@ -14,28 +14,26 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20260420-1">
-  <script src="/asthma/logic.js?v=20260411-2" defer></script>
-  <script src="/asthma/app.js?v=20260420-1" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-1">
+  <script src="/asthma/input-schema.js?v=20261012-1" defer></script>
+  <script src="/asthma/medications.js?v=20261012-1" defer></script>
+  <script src="/asthma/logic.js?v=20261012-1" defer></script>
+  <script src="/asthma/notes.js?v=20261012-1" defer></script>
+  <script src="/asthma/app.js?v=20261012-1" defer></script>
 </head>
 <body class="asthma-page">
+  <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
   <main class="siteShell">
     <header class="siteBar">
       <a class="siteBrand" href="/">Home</a>
       <p class="siteTagline">Asthma management decision support</p>
     </header>
-
     <div class="app-shell">
       <header class="hero">
         <p class="eyebrow">Pulmonary Medicine</p>
         <h1>Asthma Management</h1>
-        <p class="heroLead">
-          Guideline-mapped workflow for the management of adult patients with asthma.
-        </p>
-        <p class="heroNote">
-          Use this tool to support diagnosis confirmation, initial treatment selection, follow-up care,
-          and severe asthma escalation.
-        </p>
+        <p class="heroLead">Structured decision support for adult asthma care.</p>
+        <p class="heroNote">Diagnosis, treatment review, exacerbation care, and a SOAP note for U.S. pulmonary practice.</p>
         <details class="contributors-drawer">
           <summary>Contributors</summary>
           <ul class="contributors-list">
@@ -45,471 +43,233 @@
         </details>
       </header>
 
-    <form id="asthma-form" class="form-panels">
-      <section class="panel">
-        <h2>1) Diagnostic Confirmation Context</h2>
-        <div class="grid">
-          <label>
-            Management phase
-            <select id="management-phase">
-              <option value="initial">Initial asthma management</option>
-              <option value="followup">Follow-up asthma management</option>
-            </select>
-          </label>
-          <label>
-            Age
-            <input id="age" type="number" min="18" max="120" step="1">
-          </label>
-        </div>
-        <div id="initial-diagnostic-fields">
-          <div class="grid checkbox-grid">
-            <label class="checkbox-row">
-              <input type="checkbox" id="typical-symptoms">
-              Typical variable respiratory symptoms are present (wheeze, dyspnea, chest tightness, or cough with variable triggers)
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="ics-response">
-              Clinical improvement to ICS meets diagnostic criteria
-            </label>
-          </div>
+      <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
+      <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
+        <p id="form-instructions" class="form-instructions">Document what is known. Leave unassessed findings as <strong>Not assessed / not documented</strong>. Optional sections can be expanded as needed.</p>
 
+        <section class="panel" aria-labelledby="encounter-heading">
+          <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
+          <div class="grid" data-fields="managementPhase age"></div>
+          <div class="grid" data-fields="controller reliever"></div>
+          <div id="ics-dose-fields" class="grid hidden" data-fields="icsDose"></div>
+          <div id="laba-type-fields" class="grid hidden" data-fields="labaType"></div>
+          <div class="grid full-width" data-fields="currentMedicationText"></div>
+          <details class="clinical-drawer">
+            <summary>Add-ons and treatment optimization</summary>
+            <div class="drawer-body">
+              <div class="grid" data-fields="lamaAddon currentBiologic"></div>
+              <div id="biologic-duration-fields" class="grid hidden" data-fields="biologicMonths"></div>
+              <div class="grid" data-fields="maintenanceOcs"></div>
+              <div id="ocs-dose-fields" class="grid hidden" data-fields="maintenanceOcsDose"></div>
+              <div class="grid" data-fields="adherence technique accessBarrier optimizedTherapy severeAsthmaEstablished icsSideEffects"></div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel" aria-labelledby="diagnosis-heading">
+          <h2 id="diagnosis-heading">2) Diagnosis and Objective Testing</h2>
+          <div class="grid" data-fields="diagnosisContext typicalSymptoms"></div>
+          <details class="clinical-drawer">
+            <summary>Previously documented diagnostic evidence</summary>
+            <div class="drawer-body">
+              <p class="hint">Check only positive historical evidence. An unchecked box means evidence has not been documented here.</p>
+              <div class="grid checkbox-grid" data-fields="dxBd dxIcsObjective dxChallenge dxPef"></div>
+            </div>
+          </details>
+          <details id="testing-details" class="clinical-drawer">
+            <summary>Spirometry and additional testing</summary>
+            <div class="drawer-body">
+              <div class="spirometry-groups">
+                <section class="spirometry-group" aria-labelledby="pre-bd-heading">
+                  <h3 id="pre-bd-heading" class="spirometry-group-title">Pre-BD values</h3>
+                  <div class="grid spirometry-subgrid" data-fields="fev1Pre fvcPre fev1Predicted fvcPredicted"></div>
+                </section>
+                <section class="spirometry-group" aria-labelledby="post-bd-heading">
+                  <h3 id="post-bd-heading" class="spirometry-group-title">Post-BD values</h3>
+                  <div class="grid spirometry-subgrid" data-fields="fev1Post fvcPost"></div>
+                </section>
+              </div>
+              <div class="grid full-width" data-fields="bronchodilatorHeld"></div>
+              <details class="washout-note">
+                <summary>Bronchodilator washout reference</summary>
+                <div class="washout-note-body">
+                  <table class="washout-table" aria-label="ATS/ERS bronchodilator washout times">
+                    <tbody>
+                      <tr><th scope="row">SABA</th><td>4-6 h</td></tr>
+                      <tr><th scope="row">SAMA</th><td>12 h</td></tr>
+                      <tr><th scope="row">LABA</th><td>24 h</td></tr>
+                      <tr><th scope="row">Ultra-LABA</th><td>36 h</td></tr>
+                      <tr><th scope="row">LAMA</th><td>36-48 h</td></tr>
+                    </tbody>
+                  </table>
+                  <p class="hint">ICS and leukotriene modifiers usually do not need to be withheld. For combination inhalers, use the longest-acting component and follow local lab protocol.</p>
+                  <a class="hint" href="https://doi.org/10.1164/rccm.201908-1590ST" target="_blank" rel="noopener noreferrer">ATS/ERS spirometry standard</a>
+                </div>
+              </details>
+              <div class="grid" data-fields="bronchoprovocation pefVariability icsObjectiveResponse clinicalIcsResponse"></div>
+              <p class="hint">GINA bronchodilator diagnostic support and ATS/ERS responsiveness are reported separately. Symptom improvement alone is distinct from objective improvement after ICS.</p>
+            </div>
+          </details>
+          <p id="diagnostic-input-summary" class="input-summary">Diagnostic findings will be interpreted with the documented history when recommendations are generated.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="symptoms-heading">
+          <h2 id="symptoms-heading">3) Symptoms and Exacerbation Risk</h2>
+          <div class="grid" data-fields="symptomDays nightWaking activityLimitation"></div>
+          <div id="saba-control-fields" class="grid hidden" data-fields="sabaFrequency sabaCanisters"></div>
+          <div id="air-use-fields" class="grid hidden" data-fields="airUsesPerWeek"></div>
+          <div class="calc-actions helper-actions">
+            <button type="button" id="set-symptoms-negative-btn" class="ghost-btn" aria-describedby="symptom-shortcut-help">Document No Current Symptoms</button>
+          </div>
+          <p id="symptom-shortcut-help" class="hint">Sets no daytime symptoms, night waking, or activity limitation; also sets no symptomatic SABA use when applicable.</p>
+          <p id="control-input-summary" class="input-summary">Symptom control is not yet assessed.</p>
           <div class="subsection">
-            <h3 class="subsection-title">Baseline Spirometry</h3>
-            <div class="spirometry-groups">
-              <section class="spirometry-group" aria-label="Pre-bronchodilator spirometry values">
-                <h4 class="spirometry-group-title">Pre-BD values</h4>
-                <div class="grid spirometry-subgrid">
-                  <label>
-                    Pre-BD FEV1 (L)
-                    <input id="fev1-pre" type="number" min="0" max="8" step="0.01" placeholder="2.05">
-                  </label>
-                  <label>
-                    Pre-BD FVC (L)
-                    <input id="fvc-pre" type="number" min="0" max="8" step="0.01" placeholder="3.30">
-                  </label>
-                  <label>
-                    Pre-BD FEV1 % predicted
-                    <input id="fev1-predicted" type="number" min="0" max="150" step="1" placeholder="78">
-                  </label>
-                  <label>
-                    Pre-BD FVC % predicted
-                    <input id="fvc-predicted" type="number" min="0" max="150" step="1" placeholder="84">
-                  </label>
-                </div>
-              </section>
-              <section class="spirometry-group" aria-label="Post-bronchodilator spirometry values">
-                <h4 class="spirometry-group-title">Post-BD values</h4>
-                <div class="grid spirometry-subgrid">
-                  <label>
-                    Post-BD FEV1 (L)
-                    <input id="fev1-post" type="number" min="0" max="8" step="0.01" placeholder="2.36">
-                  </label>
-                  <label>
-                    Post-BD FVC (L)
-                    <input id="fvc-post" type="number" min="0" max="8" step="0.01" placeholder="3.55">
-                  </label>
-                </div>
-              </section>
+            <h3 class="subsection-title">Exacerbations in the Past 12 Months</h3>
+            <div class="grid" data-fields="ocsExacerbations hospitalExacerbations"></div>
+            <div class="calc-actions helper-actions">
+              <button type="button" id="set-exac-zero-btn" class="ghost-btn">Document Both Counts as 0</button>
             </div>
-            <div class="grid spirometry-grid">
-              <label class="checkbox-row inline-confirmation">
-                <input type="checkbox" id="bronchodilator-held" checked>
-                Asthma therapies were withheld prior to spirometry
-              </label>
+            <div class="grid" data-fields="recentExacerbation priorIcu persistentExacerbations"></div>
+          </div>
+          <details class="clinical-drawer">
+            <summary>Stability and step-down considerations</summary>
+            <div class="drawer-body">
+              <div class="grid" data-fields="stableMonths lungFunctionStable pregnant respiratoryInfection travelling"></div>
             </div>
-            <details class="washout-note">
-              <summary>Bronchodilator washout reference</summary>
-              <div class="washout-note-body">
-                <table class="washout-table" aria-label="Bronchodilator washout times">
-                  <tbody>
-                    <tr><th scope="row">SABA</th><td>4-6 h</td></tr>
-                    <tr><th scope="row">SAMA</th><td>12 h</td></tr>
-                    <tr><th scope="row">LABA</th><td>24 h</td></tr>
-                    <tr><th scope="row">Ultra-LABA</th><td>36 h</td></tr>
-                    <tr><th scope="row">LAMA</th><td>36-48 h</td></tr>
-                  </tbody>
-                </table>
-                <p class="hint">ICS and leukotriene modifiers usually do not need to be withheld. For combination inhalers, use the longest-acting component and follow local lab protocol.</p>
+          </details>
+        </section>
+
+        <section class="panel" aria-labelledby="acute-heading">
+          <h2 id="acute-heading">4) Acute Exacerbation Assessment</h2>
+          <div class="grid" data-fields="acutePresentation urgentRedFlags"></div>
+          <div id="acute-fields" class="hidden">
+            <p class="clinical-callout">Assess the most severe feature and response to treatment. Incomplete observations do not establish safe outpatient management or discharge readiness.</p>
+            <div class="grid" data-fields="acuteHistory acuteTreatmentGiven"></div>
+            <div id="acute-vitals-slot"></div>
+            <div class="grid" data-fields="acuteSpeech acuteCanLieDown acuteUnableToLieDown acuteCannotDrink acuteCyanosis acuteMentalStatus acuteRespiratoryEffort acuteAccessoryMuscles acuteAirEntry acuteWheeze"></div>
+            <div class="grid" data-fields="acuteLungFunctionPercent acuteLungFunctionType acuteLungFunctionReference"></div>
+            <details class="clinical-drawer">
+              <summary>Actual reassessment after treatment</summary>
+              <div class="drawer-body">
+                <p class="hint">Enter observed findings and actual treatment response. Leave unavailable observations blank.</p>
+                <div class="grid" data-fields="acuteResponse observationMinutes postTreatmentSpo2 postTreatmentRoomAir postTreatmentRespiratoryRate postTreatmentLungFunctionPercent postTreatmentMildFeatures homeSupport"></div>
               </div>
             </details>
           </div>
+        </section>
 
-          <div class="subsection">
-            <h3 class="subsection-title">Bronchoprovocative Testing</h3>
-            <div class="grid">
-              <label>
-                Bronchoprovocation result
-                <select id="bronchoprovocation">
-                  <option value="not-done">Not done</option>
-                  <option value="positive">Positive</option>
-                  <option value="negative">Negative</option>
-                </select>
-              </label>
+        <details class="panel panel-drawer">
+          <summary><span class="drawer-title">5) Phenotype and Modifiers</span><span class="hint">Biomarkers, comorbidities, and relevant exposures</span></summary>
+          <div class="drawer-body">
+            <div class="grid" data-fields="eosinophils historicalEosinophils feno totalIge igePretreatment weightKg"></div>
+            <div class="grid" data-fields="allergenDriven perennialSensitization nasalPolyps atopicDermatitis egpa endemicExposure smoking"></div>
+            <div class="grid full-width" data-fields="exposureText"></div>
+          </div>
+        </details>
+
+        <details class="panel panel-drawer">
+          <summary><span class="drawer-title">6) Preventive Care Status</span><span class="hint">Documented vaccine history; unknown does not mean incomplete</span></summary>
+          <div class="drawer-body">
+            <div class="grid" data-fields="pneumococcal rsv zoster tdap flu covid"></div>
+          </div>
+        </details>
+
+        <details id="encounter-details" class="panel panel-drawer">
+          <summary><span class="drawer-title">7) Optional Encounter Documentation</span><span class="hint">Interval history, vitals, examination, and completed counseling</span></summary>
+          <div class="drawer-body">
+            <div class="grid full-width" data-fields="hpi"></div>
+            <div id="encounter-vitals-slot">
+              <fieldset id="visit-vitals" class="vitals-fieldset">
+                <legend>Encounter Vitals</legend>
+                <p class="hint">Enter measured values. These same vitals are used for acute assessment when an exacerbation is documented.</p>
+                <div class="grid grid-three" data-fields="heartRate respiratoryRate spo2 systolicBp diastolicBp temperature"></div>
+                <div class="grid" data-fields="roomAir"></div>
+              </fieldset>
             </div>
+            <div class="grid full-width" data-fields="exam clinicianContext counselingDocumented"></div>
           </div>
-        </div>
+        </details>
 
-        <div id="followup-diagnostic-fields" class="hidden">
-          <div class="grid checkbox-grid">
-            <label class="checkbox-row">
-              <input type="checkbox" id="dx-bronchodilator-response">
-              Asthma was diagnosed by bronchodilator response on spirometry
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="dx-ics-improvement">
-              Asthma was diagnosed by clinical improvement to ICS-containing treatment
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="dx-positive-bronchoprovocation">
-              Asthma was diagnosed by positive bronchoprovocative testing
-            </label>
-          </div>
+        <div id="form-errors" class="form-errors hidden" role="alert" aria-atomic="true"></div>
+        <div class="generate-bar">
+          <button type="submit" id="generate-btn" class="primary-btn">Generate Management Recommendations and SOAP Note</button>
+          <p id="recommendation-status" class="workflow-status" role="status" aria-live="polite" aria-atomic="true">Ready for clinical inputs.</p>
         </div>
+      </form>
 
-        <div class="calculator">
-          <h3 class="calc-title">Diagnostic Helper</h3>
-          <p class="hint">GINA diagnosis in adults should combine typical symptoms with objective evidence of variable expiratory airflow. Bronchodilator responsiveness is counted if either the traditional threshold or the ATS/ERS predicted-value threshold is met.</p>
-          <div class="calc-actions">
-            <span id="bd-response-display" class="score-chip">BD response: --</span>
-            <span id="diagnosis-support-display" class="score-chip">Objective support: --</span>
-          </div>
-          <p id="bd-calc-note" class="hint"></p>
-          <p id="diagnosis-calc-note" class="hint"></p>
+      <section id="results" class="results hidden" aria-labelledby="results-heading" aria-describedby="results-status">
+        <div class="results-heading-row">
+          <h2 id="results-heading" tabindex="-1">Generated Management Recommendations</h2>
+          <p id="results-status" class="results-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
-      </section>
-
-      <section class="panel">
-        <h2>2) Symptom Burden and GINA Control</h2>
-        <div id="initial-step-fields" class="subsection">
-          <h3 class="subsection-title">Initial Track 1 Starting-Point Inputs</h3>
-          <div class="grid">
-            <label>
-              Daytime symptom frequency
-              <select id="symptom-days-category">
-                <option value="not-entered">Not entered</option>
-                <option value="infrequent">1-2 days/week or less</option>
-                <option value="three-to-five">3-5 days/week</option>
-                <option value="most-days">Most days</option>
-                <option value="daily">Every day</option>
-              </select>
-            </label>
-            <label>
-              Night waking frequency
-              <select id="night-waking-category">
-                <option value="not-entered">Not entered</option>
-                <option value="none">None</option>
-                <option value="less-than-weekly">Less than weekly</option>
-                <option value="weekly-or-more">Weekly or more</option>
-              </select>
-            </label>
-          </div>
-          <div class="grid checkbox-grid">
-            <label class="checkbox-row">
-              <input type="checkbox" id="acute-exacerbation-today">
-              The patient is starting or restarting treatment during an acute exacerbation or shortly after urgent clinical worsening
-            </label>
-          </div>
-        </div>
-        <div class="grid checkbox-grid">
-          <label class="checkbox-row">
-            <input type="checkbox" id="urgent-red-flags">
-            Red-flag presentation today (severe respiratory distress, cyanosis, altered mental status, silent chest, or unstable oxygenation)
-          </label>
-        </div>
-        <div class="calculator">
-          <h3 class="calc-title">GINA Symptom Control Checker (Last 4 Weeks)</h3>
-          <fieldset class="mmrc-fieldset">
-            <legend class="sr-only">GINA symptom control questions</legend>
-            <label class="mmrc-row">
-              <input type="checkbox" id="daytime-gt2">
-              Daytime asthma symptoms more than twice per week
-            </label>
-            <label class="mmrc-row">
-              <input type="checkbox" id="night-waking-4w">
-              Any night waking due to asthma
-            </label>
-            <label class="mmrc-row">
-              <input type="checkbox" id="reliever-gt2">
-              Reliever use more than twice per week
-            </label>
-            <label class="mmrc-row">
-              <input type="checkbox" id="activity-limitation">
-              Any activity limitation due to asthma
-            </label>
+        <div id="emergency-output" class="emergency-output hidden" role="alert"></div>
+        <article class="result-card">
+          <h2>Assessment Summary</h2>
+          <div id="assessment-summary"></div>
+        </article>
+        <article class="result-card">
+          <h2>Recommended Management Steps</h2>
+          <div id="management-steps"></div>
+        </article>
+        <article id="medication-card" class="result-card hidden">
+          <h2>Medication Details</h2>
+          <ul id="medication-list" class="medication-list"></ul>
+        </article>
+        <article id="biologic-guidance-card" class="result-card biologic-card hidden">
+          <h2>Biologic Considerations</h2>
+          <p id="biologic-instructions">Select one agent to discuss in the note, if appropriate. Eligibility, outstanding prerequisites, and timing still apply.</p>
+          <fieldset id="biologic-options" class="biologic-options" aria-describedby="biologic-instructions">
+            <legend class="sr-only">Agent for clinical note</legend>
+            <div id="biologic-primary-options"></div>
+            <details id="biologic-more-options" class="clinical-drawer hidden">
+              <summary id="biologic-more-summary">Additional options</summary>
+              <div id="biologic-additional-options" class="drawer-body"></div>
+            </details>
           </fieldset>
-          <div class="calc-actions">
-            <span id="control-display" class="score-chip">Control: --</span>
+        </article>
+        <article id="prevention-card" class="result-card hidden">
+          <h2>Preventive Care and Vaccination</h2>
+          <ul id="prevention-list"></ul>
+        </article>
+        <article id="caution-card" class="result-card caution hidden">
+          <h2>Safety Checks</h2>
+          <ul id="caution-list"></ul>
+        </article>
+        <article id="nonpharm-card" class="result-card hidden">
+          <h2>Non-Pharmacologic Core Bundle</h2>
+          <ul id="nonpharm-list"></ul>
+        </article>
+        <details id="rationale-card" class="result-card panel-drawer">
+          <summary><span class="drawer-title">Rationale and Clinical Sources</span></summary>
+          <div class="drawer-body">
+            <ul id="rationale-list"></ul>
+            <ul id="source-list" class="source-list"></ul>
           </div>
-          <p id="control-note" class="hint"></p>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>3) Exacerbation History (Previous 12 Months)</h2>
-        <div class="grid">
-          <label>
-            Exacerbations requiring oral corticosteroids
-            <span class="hint">Enter an explicit 0 if none occurred.</span>
-            <input id="moderate-exac" type="number" min="0" max="20" step="1">
-          </label>
-          <label>
-            Exacerbations requiring hospitalization
-            <span class="hint">Enter an explicit 0 if none occurred.</span>
-            <input id="severe-exac" type="number" min="0" max="20" step="1">
-          </label>
-        </div>
-        <div class="calc-actions helper-actions">
-          <button type="button" id="set-exac-zero-btn" class="ghost-btn">Set Both Counts to 0</button>
-          <span id="exac-history-display" class="score-chip helper-chip">Exacerbation counts: --</span>
-        </div>
-        <div class="grid checkbox-grid">
-          <label class="checkbox-row">
-            <input type="checkbox" id="life-threatening-history">
-            Prior ICU admission, intubation, or other life-threatening asthma exacerbation
-          </label>
-          <label class="checkbox-row">
-            <input type="checkbox" id="persistent-exacerbations">
-            Exacerbations remain a persistent active problem despite current therapy
-          </label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>4) Biomarkers, Phenotype, and Modifiers</h2>
-        <div class="grid">
-          <label>
-            Blood eosinophils (cells/uL)
-            <input id="eosinophils" type="number" min="0" max="5000" step="1">
-          </label>
-          <label>
-            FeNO (ppb)
-            <input id="feno" type="number" min="0" max="500" step="1">
-          </label>
-        </div>
-        <div class="grid">
-          <label>
-            Total IgE (IU/mL)
-            <input id="total-ige" type="number" min="0" max="5000" step="1">
-          </label>
-          <label>
-            Weight (kg) for omalizumab dosing feasibility
-            <input id="weight-kg" type="number" min="20" max="300" step="0.1">
-          </label>
-        </div>
-        <div class="grid">
-          <label>
-            Smoking status
-            <select id="smoking-status">
-              <option value="never">Never smoker</option>
-              <option value="former">Former smoker</option>
-              <option value="current">Current smoker</option>
-            </select>
-          </label>
-        </div>
-        <div class="grid modifier-columns">
-          <div class="modifier-column">
-            <h3 class="subsection-title">Medication Considerations</h3>
-            <div class="checkbox-stack">
-              <label class="checkbox-row">
-                <input type="checkbox" id="poor-adherence">
-                Adherence is suboptimal
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="poor-technique">
-                Inhaler technique is incorrect or inconsistent
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="ics-side-effects">
-                Significant ICS adverse effects or concern about cumulative steroid toxicity
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="maintenance-ocs">
-                Patient requires maintenance oral corticosteroids
-              </label>
-            </div>
+        </details>
+        <article class="result-card note-card">
+          <div class="note-toolbar">
+            <h2 id="note-heading" class="note-title">Copy/Paste Clinical Note</h2>
+            <button type="button" id="copy-note-btn" class="secondary-btn" disabled>Copy SOAP Note</button>
           </div>
-          <div class="modifier-column">
-            <h3 class="subsection-title">Phenotypic Considerations</h3>
-            <div class="checkbox-stack">
-              <label class="checkbox-row">
-                <input type="checkbox" id="allergen-driven">
-                Clinically allergen-driven asthma features are present
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="sensitization-confirmed">
-                Objective allergen sensitization is confirmed (skin prick testing or specific IgE)
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="nasal-polyps">
-                Chronic rhinosinusitis with nasal polyps or significant upper-airway Type 2 disease
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="atopic-dermatitis">
-                Moderate or severe atopic dermatitis is present
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="egpa">
-                Eosinophilic granulomatosis with polyangiitis (EGPA) is present or strongly suspected
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="endemic-area-exposure">
-                Patient has lived or resided in an endemic area for parasitic infection
-              </label>
-            </div>
-            <p class="hint">If EGPA is suspected, confirm diagnosis and use indication-specific dosing; do not rely on asthma-only dosing text.</p>
-          </div>
-        </div>
+          <p id="copy-note-status" class="hint" role="status" aria-live="polite" aria-atomic="true"></p>
+          <textarea id="note-output" class="note-output" readonly aria-labelledby="note-heading" aria-describedby="copy-note-status" spellcheck="false"></textarea>
+        </article>
       </section>
 
-      <section class="panel">
-        <h2>5) Preventive Care Status</h2>
-        <div class="grid">
-          <label>
-            Pneumococcal vaccine status
-            <select id="pneumococcal-status">
-              <option value="unknown">Unknown</option>
-              <option value="unvaccinated">Unvaccinated / incomplete</option>
-              <option value="complete">Series complete / already addressed</option>
-            </select>
-          </label>
-          <label>
-            RSV vaccine status
-            <select id="rsv-status">
-              <option value="unknown">Unknown</option>
-              <option value="unvaccinated">Unvaccinated</option>
-              <option value="complete">Already received RSV vaccine</option>
-            </select>
-          </label>
-        </div>
-        <div class="grid">
-          <label>
-            Zoster vaccine status
-            <select id="zoster-status">
-              <option value="unknown">Unknown</option>
-              <option value="unvaccinated">Unvaccinated / incomplete</option>
-              <option value="complete">Completed recombinant zoster vaccine series</option>
-            </select>
-          </label>
-          <label>
-            Tdap or tetanus booster within the last 10 years
-            <select id="tdap-status">
-              <option value="unknown">Unknown / not documented</option>
-              <option value="not-up-to-date">No</option>
-              <option value="up-to-date">Yes</option>
-            </select>
-          </label>
-        </div>
-        <div class="grid">
-          <label>
-            Influenza vaccine status
-            <select id="flu-status">
-              <option value="unknown">Unknown</option>
-              <option value="not-current">Not current</option>
-              <option value="current">Current season vaccine received</option>
-            </select>
-          </label>
-          <label>
-            COVID vaccine status
-            <select id="covid-status">
-              <option value="unknown">Unknown</option>
-              <option value="not-current">Not current / should review local protocol</option>
-              <option value="current">Current per local protocol</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>6) Current Maintenance Status</h2>
-        <label>
-          Current asthma maintenance regimen
-          <select id="current-regimen">
-            <option value="naive">No maintenance inhaler / treatment-naive</option>
-            <option value="air-only">As-needed budesonide-formoterol only (Track 1 Step 1-2)</option>
-            <option value="mart-low">Low-dose budesonide-formoterol MART (Track 1 Step 3)</option>
-            <option value="mart-medium">Medium-dose budesonide-formoterol MART (Track 1 Step 4)</option>
-            <option value="ics-laba-saba">Maintenance ICS-LABA with SABA reliever (Track 2 style)</option>
-            <option value="high-dose-ics-laba">High-dose ICS-LABA / Step 5 level inhaled therapy</option>
-            <option value="triple-therapy">ICS-LABA-LAMA triple inhaled therapy / LAMA-LABA-ICS regimen</option>
-            <option value="biologic-other">Biologic plus ICS-containing regimen / other complex regimen</option>
-          </select>
-        </label>
-      </section>
-
-      <button type="submit" class="primary-btn">Generate Management Recommendation</button>
-    </form>
-
-    <section id="results" class="results hidden">
-      <article class="result-card">
-        <h2>Assessment Summary</h2>
-        <p id="group-output"></p>
-        <p id="symptom-output"></p>
-        <p id="risk-output"></p>
-      </article>
-
-      <article class="result-card">
-        <h2>Recommended Management Steps</h2>
-        <ul id="plan-list"></ul>
-      </article>
-
-      <article class="result-card">
-        <h2>Medication Details</h2>
-        <ul id="medication-list"></ul>
-      </article>
-
-      <article id="biologic-guidance-card" class="result-card biologic-card hidden">
-        <h2>Biologic Guidance</h2>
-        <p id="biologic-summary"></p>
-        <h3 class="result-subtitle">Preferred Agents</h3>
-        <ul id="biologic-preferred-list"></ul>
-        <h3 class="result-subtitle">Secondary Agents</h3>
-        <ul id="biologic-secondary-list"></ul>
-        <h3 class="result-subtitle">Specific Considerations</h3>
-        <ul id="biologic-considerations-list"></ul>
-      </article>
-
-      <article class="result-card">
-        <h2>Preventive Care and Vaccination</h2>
-        <ul id="prevention-list"></ul>
-      </article>
-
-      <article class="result-card">
-        <h2>Rationale Trace</h2>
-        <ul id="rationale-list"></ul>
-      </article>
-
-      <article class="result-card caution">
-        <h2>Safety Checks</h2>
-        <ul id="caution-list"></ul>
-      </article>
-
-      <article class="result-card">
-        <h2>Non-Pharmacologic Core Bundle</h2>
-        <ul id="nonpharm-list"></ul>
-      </article>
-
-      <article class="result-card">
-        <div class="calc-actions">
-          <h2 class="note-title">Copy/Paste Clinical Note</h2>
-          <button type="button" id="copy-note-btn" class="secondary-btn">Copy Note</button>
-          <span id="copy-note-status" class="hint"></span>
-        </div>
-        <textarea id="note-output" class="note-output" readonly></textarea>
-      </article>
-    </section>
-
-    <footer class="footer">
-      <p><strong>Evidence base:</strong> GINA 2025 Global Strategy for Asthma Management and Prevention, GINA 2025 Difficult-to-Treat and Severe Asthma Guide, and current CDC adult vaccine guidance.</p>
-      <p><strong>Application last updated:</strong> April 14, 2026.</p>
-      <p><a href="https://ginasthma.org/reports/" target="_blank" rel="noopener noreferrer">Open official GINA reports page</a></p>
-      <p><a href="https://www.lung.org/getmedia/dc79f142-a963-47bc-8337-afe3c3e87734/Asthma-Action-Plan.pdf" target="_blank" rel="noopener noreferrer">Open American Lung Association Asthma Action Plan</a></p>
-      <p class="warning">
-        This platform encodes clinical practice guidelines into structured decision-support tools to promote consistency and transparency. However, these outputs are simplifications of complex clinical recommendations and may not capture all relevant patient-specific factors.
-      </p>
-      <p class="warning">
-        Clinical decisions must always be made in the context of individual patient circumstances, clinician expertise, and institutional protocols. Users are responsible for independently verifying results and should not rely solely on this tool for patient care decisions.
-      </p>
-    </footer>
+      <footer class="footer">
+        <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; and current CDC adult immunization guidance.</p>
+        <p><strong>Application last updated:</strong> October 12, 2026.</p>
+        <ul class="evidence-links">
+          <li><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026 strategy</a></li>
+          <li><a href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe asthma guide</a></li>
+          <li><a href="https://www.nhlbi.nih.gov/resources/clinician-guide-2020-focused-updates-asthma-management-guidelines" target="_blank" rel="noopener noreferrer">NAEPP 2020 clinician guide</a></li>
+          <li><a href="https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm" target="_blank" rel="noopener noreferrer">FDA prescribing information</a></li>
+          <li><a href="https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html" target="_blank" rel="noopener noreferrer">CDC adult vaccine guidance</a></li>
+          <li><a href="https://www.lung.org/getmedia/dc79f142-a963-47bc-8337-afe3c3e87734/Asthma-Action-Plan.pdf" target="_blank" rel="noopener noreferrer">Asthma action plan</a></li>
+        </ul>
+        <p class="warning">This platform encodes clinical practice guidelines into structured decision-support tools to promote consistency and transparency. However, these outputs are simplifications of complex clinical recommendations and may not capture all relevant patient-specific factors.</p>
+        <p class="warning">Clinical decisions must always be made in the context of individual patient circumstances, clinician expertise, and institutional protocols. Users are responsible for independently verifying results and should not rely solely on this tool for patient care decisions.</p>
+      </footer>
     </div>
   </main>
 </body>

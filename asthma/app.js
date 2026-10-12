@@ -1,2186 +1,619 @@
-const {
-  DEFAULT_NO_WARNING,
-  getBronchodilatorAssessment: getBronchodilatorAssessmentLogic,
-  classifyControl: classifyControlLogic,
-  classifyExacerbationRisk: classifyExacerbationRiskLogic,
-  isHighDoseEquivalentRegimen: isHighDoseEquivalentRegimenLogic,
-  classifySevereAsthmaState: classifySevereAsthmaStateLogic,
-  pickInitialTrack1Step: pickInitialTrack1StepLogic,
-  getDupilumabEvidenceFlag,
-  getOmalizumabFeasibility,
-  getMepolizumabDetail: getMepolizumabDetailForContext,
-  getBenralizumabDetail: getBenralizumabDetailForContext
-} = window.asthmaLogic;
-
-const NUMERIC_FIELD_CONFIG = {
-  age: { id: "age", label: "Age", options: { min: 18, max: 120, integer: true } },
-  fev1Pre: { id: "fev1-pre", label: "Pre-BD FEV1", options: { min: 0, max: 8 } },
-  fev1Post: { id: "fev1-post", label: "Post-BD FEV1", options: { min: 0, max: 8 } },
-  fvcPre: { id: "fvc-pre", label: "Pre-BD FVC", options: { min: 0, max: 8 } },
-  fvcPost: { id: "fvc-post", label: "Post-BD FVC", options: { min: 0, max: 8 } },
-  fev1Predicted: { id: "fev1-predicted", label: "Pre-BD FEV1 % predicted", options: { min: 0, max: 150 } },
-  fvcPredicted: { id: "fvc-predicted", label: "Pre-BD FVC % predicted", options: { min: 0, max: 150 } },
-  moderateExac: {
-    id: "moderate-exac",
-    label: "Oral corticosteroid-treated exacerbation count",
-    options: { min: 0, max: 20, integer: true }
-  },
-  severeExac: {
-    id: "severe-exac",
-    label: "Hospitalization-level exacerbation count",
-    options: { min: 0, max: 20, integer: true }
-  },
-  eosinophils: { id: "eosinophils", label: "Blood eosinophils", options: { min: 0, max: 5000, integer: true } },
-  feno: { id: "feno", label: "FeNO", options: { min: 0, max: 500, integer: true } },
-  totalIge: { id: "total-ige", label: "Total IgE (IU/mL)", options: { min: 0, max: 5000, integer: true } },
-  weightKg: { id: "weight-kg", label: "Weight", options: { min: 20, max: 300 } }
-};
-
-function readNumericField(id, options = {}) {
-  const raw = document.getElementById(id).value.trim();
-  if (raw === "") {
-    return { value: null, invalid: false };
-  }
-
-  const value = Number(raw);
-  if (!Number.isFinite(value)) {
-    return { value: null, invalid: true };
-  }
-
-  if (options.integer && !Number.isInteger(value)) {
-    return { value: null, invalid: true };
-  }
-
-  if (options.min !== undefined && value < options.min) {
-    return { value: null, invalid: true };
-  }
-
-  if (options.max !== undefined && value > options.max) {
-    return { value: null, invalid: true };
-  }
-
-  return { value, invalid: false };
-}
-
-function describeNumericRule(options = {}) {
-  const parts = [];
-
-  if (options.integer) {
-    parts.push("a whole number");
-  } else {
-    parts.push("a numeric value");
-  }
-
-  if (options.min !== undefined && options.max !== undefined) {
-    parts.push(`between ${options.min} and ${options.max}`);
-  } else if (options.min !== undefined) {
-    parts.push(`at least ${options.min}`);
-  } else if (options.max !== undefined) {
-    parts.push(`no more than ${options.max}`);
-  }
-
-  return parts.join(" ");
-}
-
-function setNumericFieldAlertState(id, isInvalid) {
-  const field = document.getElementById(id);
-  if (!field) {
-    return;
-  }
-
-  field.classList.toggle("numeric-alert", isInvalid);
-
-  const label = field.closest("label");
-  if (label) {
-    label.classList.toggle("numeric-alert-label", isInvalid);
-  }
-
-  if (isInvalid) {
-    field.setAttribute("aria-invalid", "true");
-  } else {
-    field.removeAttribute("aria-invalid");
-  }
-}
-
-function validateNumericField(configKey, invalidEntries = null) {
-  const config = NUMERIC_FIELD_CONFIG[configKey];
-  const parsed = readNumericField(config.id, config.options);
-  setNumericFieldAlertState(config.id, parsed.invalid);
-
-  if (parsed.invalid && invalidEntries) {
-    invalidEntries.push(`${config.label} must be ${describeNumericRule(config.options)}.`);
-  }
-
-  return parsed.value;
-}
-
-function getValidatedNumericValue(configKey, invalidEntries) {
-  return validateNumericField(configKey, invalidEntries);
-}
-
-function refreshNumericFieldAlerts() {
-  Object.keys(NUMERIC_FIELD_CONFIG).forEach((configKey) => {
-    validateNumericField(configKey);
-  });
-}
-
-function getCheckboxValue(id) {
-  return document.getElementById(id).checked;
-}
-
-function getSelectValue(id) {
-  return document.getElementById(id).value;
-}
-
-function getInputState() {
-  const invalidEntries = [];
-
-  return {
-    managementPhase: getSelectValue("management-phase"),
-    age: getValidatedNumericValue("age", invalidEntries),
-    typicalSymptoms: getCheckboxValue("typical-symptoms"),
-    urgentRedFlags: getCheckboxValue("urgent-red-flags"),
-    symptomDaysCategory: getSelectValue("symptom-days-category"),
-    nightWakingCategory: getSelectValue("night-waking-category"),
-    acuteExacerbationToday: getCheckboxValue("acute-exacerbation-today"),
-    bronchodilatorHeld: getCheckboxValue("bronchodilator-held"),
-    fev1Pre: getValidatedNumericValue("fev1Pre", invalidEntries),
-    fev1Post: getValidatedNumericValue("fev1Post", invalidEntries),
-    fvcPre: getValidatedNumericValue("fvcPre", invalidEntries),
-    fvcPost: getValidatedNumericValue("fvcPost", invalidEntries),
-    fev1Predicted: getValidatedNumericValue("fev1Predicted", invalidEntries),
-    fvcPredicted: getValidatedNumericValue("fvcPredicted", invalidEntries),
-    bronchoprovocation: getSelectValue("bronchoprovocation"),
-    icsResponse: getCheckboxValue("ics-response"),
-    dxBronchodilatorResponse: getCheckboxValue("dx-bronchodilator-response"),
-    dxIcsImprovement: getCheckboxValue("dx-ics-improvement"),
-    dxPositiveBronchoprovocation: getCheckboxValue("dx-positive-bronchoprovocation"),
-    daytimeGt2: getCheckboxValue("daytime-gt2"),
-    nightWaking4w: getCheckboxValue("night-waking-4w"),
-    relieverGt2: getCheckboxValue("reliever-gt2"),
-    activityLimitation: getCheckboxValue("activity-limitation"),
-    moderateExac: getValidatedNumericValue("moderateExac", invalidEntries),
-    severeExac: getValidatedNumericValue("severeExac", invalidEntries),
-    lifeThreateningHistory: getCheckboxValue("life-threatening-history"),
-    persistentExacerbations: getCheckboxValue("persistent-exacerbations"),
-    eosinophils: getValidatedNumericValue("eosinophils", invalidEntries),
-    feno: getValidatedNumericValue("feno", invalidEntries),
-    totalIge: getValidatedNumericValue("totalIge", invalidEntries),
-    weightKg: getValidatedNumericValue("weightKg", invalidEntries),
-    smokingStatus: getSelectValue("smoking-status"),
-    allergenDriven: getCheckboxValue("allergen-driven"),
-    sensitizationConfirmed: getCheckboxValue("sensitization-confirmed"),
-    nasalPolyps: getCheckboxValue("nasal-polyps"),
-    atopicDermatitis: getCheckboxValue("atopic-dermatitis"),
-    egpa: getCheckboxValue("egpa"),
-    endemicAreaExposure: getCheckboxValue("endemic-area-exposure"),
-    maintenanceOcs: getCheckboxValue("maintenance-ocs"),
-    poorTechnique: getCheckboxValue("poor-technique"),
-    poorAdherence: getCheckboxValue("poor-adherence"),
-    icsSideEffects: getCheckboxValue("ics-side-effects"),
-    pneumococcalStatus: getSelectValue("pneumococcal-status"),
-    rsvStatus: getSelectValue("rsv-status"),
-    zosterStatus: getSelectValue("zoster-status"),
-    tdapStatus: getSelectValue("tdap-status"),
-    fluStatus: getSelectValue("flu-status"),
-    covidStatus: getSelectValue("covid-status"),
-    currentRegimen: getSelectValue("current-regimen"),
-    invalidEntries
-  };
-}
-
-function uniqueItems(items) {
-  return Array.from(new Set(items));
-}
-
-function addSpacerRecommendation(plan) {
-  plan.push("If using a pMDI, prescribe/continue a spacer or valved holding chamber and review technique.");
-}
-
-function shouldRecommendParasitePrecaution(data) {
-  return data.eosinophils !== null && data.eosinophils > 300 && data.endemicAreaExposure;
-}
-
-function getParasitePrecautionRecommendation(data, options = {}) {
-  if (!shouldRecommendParasitePrecaution(data)) {
-    return null;
-  }
-
-  const therapyTargets = [];
-  if (options.oralCorticosteroids) {
-    therapyTargets.push("oral corticosteroids");
-  }
-  if (options.biologicTherapy) {
-    therapyTargets.push("biologic therapy");
-  }
-
-  if (therapyTargets.length === 0) {
-    return null;
-  }
-
-  const targetText = therapyTargets.length === 2
-    ? `${therapyTargets[0]} or ${therapyTargets[1]}`
-    : therapyTargets[0];
-
-  return `Because blood eosinophils are above 300 cells/uL and the patient has lived or resided in an endemic area, consider parasite testing or treatment before starting ${targetText}.`;
-}
-
-function getBronchodilatorAssessment(data) {
-  return getBronchodilatorAssessmentLogic(data);
-}
-
-function getFollowUpDiagnosisSupport(data) {
-  const supportItems = [];
-
-  if (data.dxBronchodilatorResponse) {
-    supportItems.push("bronchodilator response on spirometry");
-  }
-  if (data.dxIcsImprovement) {
-    supportItems.push("clinical improvement to ICS-containing treatment");
-  }
-  if (data.dxPositiveBronchoprovocation) {
-    supportItems.push("positive bronchoprovocative testing");
-  }
-
-  return supportItems;
-}
-
-function getDiagnosticEvidenceSummary(data, bdAssessment) {
-  if (data.managementPhase === "followup") {
-    const supportItems = getFollowUpDiagnosisSupport(data);
-    if (supportItems.length > 0) {
-      return `Diagnosis basis documented by: ${supportItems.join(", ")}.`;
-    }
-
-    return "No prior diagnostic basis was selected in follow-up mode.";
-  }
-
-  return bdAssessment.summary;
-}
-
-function getDiagnosticStatus(data, bdAssessment) {
-  if (data.managementPhase === "followup") {
-    const supportItems = getFollowUpDiagnosisSupport(data);
-    const objectiveSupport = supportItems.length > 0;
-
-    if (objectiveSupport) {
-      return {
-        key: "confirmed-followup",
-        label: "Prior asthma diagnosis documented",
-        confirmed: true,
-        objectiveSupport: true,
-        supportItems,
-        noteLine: `Prior asthma diagnosis documented by: ${supportItems.join(", ")}.`,
-        summary: `Follow-up mode documents prior asthma diagnosis by ${supportItems.join(", ")}.`
-      };
-    }
-
-    return {
-      key: "uncertain-followup",
-      label: "Prior asthma diagnosis not documented",
-      confirmed: false,
-      objectiveSupport: false,
-      supportItems: [],
-      noteLine: "No prior diagnostic basis for asthma was selected in follow-up mode.",
-      summary: "Follow-up mode requires documenting how asthma was originally diagnosed."
-    };
-  }
-
-  const supportItems = [];
-
-  if (bdAssessment.positive) {
-    supportItems.push("positive bronchodilator response");
-  }
-  if (data.icsResponse) {
-    supportItems.push("positive response after 4 weeks of ICS-containing treatment");
-  }
-  if (data.bronchoprovocation === "positive") {
-    supportItems.push("positive bronchoprovocation testing");
-  }
-
-  const objectiveSupport = supportItems.length > 0;
-
-  if (data.urgentRedFlags) {
-    return {
-      key: "urgent",
-      label: "Urgent red flags present",
-      confirmed: false,
-      objectiveSupport,
-      supportItems,
-      noteLine: "Red-flag acute presentation interrupts routine outpatient decision support.",
-      summary: "Red-flag acute symptoms are present, so emergency evaluation takes priority over routine stepped asthma management."
-    };
-  }
-
-  if (data.typicalSymptoms && objectiveSupport) {
-    return {
-      key: "confirmed",
-      label: "Asthma objectively confirmed",
-      confirmed: true,
-      objectiveSupport,
-      supportItems,
-      noteLine: `Typical symptoms plus objective support: ${supportItems.join(", ")}.`,
-      summary: `Typical variable symptoms are present and objective evidence supports asthma (${supportItems.join(", ")}).`
-    };
-  }
-
-  if (data.typicalSymptoms && !objectiveSupport) {
-    return {
-      key: "likely-not-confirmed",
-      label: "Asthma likely but not yet objectively confirmed",
-      confirmed: false,
-      objectiveSupport,
-      supportItems,
-      noteLine: "Typical symptoms are present but current objective criteria are not yet documented.",
-      summary: "Typical symptoms are present, but objective evidence of variable expiratory airflow is not yet documented."
-    };
-  }
-
-  if (!data.typicalSymptoms && objectiveSupport) {
-    return {
-      key: "atypical-but-supported",
-      label: "Objective variability present, but symptom pattern is atypical",
-      confirmed: false,
-      objectiveSupport,
-      supportItems,
-      noteLine: `Objective support is present (${supportItems.join(", ")}), but the symptom pattern entered is atypical.`,
-      summary: "Objective variability is present, but the symptom pattern entered is not clearly typical for asthma, so the differential should still be reviewed."
-    };
-  }
-
-  return {
-    key: "uncertain",
-    label: "Diagnosis uncertain",
-    confirmed: false,
-    objectiveSupport,
-    supportItems,
-    noteLine: "Neither a clearly typical symptom pattern nor objective variability is documented from the entered fields.",
-    summary: "The diagnosis remains uncertain from the entered data and alternative diagnoses should be considered."
-  };
-}
-
-function classifyControl(data) {
-  return classifyControlLogic(data);
-}
-
-function classifyExacerbationRisk(data) {
-  return classifyExacerbationRiskLogic(data);
-}
-
-function classifySevereAsthmaState(data, control, exacRisk) {
-  return classifySevereAsthmaStateLogic(data, control, exacRisk);
-}
-
-function updateDiagnosticDisplay() {
-  const data = getInputState();
-  const bdAssessment = getBronchodilatorAssessment(data);
-  const diagnosticStatus = getDiagnosticStatus(data, bdAssessment);
-
-  document.getElementById("bd-response-display").textContent = data.managementPhase === "followup"
-    ? data.dxBronchodilatorResponse
-      ? "BD response: documented"
-      : "BD response: not documented"
-    : bdAssessment.positive
-      ? "BD response: positive"
-      : bdAssessment.available
-        ? "BD response: not positive"
-        : "BD response: incomplete";
-
-  document.getElementById("diagnosis-support-display").textContent = diagnosticStatus.objectiveSupport
-    ? "Objective support: present"
-    : "Objective support: absent";
-
-  document.getElementById("bd-calc-note").textContent = getDiagnosticEvidenceSummary(data, bdAssessment);
-  document.getElementById("diagnosis-calc-note").textContent = diagnosticStatus.summary;
-}
-
-function updateControlDisplay() {
-  const control = classifyControl(getInputState());
-  document.getElementById("control-display").textContent = `Control: ${control.classification}`;
-  document.getElementById("control-note").textContent = control.summary;
-}
-
-function updateExacerbationDisplay() {
-  const exacRisk = classifyExacerbationRisk(getInputState());
-  const chip = document.getElementById("exac-history-display");
-
-  if (exacRisk.anyExacerbation === null) {
-    chip.textContent = "Exacerbation counts: missing";
-    return;
-  }
-
-  chip.textContent = exacRisk.anyExacerbation
-    ? "Exacerbation counts: risk signal present"
-    : "Exacerbation counts: none recorded";
-}
-
-function initHelpers() {
-  [
-    "management-phase",
-    "typical-symptoms",
-    "urgent-red-flags",
-    "bronchodilator-held",
-    "fev1-pre",
-    "fev1-post",
-    "fvc-pre",
-    "fvc-post",
-    "fev1-predicted",
-    "fvc-predicted",
-    "symptom-days-category",
-    "night-waking-category",
-    "ics-response",
-    "bronchoprovocation",
-    "dx-bronchodilator-response",
-    "dx-ics-improvement",
-    "dx-positive-bronchoprovocation"
-  ].forEach((id) => {
-    const element = document.getElementById(id);
-    const eventName = element.tagName === "SELECT" ? "change" : "input";
-    element.addEventListener(eventName, updateDiagnosticDisplay);
-    if (element.type === "checkbox") {
-      element.addEventListener("change", updateDiagnosticDisplay);
-    }
-  });
-
-  document.getElementById("management-phase").addEventListener("change", syncManagementPhaseUi);
-
-  [
-    "daytime-gt2",
-    "night-waking-4w",
-    "reliever-gt2",
-    "activity-limitation"
-  ].forEach((id) => {
-    document.getElementById(id).addEventListener("change", updateControlDisplay);
-  });
-
-  [
-    "moderate-exac",
-    "severe-exac"
-  ].forEach((id) => {
-    document.getElementById(id).addEventListener("input", updateExacerbationDisplay);
-    document.getElementById(id).addEventListener("change", updateExacerbationDisplay);
-  });
-
-  Object.values(NUMERIC_FIELD_CONFIG).forEach(({ id }) => {
-    const element = document.getElementById(id);
-    element.addEventListener("input", refreshNumericFieldAlerts);
-    element.addEventListener("change", refreshNumericFieldAlerts);
-  });
-
-  syncManagementPhaseUi();
-  refreshNumericFieldAlerts();
-  updateDiagnosticDisplay();
-  updateControlDisplay();
-  updateExacerbationDisplay();
-}
-
-function syncManagementPhaseUi() {
-  const phase = getSelectValue("management-phase");
-  const initialFields = document.getElementById("initial-diagnostic-fields");
-  const followupFields = document.getElementById("followup-diagnostic-fields");
-  const initialStepFields = document.getElementById("initial-step-fields");
-
-  if (phase === "followup") {
-    initialFields.classList.add("hidden");
-    followupFields.classList.remove("hidden");
-    initialStepFields.classList.add("hidden");
-  } else {
-    initialFields.classList.remove("hidden");
-    followupFields.classList.add("hidden");
-    initialStepFields.classList.remove("hidden");
-  }
-
-  updateDiagnosticDisplay();
-}
-
-function initExacerbationHelpers() {
-  document.getElementById("set-exac-zero-btn").addEventListener("click", () => {
-    document.getElementById("moderate-exac").value = "0";
-    document.getElementById("severe-exac").value = "0";
-    updateExacerbationDisplay();
-  });
-}
-
-function getPhaseLabel(phase) {
-  return phase === "followup"
-    ? "Follow-up asthma management"
-    : "Initial asthma management";
-}
-
-function getEffectiveManagementPhaseContext(data) {
-  const followupAssumed = data.managementPhase === "initial" && data.currentRegimen !== "naive";
-  return {
-    phase: followupAssumed ? "followup" : data.managementPhase,
-    followupAssumed
-  };
-}
-
-function getRegimenLabel(regimen) {
-  const labels = {
-    naive: "No maintenance inhaler / treatment-naive",
-    "air-only": "As-needed budesonide-formoterol only (Track 1 Step 1-2)",
-    "mart-low": "Low-dose budesonide-formoterol MART (Track 1 Step 3)",
-    "mart-medium": "Medium-dose budesonide-formoterol MART (Track 1 Step 4)",
-    "ics-laba-saba": "Maintenance ICS-LABA with SABA reliever",
-    "high-dose-ics-laba": "High-dose ICS-LABA / Step 5 level inhaled therapy",
-    "triple-therapy": "ICS-LABA-LAMA triple inhaled therapy / LAMA-LABA-ICS regimen",
-    "biologic-other": "Biologic plus ICS-containing regimen / other complex regimen"
-  };
-
-  return labels[regimen] || "Unknown regimen";
-}
-
-function getBudesonideFormoterolAirDetail() {
-  return "Preferred Track 1 AIR-only dosing: budesonide-formoterol 200/6 mcg metered dose (160/4.5 mcg delivered) by inhaled DPI or pMDI, 1 inhalation as needed for symptoms and before exercise or expected allergen exposure if needed. Maximum total 12 inhalations in 24 hours. Common adverse effects include dysphonia, oropharyngeal candidiasis, tremor, palpitations, headache, and cramps.";
-}
-
-function getBudesonideFormoterolLowMartDetail() {
-  return "Preferred Track 1 Step 3 MART dosing: budesonide-formoterol 200/6 mcg metered dose (160/4.5 mcg delivered) by inhaled DPI or pMDI, 1 inhalation twice daily or once daily for maintenance plus 1 inhalation as needed for symptoms. Maximum total 12 inhalations in 24 hours. Common adverse effects include dysphonia, oral candidiasis, tremor, headache, and tachycardia.";
-}
-
-function getBudesonideFormoterolMediumMartDetail() {
-  return "Preferred Track 1 Step 4 MART dosing: budesonide-formoterol 200/6 mcg metered dose (160/4.5 mcg delivered) by inhaled DPI or pMDI, 2 inhalations twice daily for maintenance plus 1 inhalation as needed for symptoms. Maximum total 12 inhalations in 24 hours. Common adverse effects include dysphonia, oral candidiasis, tremor, headache, and tachycardia.";
-}
-
-function getLamaDetail() {
-  return "LAMA add-on option: tiotropium by mist inhaler or a triple inhaler may be considered as add-on therapy in uncontrolled asthma despite at least medium-dose ICS-LABA. Route: inhaled. Common adverse effects include dry mouth and urinary retention. Ensure sufficient ICS dose is already in place before adding a LAMA.";
-}
-
-function getAzithromycinDetail() {
-  return "Azithromycin add-on option: 500 mg by mouth three times weekly, generally for at least 6 months, only after specialist referral for persistent symptomatic asthma despite high-dose ICS-LABA. Check sputum for atypical mycobacteria, obtain ECG for QTc before treatment and again after 1 month, and weigh antimicrobial-resistance risk. Diarrhea is more common with this regimen.";
-}
-
-function getOmalizumabDetail() {
-  return "Omalizumab option for severe allergic asthma: subcutaneous injection every 2 to 4 weeks with dose determined by baseline IgE (IU/mL) and weight. Use only when objective sensitization is confirmed and the local dosing table can be satisfied. Common adverse effects include injection-site reactions; anaphylaxis is rare.";
-}
-
-function getMepolizumabDetail() {
-  return getMepolizumabDetailForContext({ egpa: false });
-}
-
-function getBenralizumabDetail() {
-  return getBenralizumabDetailForContext({ egpa: false });
-}
-
-function getReslizumabDetail() {
-  return "Reslizumab option for severe eosinophilic asthma: 3 mg/kg by intravenous infusion every 4 weeks. Monitor for infusion or hypersensitivity reactions.";
-}
-
-function getDupilumabDetail() {
-  return "Dupilumab option for severe eosinophilic or Type 2 asthma and for maintenance OCS-dependent severe asthma: 200 mg or 300 mg subcutaneously every 2 weeks; use 300 mg every 2 weeks for OCS-dependent disease. Common adverse effects include injection-site reactions and transient eosinophilia. Rare EGPA may be unmasked during steroid reduction.";
-}
-
-function getTezepelumabDetail() {
-  return "Tezepelumab option for severe asthma with exacerbations: 210 mg subcutaneously every 4 weeks. It can be considered even when Type 2 markers are not clearly elevated. Common adverse effects include injection-site reactions; anaphylaxis is rare.";
-}
-
-function getPrednisoneLastResortDetail() {
-  return "Maintenance oral corticosteroids should be reserved as a last resort. If required, keep prednisone-equivalent dosing as low as possible, often no more than 7.5 mg/day, and monitor for adrenal suppression, osteoporosis, diabetes, cataracts, glaucoma, hypertension, mood change, infection, and fragility fracture risk.";
-}
-
-function getSmokingCessationDetails() {
-  return [
-    "Smoking cessation options below reflect general dosing patterns; check contraindications, renal dosing, and local policy before prescribing.",
-    "Smoking cessation works best with counseling plus pharmacotherapy. Offer structured cessation support and quit-line referral.",
-    "Varenicline: 0.5 mg by mouth once daily on days 1-3, then 0.5 mg twice daily on days 4-7, then 1 mg twice daily for 12 weeks. Review nausea, sleep disturbance, renal dosing, and neuropsychiatric risk.",
-    "Bupropion SR: 150 mg by mouth once daily for 3 days, then 150 mg twice daily. Avoid with seizure disorder, eating disorder history, monoamine oxidase inhibitor use, or abrupt sedative or alcohol withdrawal.",
-    "Nicotine replacement can be layered as patch plus short-acting gum or lozenge depending on dependence and prior response."
-  ];
-}
-
-function isHighDoseEquivalentRegimen(data) {
-  return isHighDoseEquivalentRegimenLogic(data);
-}
-
-function getBiologicAgentDetail(agentId, data) {
-  const details = {
-    omalizumab: getOmalizumabDetail(),
-    mepolizumab: getMepolizumabDetailForContext({ egpa: data.egpa }),
-    benralizumab: getBenralizumabDetailForContext({ egpa: data.egpa }),
-    reslizumab: getReslizumabDetail(),
-    dupilumab: getDupilumabDetail(),
-    tezepelumab: getTezepelumabDetail()
-  };
-
-  return details[agentId] || null;
-}
-
-function buildBiologicGuidance(data, severeState, control, exacRisk) {
-  const empty = {
-    show: false,
-    summary: "",
-    preferred: [],
-    secondary: [],
-    considerations: [],
-    medicationDetails: [],
-    planSummary: ""
-  };
-
-  const uncontrolled = control.classification !== "well controlled" ||
-    exacRisk.anyExacerbation === true ||
-    data.persistentExacerbations ||
-    data.maintenanceOcs;
-  const highDoseEquivalent = isHighDoseEquivalentRegimen(data);
-  const eos = data.eosinophils;
-  const eos150 = eos !== null && eos >= 150;
-  const eosAboveDupilumabEvidence = getDupilumabEvidenceFlag(eos);
-  const feno25 = data.feno !== null && data.feno >= 25;
-  const omalizumabStatus = getOmalizumabFeasibility(data);
-  const allergicCandidate = omalizumabStatus.fullyAssessable;
-  const allergicSignal = data.allergenDriven || omalizumabStatus.eligibleForConsideration;
-  const recentExacerbationSignal = exacRisk.anyExacerbation === true || data.persistentExacerbations;
-  const phenotypeMarkers = allergicSignal || eos150 || feno25 || data.maintenanceOcs ||
-    data.nasalPolyps || data.atopicDermatitis || data.egpa;
-  const tezepelumabCandidate = recentExacerbationSignal || data.maintenanceOcs;
-
-  if (severeState.state !== "severe-definition-met" || !highDoseEquivalent || !uncontrolled) {
-    return empty;
-  }
-
-  if (exacRisk.anyExacerbation === null && !data.maintenanceOcs) {
-    return {
-      show: true,
-      summary: "Biologic phenotype matching is incomplete because prior-year exacerbation counts were not fully entered. This section is phenotype matching, not an eligibility determiner.",
-      preferred: [],
-      secondary: ["Document OCS-treated and hospitalization-level exacerbation counts before using this biologic section to infer eligibility."],
-      considerations: [
-        "Confirm local payer/regulatory criteria before ordering; required exacerbation counts and biomarker thresholds vary by product and insurer.",
-        "If biologic therapy remains under consideration after exacerbation history is documented, recheck eosinophils, FeNO, sensitization, and comorbid phenotype markers."
-      ],
-      medicationDetails: [],
-      planSummary: "Document exacerbation history before selecting a biologic."
-    };
-  }
-
-  if (!phenotypeMarkers && !tezepelumabCandidate) {
-    return empty;
-  }
-
-  const preferred = [];
-  const secondary = [];
-  const considerations = [];
-  const preferredIds = [];
-  const secondaryIds = [];
-
-  function addPreferred(id, text) {
-    if (!preferredIds.includes(id)) {
-      preferredIds.push(id);
-      preferred.push(text);
-    }
-  }
-
-  function addSecondary(id, text) {
-    if (!preferredIds.includes(id) && !secondaryIds.includes(id)) {
-      secondaryIds.push(id);
-      secondary.push(text);
-    }
-  }
-
-  function addConsideration(text) {
-    if (!considerations.includes(text)) {
-      considerations.push(text);
-    }
-  }
-
-  const burdenParts = [];
-  if (control.classification !== "well controlled") {
-    burdenParts.push(`GINA control remains ${control.classification}`);
-  }
-  if (exacRisk.frequentExacerbation === true) {
-    burdenParts.push("exacerbation burden is high");
-  } else if (exacRisk.anyExacerbation === true) {
-    burdenParts.push("there has been at least one recent exacerbation");
-  }
-  if (data.maintenanceOcs) {
-    burdenParts.push("maintenance oral corticosteroids are required");
-  }
-
-  const phenotypeParts = [];
-  if (eos !== null) {
-    phenotypeParts.push(`blood eosinophils ${eos} cells/uL`);
-  }
-  if (data.feno !== null) {
-    phenotypeParts.push(`FeNO ${data.feno} ppb`);
-  }
-  if (omalizumabStatus.eligibleForConsideration) {
-    phenotypeParts.push(`sensitization-confirmed allergen-driven disease with total IgE ${data.totalIge} IU/mL`);
-  } else if (data.allergenDriven) {
-    phenotypeParts.push("allergen-driven symptoms");
-  }
-  if (data.nasalPolyps) {
-    phenotypeParts.push("nasal polyps");
-  }
-  if (data.atopicDermatitis) {
-    phenotypeParts.push("atopic dermatitis");
-  }
-  if (data.egpa) {
-    phenotypeParts.push("EGPA concern");
-  }
-
-  let summary;
-  if (data.currentRegimen === "biologic-other") {
-    summary = "The patient already appears to be on a biologic or another complex Step 5 regimen, so this section is best used to think about the most logical biologic phenotype match or switching strategy if the current response has been incomplete.";
-  } else {
-    summary = `Biologic escalation is reasonable because ${burdenParts.length > 0 ? burdenParts.join(", ") : "the patient remains uncontrolled"} despite ${getRegimenLabel(data.currentRegimen).toLowerCase()}.`;
-  }
-  if (phenotypeParts.length > 0) {
-    summary += ` Entered phenotype signals include ${phenotypeParts.join(", ")}.`;
-  } else {
-    summary += " Phenotype markers are limited from the entered data, so a broader-mechanism biologic may be the most practical starting point if local eligibility criteria are met.";
-  }
-  summary += " This section is phenotype matching, not an eligibility determiner.";
-
-  if (data.egpa) {
-    addPreferred("mepolizumab", "Mepolizumab: favored when EGPA is present or strongly suspected, especially with eosinophilia, recurrent exacerbations, or steroid exposure.");
-    addPreferred("benralizumab", "Benralizumab: strong alternative in eosinophilic disease, but use EGPA-specific, not asthma-only, dosing when EGPA is the indication.");
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: fallback if a more phenotype-specific biologic is unavailable or not tolerated, but it is less tailored to EGPA.");
-    }
-    if (!eosAboveDupilumabEvidence && (feno25 || data.atopicDermatitis || data.nasalPolyps)) {
-      addSecondary("dupilumab", "Dupilumab: possible backup if Type 2 asthma remains dominant, but usually less attractive than anti-IL5/IL5R therapy when EGPA is active or suspected.");
-    }
-    addConsideration("EGPA should prompt coordinated specialist review and caution during steroid tapering; anti-IL5/IL5R strategies are usually more attractive than dupilumab when EGPA is active/suspected.");
-  } else if (data.maintenanceOcs) {
-    if (!eosAboveDupilumabEvidence) {
-      addPreferred("dupilumab", data.nasalPolyps || data.atopicDermatitis || feno25
-        ? "Dupilumab: strongest fit because maintenance steroid dependence plus FeNO elevation, nasal polyps, or atopic dermatitis favors an OCS-sparing anti-IL4Rα strategy."
-        : "Dupilumab: favored in maintenance OCS-dependent severe asthma because steroid-sparing evidence is strongest in this setting."
-      );
-    }
-    if (eos150) {
-      addPreferred(data.nasalPolyps ? "mepolizumab" : "benralizumab", eosAboveDupilumabEvidence
-        ? data.nasalPolyps
-          ? "Mepolizumab: preferred over dupilumab here because very high eosinophils plus nasal polyps makes an anti-IL5 pathway more evidence-aligned."
-          : "Benralizumab: preferred over dupilumab here because very high eosinophils make anti-IL5R therapy more evidence-aligned."
-        : data.nasalPolyps
-          ? "Mepolizumab: strong parallel option because eosinophilia with nasal polyps supports an anti-IL5 pathway."
-          : "Benralizumab: strong alternative when eosinophilia supports anti-IL5R therapy and less frequent dosing is desirable."
-      );
-      addSecondary(data.nasalPolyps ? "benralizumab" : "mepolizumab", data.nasalPolyps
-        ? "Benralizumab: reasonable alternative anti-IL5R option if mepolizumab is not available or payer criteria favor it."
-        : "Mepolizumab: reasonable anti-IL5 alternative if benralizumab is unavailable or nasal polyps later become more prominent."
-      );
-      addSecondary("reslizumab", "Reslizumab: adult IV alternative if infusion therapy is acceptable, generally as a backup rather than first choice.");
-    }
-    if (allergicCandidate) {
-      addSecondary("omalizumab", "Omalizumab: consider mainly if allergic disease clearly dominates and local criteria are met, but it is usually not the first OCS-sparing choice.");
-    }
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: consider if other biologics are not clearly preferred, though OCS-sparing evidence is less established.");
-    }
-    addConsideration("Maintenance OCS use should favor agents with stronger steroid-sparing evidence; omalizumab and tezepelumab are usually less attractive when OCS reduction is the main goal.");
-  } else if (data.nasalPolyps || data.atopicDermatitis) {
-    addPreferred("dupilumab", data.nasalPolyps && data.atopicDermatitis
-      ? "Dupilumab: preferred because it can address severe asthma together with both nasal polyps and atopic dermatitis."
-      : data.nasalPolyps
-        ? "Dupilumab: favored when nasal polyps/upper-airway Type 2 disease increase the value of anti-IL4Rα therapy."
-        : "Dupilumab: favored when moderate-to-severe atopic dermatitis strengthens the case for anti-IL4Rα therapy."
-    );
-    if (eos150) {
-      addSecondary("mepolizumab", data.nasalPolyps
-        ? "Mepolizumab: strong alternative because eosinophilic asthma with nasal polyps often responds well to anti-IL5 therapy."
-        : "Mepolizumab: strong alternative if eosinophilia is prominent and an anti-IL5 strategy is preferred."
-      );
-      addSecondary("benralizumab", "Benralizumab: reasonable anti-IL5R alternative, especially if less frequent maintenance dosing matters.");
-    }
-    if (allergicCandidate) {
-      addSecondary("omalizumab", "Omalizumab: consider when allergen-driven symptoms and IgE-based eligibility are clear, especially if allergic disease seems to dominate.");
-    }
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: fallback if a broader upstream biologic is preferred or payer criteria limit other agents.");
-    }
-    addConsideration("Dupilumab becomes especially attractive when nasal polyps or moderate-to-severe atopic dermatitis are active.");
-  } else if (eos150) {
-    addPreferred(data.nasalPolyps ? "mepolizumab" : "benralizumab", data.nasalPolyps
-      ? "Mepolizumab: preferred because eosinophilia with nasal polyps makes an anti-IL5 option especially attractive."
-      : "Benralizumab: favored when eosinophilia supports an anti-IL5R strategy and every-8-week maintenance dosing is advantageous."
-    );
-    addSecondary(data.nasalPolyps ? "benralizumab" : "mepolizumab", data.nasalPolyps
-      ? "Benralizumab: close alternative anti-IL5R option if payer criteria or dosing preferences favor it."
-      : "Mepolizumab: close anti-IL5 alternative if payer criteria or comorbidity profile later favor it."
-    );
-    addSecondary("reslizumab", "Reslizumab: adult IV alternative if infusion therapy is acceptable, generally as a backup rather than first choice.");
-    if (!eosAboveDupilumabEvidence && (feno25 || data.nasalPolyps || data.atopicDermatitis)) {
-      addSecondary("dupilumab", "Dupilumab: compelling alternative if FeNO is elevated or upper-airway/skin Type 2 comorbidity is present.");
-    }
-    if (allergicCandidate) {
-      addSecondary("omalizumab", "Omalizumab: additional option if allergic triggers and IgE-based eligibility are also present.");
-    }
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: broader-mechanism fallback if another biologic is not clearly preferred or not available.");
-    }
-    addConsideration(data.nasalPolyps
-      ? "When nasal polyps are prominent, mepolizumab and dupilumab often rise in priority among eosinophilic options."
-      : "Among anti-IL5/IL5R options, benralizumab may be preferable when less frequent maintenance dosing is important."
-    );
-  } else if (feno25) {
-    addPreferred("dupilumab", "Dupilumab: favored when elevated FeNO suggests an IL-4/IL-13-driven Type 2 phenotype.");
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: sensible alternative because higher FeNO also predicts better response to anti-TSLP therapy.");
-    }
-    if (allergicCandidate) {
-      addSecondary("omalizumab", "Omalizumab: consider if allergen-driven symptoms dominate and IgE-based dosing criteria are satisfied.");
-    }
-    addConsideration("Higher FeNO predicts better response to dupilumab and often favors tezepelumab as well.");
-  } else if (allergicCandidate) {
-    addPreferred("omalizumab", "Omalizumab: favored when the history is clearly allergen-driven, sensitization is confirmed, and eosinophilic/OCS-dependent signals are not dominant.");
-    if (recentExacerbationSignal) {
-      addSecondary("tezepelumab", "Tezepelumab: fallback if a broader-mechanism biologic is preferred or IgE dosing constraints limit omalizumab.");
-    }
-    addConsideration("Confirm that weight and total IgE fit the local dosing table before choosing omalizumab.");
-  } else if (recentExacerbationSignal) {
-    addPreferred("tezepelumab", "Tezepelumab: favored broad-mechanism option when severe exacerbations persist and allergic/eosinophilic signals are weak or inconsistent.");
-    addConsideration("Tezepelumab is often easiest to justify when biomarker data are limited, but repeating eosinophils/FeNO may uncover a more phenotype-specific option.");
-  }
-
-  if (data.allergenDriven && !data.sensitizationConfirmed) {
-    addConsideration("Allergen-driven symptoms were entered without objective sensitization confirmation; obtain skin prick testing or serum specific IgE testing prior to considering therapy with omalizumab.");
-  }
-
-  if (omalizumabStatus.eligibleForConsideration && !omalizumabStatus.fullyAssessable) {
-    addConsideration("Enter weight before choosing omalizumab because dosing depends on both baseline IgE (IU/mL) and weight.");
-  }
-
-  addConsideration("Confirm local payer/regulatory criteria before ordering; required exacerbation counts and biomarker thresholds vary by product and insurer.");
-  addConsideration("Review response after an initial biologic trial of about 4 months; extend to 6-12 months if benefit is uncertain before declaring failure.");
-  addConsideration("Choose among eligible agents using phenotype match, dosing interval, route, comorbidities, and patient preference.");
-
-  if (data.currentRegimen === "biologic-other") {
-    addConsideration("If a biologic is already in use, use this ranking mainly to decide whether the current biologic remains the best fit or whether a switch is more logical.");
-  }
-
-  if (data.maintenanceOcs) {
-    addConsideration("Maintenance oral steroids can suppress eosinophils, FeNO, and IgE; historical biomarker data may be more informative than a single on-OCS measurement.");
-  }
-
-  if (eosAboveDupilumabEvidence) {
-    addConsideration("Current or past eosinophils >=1500 cells/uL make dupilumab less attractive; revisit alternative eosinophilic diagnoses.");
-  }
-
-  const medicationDetails = [...preferredIds, ...secondaryIds]
-    .map((agentId) => getBiologicAgentDetail(agentId, data))
-    .filter(Boolean);
-  const secondaryOutput = secondary.length > 0
-    ? secondary
-    : ["No clear backup biologic identified; if the preferred agent is not feasible, repeat biomarkers and reassess phenotype before choosing a fallback."];
-  const leadAgent = preferred.length > 0
-    ? preferred[0].split(":")[0]
-    : "phenotype-directed biologic therapy";
-
-  return {
-    show: preferred.length > 0 || secondaryOutput.length > 0,
-    summary,
-    preferred,
-    secondary: secondaryOutput,
-    considerations: uniqueItems(considerations),
-    medicationDetails: uniqueItems(medicationDetails),
-    planSummary: `Preferred biologic direction: ${leadAgent}. Review the biologic guidance card below before ordering or switching therapy.`
-  };
-}
-
-function addSevereAsthmaPlan(plan, rationale, medicationDetails, data, severeState, biologicGuidance) {
-  plan.push("Prioritize a structured severe-asthma review with phenotype-directed Step 5 planning.");
-  plan.push("If symptoms remain uncontrolled after step-up therapy, reassess inhaler technique, adherence, smoke/irritant exposure, obesity, chronic rhinosinusitis with or without nasal polyps, GERD, OSA, inducible laryngeal obstruction, and medication adverse effects before further escalation.");
-  addSpacerRecommendation(plan);
-
-  const parasitePrecaution = getParasitePrecautionRecommendation(data, {
-    oralCorticosteroids: data.maintenanceOcs,
-    biologicTherapy: biologicGuidance.show
-  });
-  if (parasitePrecaution) {
-    plan.push(parasitePrecaution);
-  }
-
-  if (severeState.state === "difficult-to-treat-possible") {
-    plan.push("Severe asthma evaluation is indicated, but assign a formal severe-asthma label only after optimized high-dose ICS-LABA (or equivalent) and correction of modifiable factors.");
-  }
-
-  if (data.currentRegimen !== "triple-therapy") {
-    plan.push("Consider add-on LAMA if not previously trialed.");
-    medicationDetails.push(getLamaDetail());
-  }
-
-  if (data.currentRegimen === "high-dose-ics-laba" || severeState.state === "severe-definition-met" || data.persistentExacerbations) {
-    plan.push("If symptoms or exacerbations persist despite high-dose ICS-LABA, consider low-dose azithromycin.");
-    medicationDetails.push(getAzithromycinDetail());
-  }
-
-  if (biologicGuidance.show) {
-    plan.push(biologicGuidance.planSummary);
-    rationale.push("Biologic candidacy is supported by persistent burden despite Step 5-level therapy plus the entered phenotype profile.");
-    medicationDetails.push(...biologicGuidance.medicationDetails);
-  } else if (severeState.type2High) {
-    rationale.push("Type 2-high markers are present, which supports biologic phenotyping.");
-    plan.push("Type 2 inflammation is supported by the entered data, but the current phenotype profile does not yet identify one clearly preferred biologic; complete or repeat targeted phenotype testing before selecting an add-on agent.");
-  } else {
-    rationale.push("Elevated Type 2 markers are not clearly documented from the entered data, so non-biologic add-ons and repeated biomarker review become especially important.");
-    plan.push("If Type 2 biomarkers are not elevated, repeat eosinophils/FeNO when appropriate and consider non-biologic add-ons first.");
-    if (data.currentRegimen === "high-dose-ics-laba" || data.currentRegimen === "triple-therapy" || data.currentRegimen === "biologic-other") {
-      plan.push("Tezepelumab remains an option for severe asthma with exacerbations.");
-      medicationDetails.push(getTezepelumabDetail());
-    }
-  }
-
-  if (data.maintenanceOcs) {
-    plan.push("Use maintenance prednisone only as a last-resort bridge and minimize dose and duration.");
-    medicationDetails.push(getPrednisoneLastResortDetail());
-  }
-}
-
-function formatStepDownRiskFactors(items) {
-  if (items.length === 0) {
-    return "";
-  }
-  if (items.length === 1) {
-    return items[0];
-  }
-  if (items.length === 2) {
-    return `${items[0]} and ${items[1]}`;
-  }
-  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-}
-
-function getStableStepDownRiskFactors(data) {
-  const factors = [];
-
-  if (data.lifeThreateningHistory) {
-    factors.push("a prior life-threatening exacerbation history");
-  }
-  if (data.fev1Predicted !== null && data.fev1Predicted < 80) {
-    factors.push(`reduced lung function (FEV1 ${data.fev1Predicted}% predicted)`);
-  }
-  if (data.maintenanceOcs) {
-    factors.push("maintenance oral corticosteroid exposure");
-  }
-
-  return factors;
-}
-
-function addStableStepDownPlan(plan, rationale, medicationDetails, data) {
-  const riskFactors = getStableStepDownRiskFactors(data);
-
-  plan.push("If asthma has truly remained well controlled and lung function stable for at least 3 months, consider supervised step-down to find the lowest regimen that maintains control and minimizes steroid exposure.");
-  plan.push("Choose an appropriate time for step-down (no respiratory infection, not travelling, not pregnant), document baseline symptoms and lung function, provide a written action plan, and ensure the patient can promptly resume the previous regimen if control worsens.");
-
-  if (riskFactors.length > 0) {
-    plan.push(`Because ${formatStepDownRiskFactors(riskFactors)} is present, step down only with close supervision.`);
-  }
-
-  if (data.currentRegimen === "air-only") {
-    plan.push("As-needed low-dose budesonide-formoterol is already the lowest preferred GINA Track 1 regimen. Do not step down to SABA-only treatment or completely stop ICS-containing reliever therapy.");
-  } else if (data.currentRegimen === "mart-low") {
-    plan.push("Reasonable next step-down: move from low-dose MART to as-needed-only low-dose budesonide-formoterol if stability is durable and exacerbation risk remains low.");
-    medicationDetails.push(getBudesonideFormoterolAirDetail());
-  } else if (data.currentRegimen === "mart-medium") {
-    plan.push("Reasonable next step-down: reduce from medium-dose MART to low-dose MART rather than stepping directly to reliever-only therapy.");
-    medicationDetails.push(getBudesonideFormoterolLowMartDetail());
-  } else if (data.currentRegimen === "ics-laba-saba") {
-    plan.push("If the current maintenance ICS-LABA dose is low, consider once-daily dosing. If the current dose is medium or high, reduce the ICS component by about 25 to 50 percent at a time, or switch to an ICS-formoterol-based MART regimen rather than continuing SABA-reliever therapy indefinitely.");
-    plan.push("Do not stop ICS-containing treatment or withdraw LABA abruptly during step-down.");
-    medicationDetails.push(getBudesonideFormoterolLowMartDetail());
-  } else if (data.currentRegimen === "high-dose-ics-laba") {
-    plan.push("Because the current regimen is high-dose ICS-LABA, reduce the ICS component by about 25 to 50 percent at a time while maintaining LABA, rather than stopping ICS-containing treatment or withdrawing LABA abruptly.");
-    if (data.maintenanceOcs) {
-      plan.push("If maintenance oral corticosteroids are still required, prioritize careful OCS tapering before or alongside inhaled step-down, ideally with specialist supervision.");
-    }
-  } else if (data.currentRegimen === "triple-therapy") {
-    plan.push("If stable on triple therapy, first reassess whether the LAMA add-on is still providing clear benefit; if not, consider stepping back to ICS-LABA before reducing the ICS dose.");
-    plan.push("After add-on therapy is rationalized, reduce the ICS component by about 25 to 50 percent at a time rather than stopping ICS-containing treatment.");
-  } else if (data.currentRegimen === "biologic-other") {
-    plan.push("If a biologic is providing good control, re-evaluate every 3 to 6 months; reduce or cease maintenance oral corticosteroids first, then reconsider other add-on therapy before lowering the ICS-LABA dose.");
-    plan.push("Do not completely stop ICS-containing treatment. Trial withdrawal of a biologic should usually wait until there has been at least 12 months of good control, and only with specialist supervision.");
-  }
-
-  plan.push("Review 4 to 8 weeks after any reduction, and do not make another step-down until stability has again been confirmed for 2 to 3 more months.");
-  plan.push("Do not completely stop ICS-containing treatment in adults and adolescents.");
-
-  rationale.push("GINA step-down guidance supports reducing ICS exposure by about 25 to 50 percent at a time, with written action plans and close follow-up.");
-  rationale.push("Where GINA is less specific about complex regimens, the step-down framework also reflects Australian Asthma Handbook recommendations to step down one treatment level and review early.");
-}
-
-function buildInitialRecommendations(data, diagnosticStatus, control, exacRisk, severeState, biologicGuidance) {
-  const plan = [];
-  const rationale = [];
-  const medicationDetails = [];
-  let trackStep = "Diagnostic confirmation first";
-
-  if (data.urgentRedFlags) {
-    plan.push("Red flags present: arrange immediate emergency/acute evaluation rather than routine outpatient management.");
-    plan.push("Do not use routine stepped-treatment output until the patient is stabilized.");
-    rationale.push("Safety interrupt triggered by entered red-flag acute presentation.");
-    return { plan, rationale, medicationDetails, trackStep: "Emergency evaluation required" };
-  }
-
-  if (!diagnosticStatus.confirmed) {
-    plan.push("Asthma is not objectively confirmed. Repeat spirometry with bronchodilator testing or bronchoprovocation before committing to long-term stepped therapy.");
-    if (data.currentRegimen !== "naive") {
-      plan.push("Because maintenance treatment may already be in use and diagnosis remains uncertain, consider supervised retesting and, when appropriate, step-down with repeat objective assessment or specialist referral.");
-    } else {
-      plan.push("If treatment must begin before objective confirmation, use an ICS-containing regimen rather than SABA alone and schedule repeat objective testing within the next few weeks.");
-    }
-    if (!data.typicalSymptoms) {
-      plan.push("Broaden the differential diagnosis rather than forcing an asthma diagnosis.");
-    }
-    rationale.push("GINA diagnosis in adults requires typical symptoms plus objective evidence of variable expiratory airflow.");
-    return { plan, rationale, medicationDetails, trackStep };
-  }
-
-  plan.push("Use GINA Track 1 as the preferred treatment pathway.");
-
-  const initialStep = pickInitialTrack1StepLogic(data);
-  trackStep = initialStep.trackStep;
-
-  if (initialStep.needsMoreData) {
-    plan.push("Enter daytime symptom frequency and night-waking frequency to map the initial regimen to GINA Table 3.");
-    plan.push("Until those data are entered, treat the initial step recommendation as provisional.");
-    rationale.push("The hardened initial-treatment pathway uses symptom-frequency strata rather than only the four GINA control checkboxes.");
-  } else if (initialStep.regimen === "mart-medium") {
-    plan.push("Start medium-dose budesonide-formoterol MART (GINA Track 1 Step 4).");
-    plan.push("Prescribe budesonide-formoterol 200/6 mcg MDI: 2 inhalations BID for maintenance plus 1 inhalation PRN for symptoms.");
-    plan.push("Use the same inhaler before exercise or anticipated allergen exposure as needed.");
-    addSpacerRecommendation(plan);
-    medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
-    rationale.push(initialStep.reason);
-  } else if (initialStep.regimen === "mart-low") {
-    plan.push("Start low-dose budesonide-formoterol MART (GINA Track 1 Step 3).");
-    plan.push("Prescribe budesonide-formoterol 200/6 mcg MDI: 1 inhalation BID for maintenance plus 1 inhalation PRN for symptoms.");
-    plan.push("Use the same inhaler before exercise or anticipated allergen exposure as needed.");
-    addSpacerRecommendation(plan);
-    medicationDetails.push(getBudesonideFormoterolLowMartDetail());
-    rationale.push(initialStep.reason);
-  } else {
-    plan.push("Start as-needed low-dose budesonide-formoterol as both reliever and anti-inflammatory therapy.");
-    plan.push("Use budesonide-formoterol 200/6 mcg MDI: 1 inhalation PRN for symptoms.");
-    plan.push("Use the same inhaler before exercise or anticipated allergen exposure as needed.");
-    addSpacerRecommendation(plan);
-    medicationDetails.push(getBudesonideFormoterolAirDetail());
-    rationale.push(initialStep.reason);
-  }
-
-  if (exacRisk.anyExacerbation === null) {
-    plan.push("Prior-year exacerbation counts are incomplete; confirm them before deciding against escalation or interpreting biologic eligibility.");
-  }
-
-  if (exacRisk.frequentExacerbation === true || data.lifeThreateningHistory || data.maintenanceOcs) {
-    plan.push("Because exacerbation risk is already elevated, arrange early specialist follow-up and provide a written asthma action plan from the start.");
-  }
-
-  if (severeState.state !== "not-triggered") {
-    plan.push("The entered data already suggest difficult-to-treat or severe disease, so specialist review should not be delayed.");
-    addSevereAsthmaPlan(plan, rationale, medicationDetails, data, severeState, biologicGuidance);
-    trackStep = "Step 5 / severe-asthma pathway";
-  }
-
-  if (data.smokingStatus === "current") {
-    plan.push("Strongly recommend smoking cessation; smoking worsens control and increases exacerbation risk.");
-  }
-
-  plan.push("Avoid SABA-only therapy as the long-term treatment plan.");
-
-  return { plan, rationale, medicationDetails, trackStep };
-}
-
-function buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk, severeState, biologicGuidance) {
-  const plan = [];
-  const rationale = [];
-  const medicationDetails = [];
-  let trackStep = "Follow-up reassessment";
-  const uncontrolled = control.classification !== "well controlled" ||
-    exacRisk.anyExacerbation === true ||
-    data.persistentExacerbations;
-
-  if (data.urgentRedFlags) {
-    plan.push("Red flags present: arrange immediate emergency/acute evaluation rather than routine outpatient management.");
-    plan.push("Defer stepped outpatient management until the patient is stabilized.");
-    rationale.push("Safety interrupt triggered by entered red-flag acute presentation.");
-    return { plan, rationale, medicationDetails, trackStep: "Emergency evaluation required" };
-  }
-
-  if (!diagnosticStatus.confirmed) {
-    plan.push("Diagnosis not objectively confirmed: re-establish diagnostic certainty before escalating chronic therapy.");
-    if (data.currentRegimen !== "naive") {
-      plan.push("Because ICS therapy is already in use, repeat spirometry or bronchoprovocation and consider supervised retesting or specialist review.");
-    }
-    rationale.push("Asthma treatment should be built on objective confirmation whenever possible.");
-    return { plan, rationale, medicationDetails, trackStep: "Diagnostic confirmation first" };
-  }
-
-  if (data.currentRegimen === "naive") {
-    plan.push("Follow-up mode selected, but no maintenance regimen is documented. Use the initial-treatment pathway first, then reassess response.");
-    rationale.push("Follow-up algorithms assume a maintenance regimen is already in place.");
-    return { plan, rationale, medicationDetails, trackStep: "Initial pathway needed" };
-  }
-
-  if (exacRisk.anyExacerbation === null) {
-    plan.push("Prior-year exacerbation counts are incomplete; confirm them before deciding against escalation or interpreting biologic eligibility.");
-    rationale.push("Missing exacerbation history limits follow-up risk assessment.");
-  }
-
-  if (!uncontrolled) {
-    if (exacRisk.anyExacerbation === false) {
-      trackStep = data.currentRegimen === "air-only"
-        ? "Stable control / lowest effective step"
-        : "Stable control / consider supervised step-down";
-    } else {
-      trackStep = "Continue current step";
-    }
-    plan.push("Continue the current ICS-containing regimen if control is acceptable, benefit is clear, and the regimen is tolerated.");
-    addSpacerRecommendation(plan);
-    if (exacRisk.anyExacerbation === false) {
-      addStableStepDownPlan(plan, rationale, medicationDetails, data);
-    } else if (exacRisk.anyExacerbation === null) {
-      plan.push("Do not step down chronic therapy until prior-year exacerbation history is clarified and sustained stability is confirmed.");
-    }
-    rationale.push("No clear symptom-control or exacerbation trigger for escalation was entered.");
-    return { plan, rationale, medicationDetails, trackStep };
-  }
-
-  plan.push("If symptoms remain uncontrolled after step-up therapy, reassess inhaler technique, adherence, smoke/irritant exposure, obesity, chronic rhinosinusitis with or without nasal polyps, GERD, OSA, inducible laryngeal obstruction, and medication adverse effects before further escalation.");
-
-  if (data.currentRegimen === "air-only") {
-    trackStep = "GINA Track 1 Step 3";
-    plan.push("Step up from AIR-only therapy to low-dose budesonide-formoterol MART.");
-    plan.push("Prescribe budesonide-formoterol 200/6 mcg MDI: 1 inhalation BID for maintenance plus 1 inhalation PRN for symptoms.");
-    addSpacerRecommendation(plan);
-    medicationDetails.push(getBudesonideFormoterolLowMartDetail());
-    rationale.push("Symptoms or exacerbations are persisting on AIR-only therapy, so GINA Track 1 MART escalation is appropriate.");
-  } else if (data.currentRegimen === "mart-low") {
-    trackStep = "GINA Track 1 Step 4";
-    plan.push("Step up from low-dose MART to medium-dose budesonide-formoterol MART.");
-    plan.push("Prescribe budesonide-formoterol 200/6 mcg MDI: 2 inhalations BID for maintenance plus 1 inhalation PRN for symptoms.");
-    addSpacerRecommendation(plan);
-    medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
-    rationale.push("Persistent symptoms or exacerbations on low-dose MART support Step 4 escalation.");
-  } else if (data.currentRegimen === "ics-laba-saba") {
-    trackStep = "Switch to preferred Track 1 MART";
-    if (control.classification === "uncontrolled" || exacRisk.anyExacerbation === true) {
-      plan.push("Switch from Track 2 maintenance ICS-LABA plus SABA reliever to preferred Track 1 budesonide-formoterol MART.");
-      plan.push("Practical follow-up option: medium-dose budesonide-formoterol MART, 200/6 mcg MDI, 2 inhalations BID plus 1 inhalation PRN.");
-      addSpacerRecommendation(plan);
-      medicationDetails.push(getBudesonideFormoterolMediumMartDetail());
-    } else {
-      plan.push("If simplification is desired and formulary access allows, consider low-dose budesonide-formoterol MART.");
-      addSpacerRecommendation(plan);
-      medicationDetails.push(getBudesonideFormoterolLowMartDetail());
-    }
-    rationale.push("GINA Track 1 is preferred over SABA-reliever strategies because it lowers exacerbation risk and simplifies treatment.");
-  }
-
-  if (["mart-medium", "high-dose-ics-laba", "triple-therapy", "biologic-other"].includes(data.currentRegimen) || severeState.state !== "not-triggered") {
-    trackStep = "Step 5 / severe-asthma pathway";
-    if (data.currentRegimen === "mart-medium") {
-      plan.push("Because symptoms/exacerbations persist despite medium-dose MART, consider Step 5 escalation with high-dose ICS-LABA-based therapy after reassessing technique, adherence, and modifiable comorbid contributors.");
-      plan.push(getStep5PhenotypePlanningRecommendation(data, severeState, biologicGuidance));
-      rationale.push("Persistent burden despite Track 1 Step 4 therapy supports Step 5 planning rather than repeated medium-dose MART intensification alone.");
-    } else {
-      plan.push("Because the current regimen is already Step 5-like/complex, persistent symptoms or exacerbations should trigger a structured severe-asthma review.");
-      if (severeState.state === "severe-definition-met" && ["high-dose-ics-laba", "triple-therapy", "biologic-other"].includes(data.currentRegimen) && !data.poorTechnique && !data.poorAdherence) {
-        rationale.push("Ongoing disease burden despite high-intensity therapy raises concern for true severe asthma.");
-      }
-      addSevereAsthmaPlan(plan, rationale, medicationDetails, data, severeState, biologicGuidance);
-    }
-  }
-
-  if (data.icsSideEffects) {
-    plan.push("Because steroid/ICS adverse effects are a concern, weigh benefit versus harm before further ICS escalation and favor phenotype-directed add-on planning over reflex ICS dose increases.");
-  }
-
-  return { plan, rationale, medicationDetails, trackStep };
-}
-
-function buildPreventiveCare(data, diagnosticStatus) {
-  const prevention = [];
-  const asthmaConfirmed = diagnosticStatus.confirmed;
-
-  if (!asthmaConfirmed) {
-    prevention.push("Asthma is not yet objectively confirmed; refer to current local protocol and the CDC adult immunization schedule for vaccine decision-making rather than relying on asthma-specific prompts alone.");
-  }
-
-  if (asthmaConfirmed && (data.pneumococcalStatus === "unknown" || data.pneumococcalStatus === "unvaccinated")) {
-    prevention.push("Recommend pneumococcal vaccination per current CDC guidance for asthma/chronic lung disease; choose PCV20/PCV21 or PCV15 followed by PPSV23 based on prior vaccine history and local policy.");
-  }
-
-  if (asthmaConfirmed && data.age !== null && data.age >= 50 && data.rsvStatus !== "complete") {
-    prevention.push("Recommend single-dose RSV vaccination because age 50 or older with asthma meets current chronic lung disease risk-based criteria.");
-  }
-
-  if (data.age !== null && data.age >= 50 && data.zosterStatus !== "complete") {
-    prevention.push("Recommend recombinant zoster vaccine (Shingrix) as a 2-dose series because age is 50 or older.");
-  }
-
-  if (data.tdapStatus === "unknown" || data.tdapStatus === "not-up-to-date") {
-    prevention.push("Recommend Td/Tdap now because no tetanus-containing vaccine is documented within 10 years; use Tdap if prior adult Tdap is absent or unknown.");
-  }
-
-  if (data.fluStatus !== "current") {
-    prevention.push("Recommend the current seasonal influenza vaccine.");
-  } else {
-    prevention.push("Keep influenza vaccination current annually.");
-  }
-
-  if (data.covidStatus !== "current") {
-    prevention.push("Review and update COVID vaccination per current local/CDC protocol.");
-  } else {
-    prevention.push("Keep COVID vaccination current per the active local protocol.");
-  }
-
-  return prevention;
-}
-
-function buildNonPharmacologicBundle(data, severeState) {
-  const bundle = [
-    "Review inhaler technique and adherence at every visit before step-up decisions.",
-    "Provide or update a written asthma action plan.",
-    "Encourage regular exercise and address weight management when relevant.",
-    "Reduce avoidable triggers/exposures, including smoke, irritants, and relevant allergens.",
-    "Treat modifiable comorbid contributors such as rhinosinusitis, GERD, OSA, anxiety, or depression when present."
-  ];
-
-  if (data.smokingStatus === "current") {
-    bundle.push("Advise smoking cessation at every visit and offer pharmacotherapy plus counseling.");
-  }
-
-  if (severeState.state !== "not-triggered") {
-    bundle.push("Use a lower threshold for multidisciplinary support and structured severe-asthma reassessment because difficult-to-treat or severe disease is possible.");
-  }
-
-  return bundle;
-}
-
-function buildCautions(data, diagnosticStatus, control, severeState, followupAssumed = false) {
-  const cautions = [];
-
-  if (data.invalidEntries.length > 0) {
-    cautions.push(...data.invalidEntries);
-  }
-
-  if (data.urgentRedFlags) {
-    cautions.push("Red-flag acute presentation requires emergency-level evaluation rather than routine outpatient treatment selection.");
-  }
-
-  if (!diagnosticStatus.confirmed) {
-    cautions.push("Objective confirmation of asthma is still missing.");
-  }
-
-  if (data.managementPhase === "initial" && !data.bronchodilatorHeld && (data.fev1Pre !== null || data.fev1Post !== null)) {
-    cautions.push("Bronchodilator may not have been withheld before spirometry, which can make bronchodilator responsiveness harder to interpret.");
-  }
-
-  if (followupAssumed) {
-    cautions.push("Initial mode was selected, but maintenance therapy is already documented; follow-up management logic was used.");
-  }
-
-  if (data.managementPhase === "followup" && data.currentRegimen === "naive") {
-    cautions.push("Follow-up mode selected without a documented maintenance regimen; the tool will default toward an initial-treatment recommendation.");
-  }
-
-  if (data.age === null) {
-    cautions.push("Age is missing, so age-based vaccine prompts may be incomplete.");
-  }
-
-  const exacRisk = classifyExacerbationRisk(data);
-  if (exacRisk.anyExacerbation === null) {
-    cautions.push("Exacerbation counts are incomplete; risk assessment and biologic eligibility may be understated until prior-year counts are entered.");
-  }
-
-  if (severeState.state !== "not-triggered" && data.eosinophils === null && data.feno === null && !data.allergenDriven) {
-    cautions.push("Severe-asthma pathway triggered, but Type 2 biomarker data are sparse. Eosinophils, FeNO, and allergic phenotype assessment would refine biologic selection.");
-  }
-
-  if ((data.poorTechnique || data.poorAdherence) && control.classification !== "well controlled") {
-    cautions.push("Poor technique/adherence is present; some apparent treatment failure may be modifiable before assigning a severe-asthma label.");
-  }
-
-  if (severeState.state === "difficult-to-treat-possible") {
-    cautions.push("Severe asthma evaluation is indicated, but formal severe-asthma criteria are not yet established because optimized high-dose ICS-LABA (or equivalent) and correction of modifiable factors have not been demonstrated.");
-  }
-
-  if (data.allergenDriven && !data.sensitizationConfirmed) {
-    cautions.push("Allergen-driven symptoms were entered without objective sensitization confirmation; obtain skin prick testing or serum specific IgE testing prior to considering therapy with omalizumab.");
-  }
-
-  if (data.egpa || getDupilumabEvidenceFlag(data.eosinophils)) {
-    cautions.push("Consider EGPA or another hypereosinophilic disorder before routine asthma-only escalation, especially if steroid tapering is planned.");
-  }
-
-  if (cautions.length === 0) {
-    cautions.push(DEFAULT_NO_WARNING);
-  }
-
-  return cautions;
-}
-
-function buildRecommendation(data) {
-  const phaseContext = getEffectiveManagementPhaseContext(data);
-  const bdAssessment = getBronchodilatorAssessment(data);
-  const diagnosticStatus = getDiagnosticStatus(data, bdAssessment);
-  const control = classifyControl(data);
-  const exacRisk = classifyExacerbationRisk(data);
-  const severeState = classifySevereAsthmaState(data, control, exacRisk);
-  const biologicGuidance = buildBiologicGuidance(data, severeState, control, exacRisk);
-  const prevention = buildPreventiveCare(data, diagnosticStatus);
-  const nonPharm = buildNonPharmacologicBundle(data, severeState);
-  const cautions = buildCautions(data, diagnosticStatus, control, severeState, phaseContext.followupAssumed);
-
-  let therapy;
-  if (phaseContext.phase === "followup") {
-    therapy = buildFollowUpRecommendations(data, diagnosticStatus, control, exacRisk, severeState, biologicGuidance);
-  } else {
-    therapy = buildInitialRecommendations(data, diagnosticStatus, control, exacRisk, severeState, biologicGuidance);
-  }
-
-  if (!data.urgentRedFlags && data.poorAdherence && data.currentRegimen !== "naive") {
-    therapy.plan.push("If adherence is uncertain, consider repeat FeNO, ideally after observed ICS use, to help assess ICS exposure/adherence.");
-    therapy.rationale.push("FeNO can help distinguish ongoing Type 2 inflammation from poor adherence to ICS-containing treatment.");
-  }
-
-  const phenotypeTestingAlreadyPrioritized = therapy.plan.some((item) => item.startsWith("Phenotype testing is not yet sufficiently documented;"));
-  if (!phenotypeTestingAlreadyPrioritized && data.eosinophils === null && data.feno === null && data.totalIge === null) {
-    therapy.plan.push("Biomarkers not documented: obtain blood eosinophils, FeNO, and total IgE (IU/mL) when phenotype assessment or treatment escalation is being considered.");
-    therapy.rationale.push("Biomarker data can help refine future asthma management, especially if symptoms or exacerbations persist.");
-  }
-
-  const medicationDetails = [...therapy.medicationDetails];
-  if (data.smokingStatus === "current") {
-    medicationDetails.push(...getSmokingCessationDetails());
-  }
-
-  const phenotypeParts = [];
-  if (data.eosinophils !== null) {
-    phenotypeParts.push(`blood eosinophils ${data.eosinophils} cells/uL`);
-  }
-  if (data.feno !== null) {
-    phenotypeParts.push(`FeNO ${data.feno} ppb`);
-  }
-  if (data.totalIge !== null) {
-    phenotypeParts.push(`total IgE ${data.totalIge} IU/mL`);
-  }
-  if (data.allergenDriven) {
-    phenotypeParts.push("allergen-driven features present");
-  }
-  if (data.sensitizationConfirmed) {
-    phenotypeParts.push("sensitization confirmed");
-  }
-  if (data.nasalPolyps) {
-    phenotypeParts.push("nasal polyps/upper-airway Type 2 disease present");
-  }
-  if (data.maintenanceOcs) {
-    phenotypeParts.push("maintenance oral corticosteroids required");
-  }
-  if (data.egpa) {
-    phenotypeParts.push("EGPA present or suspected");
-  }
-  if (data.endemicAreaExposure) {
-    phenotypeParts.push("history of living or residing in an endemic area for parasitic infection");
-  }
-
-  const phenotypeSummary = phenotypeParts.length > 0
-    ? `Phenotype summary: ${phenotypeParts.join(", ")}. ${severeState.summary}`
-    : severeState.summary;
-
-  return {
-    phaseLabel: getPhaseLabel(phaseContext.phase),
-    effectiveManagementPhase: phaseContext.phase,
-    followupAssumed: phaseContext.followupAssumed,
-    diagnosticLabel: diagnosticStatus.label,
-    trackStep: therapy.trackStep,
-    currentRegimen: data.currentRegimen,
-    symptomSummary: control.summary,
-    riskSummary: `${exacRisk.summary} ${phenotypeSummary}`,
-    diagnosticNoteLine: diagnosticStatus.noteLine,
-    symptomNoteLine: control.noteLine,
-    riskNoteLine: exacRisk.noteLine,
-    plan: uniqueItems(therapy.plan),
-    rationale: uniqueItems([
-      diagnosticStatus.summary,
-      getDiagnosticEvidenceSummary(data, bdAssessment),
-      ...therapy.rationale
-    ]),
-    medicationDetails: uniqueItems(medicationDetails),
-    biologicGuidance,
-    prevention: uniqueItems(prevention),
-    cautions: uniqueItems(cautions),
-    nonPharm: uniqueItems(nonPharm)
-  };
-}
-
-function fillList(elementId, items, emptyText) {
-  const container = document.getElementById(elementId);
-  container.innerHTML = "";
-
-  const sourceItems = items.length > 0 ? items : [emptyText];
-  sourceItems.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    container.appendChild(li);
-  });
-}
-
-function getSmokingSummary(data) {
-  const labels = {
-    current: "Current smoker",
-    former: "Former smoker",
-    never: "Never smoker"
-  };
-
-  return labels[data.smokingStatus] || "Smoking status unknown";
-}
-
-function sanitizeForClinicalNote(text) {
-  if (!text) {
-    return "";
-  }
-
-  return text
-    .replace(/No \/ not clearly entered/gi, "not clearly documented")
-    .replace(/No \/ not documented/gi, "not documented")
-    .replace(/\b[Nn]ot entered\b/g, (match) => (match[0] === "N" ? "Not documented" : "not documented"))
-    .replace(/\b[Nn]ot available\b/g, (match) => (match[0] === "N" ? "Not documented" : "not documented"))
-    .replace(/\b[Ss]elected\b/g, (match) => (match[0] === "S" ? "Documented" : "documented"))
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function joinClinicalList(items) {
-  const filtered = items.filter(Boolean);
-  if (filtered.length === 0) {
-    return "";
-  }
-  if (filtered.length === 1) {
-    return filtered[0];
-  }
-  if (filtered.length === 2) {
-    return `${filtered[0]} and ${filtered[1]}`;
-  }
-
-  return `${filtered.slice(0, -1).join(", ")}, and ${filtered[filtered.length - 1]}`;
-}
-
-function getSymptomDaysClinicalLabel(value) {
-  const labels = {
-    "not-entered": "not documented",
-    infrequent: "1 to 2 days per week or less",
-    "three-to-five": "3 to 5 days per week",
-    "most-days": "most days",
-    daily: "daily"
-  };
-
-  return labels[value] || "not documented";
-}
-
-function getNightWakingClinicalLabel(value) {
-  const labels = {
-    "not-entered": "not documented",
-    none: "none",
-    "less-than-weekly": "less than weekly",
-    "weekly-or-more": "weekly or more"
-  };
-
-  return labels[value] || "not documented";
-}
-
-function getBronchoprovocationClinicalLabel(value) {
-  const labels = {
-    "not-done": "not documented",
-    positive: "positive",
-    negative: "negative"
-  };
-
-  return labels[value] || "not documented";
-}
-
-function getRegimenClinicalLabel(regimen) {
-  const labels = {
-    naive: "no maintenance controller therapy",
-    "air-only": "as-needed budesonide-formoterol only",
-    "mart-low": "low-dose budesonide-formoterol MART",
-    "mart-medium": "medium-dose budesonide-formoterol MART",
-    "ics-laba-saba": "maintenance ICS-LABA with SABA reliever",
-    "high-dose-ics-laba": "high-dose ICS-LABA",
-    "triple-therapy": "ICS-LABA-LAMA triple therapy",
-    "biologic-other": "biologic plus ICS-containing therapy or another complex Step 5 regimen"
-  };
-
-  return labels[regimen] || "current regimen not documented";
-}
-
-function getRegimenTrackStepLabel(regimen) {
-  const labels = {
-    "air-only": "GINA Track 1 Step 1-2",
-    "mart-low": "GINA Track 1 Step 3",
-    "mart-medium": "GINA Track 1 Step 4",
-    "ics-laba-saba": "GINA Track 2 maintenance ICS-LABA with SABA reliever",
-    "high-dose-ics-laba": "GINA Step 5 high-dose ICS-LABA",
-    "triple-therapy": "GINA Step 5 triple therapy",
-    "biologic-other": "GINA Step 5 biologic/complex regimen"
-  };
-
-  return labels[regimen] || "";
-}
-
-function getPlannedRegimenClinicalLabel(trackStep) {
-  const labels = {
-    "GINA Track 1 Step 1-2": "as-needed budesonide-formoterol only",
-    "GINA Track 1 Step 3": "low-dose budesonide-formoterol MART",
-    "GINA Track 1 Step 4": "medium-dose budesonide-formoterol MART",
-    "Switch to preferred Track 1 MART": "preferred Track 1 budesonide-formoterol MART"
-  };
-
-  return labels[trackStep] || "";
-}
-
-function hasPhenotypeInputsEntered(data) {
-  return data.eosinophils !== null ||
-    data.feno !== null ||
-    data.totalIge !== null ||
-    data.allergenDriven ||
-    data.sensitizationConfirmed ||
-    data.nasalPolyps ||
-    data.atopicDermatitis ||
-    data.egpa;
-}
-
-function getFutureAddOnDirectionLabel(biologicGuidance) {
-  if (!biologicGuidance.show || biologicGuidance.preferred.length === 0) {
-    return "";
-  }
-
-  return biologicGuidance.preferred[0].split(":")[0].trim();
-}
-
-function getBiologicCandidateLabels(biologicGuidance, limit = 3) {
-  const allowedNames = new Set([
-    "Omalizumab",
-    "Mepolizumab",
-    "Benralizumab",
-    "Reslizumab",
-    "Dupilumab",
-    "Tezepelumab"
-  ]);
-  const candidates = [];
-
-  [...biologicGuidance.preferred, ...biologicGuidance.secondary].forEach((item) => {
-    const name = item.split(":")[0].trim();
-    if (allowedNames.has(name) && !candidates.includes(name)) {
-      candidates.push(name);
-    }
-  });
-
-  return candidates.slice(0, limit);
-}
-
-function getStep5PhenotypePlanningRecommendation(data, severeState, biologicGuidance) {
-  if (!hasPhenotypeInputsEntered(data)) {
-    return "Phenotype testing is not yet sufficiently documented; prioritize blood eosinophils, FeNO, total IgE (IU/mL), and allergic phenotype assessment now so subsequent Step 5 add-on decisions can be made efficiently if symptoms remain poorly controlled on high-dose ICS-LABA.";
-  }
-
-  const biologicCandidates = getBiologicCandidateLabels(biologicGuidance);
-  if (biologicCandidates.length > 0) {
-    return `Phenotype data are already documented. If asthma control were to remain poor despite escalation to Step 5/high-dose ICS-LABA, biologics such as ${joinClinicalList(biologicCandidates)} would potentially be indicated based on the current phenotype profile.`;
-  }
-
-  if (severeState.type2High) {
-    return "Phenotype data suggest Type 2 inflammation; will consider addition of biologic agent at follow-up if asthma control remains inadequate.";
-  }
-
-  return "Phenotype data are already documented. If symptoms remain poorly controlled after an adequate trial of high-dose ICS-LABA, use the current phenotype profile to guide subsequent Step 5 add-on selection, including non-biologic options when appropriate.";
-}
-
-function getSmokingClinicalLabel(status) {
-  const labels = {
-    current: "current smoker",
-    former: "former smoker",
-    never: "never smoker"
-  };
-
-  return labels[status] || "smoking status not documented";
-}
-
-function getSelectedControlFeatures(data) {
-  const items = [];
-
-  if (data.daytimeGt2) {
-    items.push("daytime symptoms more than twice weekly");
-  }
-  if (data.nightWaking4w) {
-    items.push("night waking due to asthma");
-  }
-  if (data.relieverGt2) {
-    items.push("reliever use more than twice weekly");
-  }
-  if (data.activityLimitation) {
-    items.push("activity limitation due to asthma");
-  }
-
-  return items;
-}
-
-function buildExacerbationSummary(data) {
-  const moderateKnown = data.moderateExac !== null;
-  const severeKnown = data.severeExac !== null;
-  const moderateText = moderateKnown ? String(data.moderateExac) : "not documented";
-  const severeText = severeKnown ? String(data.severeExac) : "not documented";
-  const totalKnown = moderateKnown || severeKnown;
-
-  let sentence;
-  if (!totalKnown) {
-    sentence = "Prior-year exacerbation history is not documented.";
-  } else if (!moderateKnown || !severeKnown) {
-    sentence = `Prior-year exacerbation history is incompletely documented; recorded counts include ${moderateText} oral corticosteroid-treated and ${severeText} hospitalization-level exacerbations.`;
-  } else {
-    sentence = `In the previous 12 months, ${moderateText} oral corticosteroid-treated and ${severeText} hospitalization-level exacerbations were documented.`;
-  }
-
-  if (data.persistentExacerbations) {
-    sentence += " Exacerbations remain a persistent active problem despite current therapy.";
-  }
-  if (data.lifeThreateningHistory) {
-    sentence += " History is notable for prior ICU admission, intubation, or another life-threatening asthma exacerbation.";
-  }
-
-  return sentence;
-}
-
-function buildSpirometrySummary(data) {
-  const parts = [];
-
-  if (data.fev1Pre !== null) {
-    parts.push(`pre-BD FEV1 ${data.fev1Pre.toFixed(2)} L`);
-  }
-  if (data.fvcPre !== null) {
-    parts.push(`pre-BD FVC ${data.fvcPre.toFixed(2)} L`);
-  }
-  if (data.fev1Predicted !== null) {
-    parts.push(`pre-BD FEV1 ${data.fev1Predicted}% predicted`);
-  }
-  if (data.fvcPredicted !== null) {
-    parts.push(`pre-BD FVC ${data.fvcPredicted}% predicted`);
-  }
-  if (data.fev1Post !== null) {
-    parts.push(`post-BD FEV1 ${data.fev1Post.toFixed(2)} L`);
-  }
-  if (data.fvcPost !== null) {
-    parts.push(`post-BD FVC ${data.fvcPost.toFixed(2)} L`);
-  }
-
-  return parts.length > 0 ? parts.join(", ") : "";
-}
-
-function getBronchodilatorResponseClinicalLabel(bdAssessment) {
-  if (bdAssessment.positive) {
-    return "positive";
-  }
-  if (bdAssessment.available) {
-    return "not diagnostic";
-  }
-
-  return "not documented";
-}
-
-function buildBiomarkerPhenotypeSummary(data) {
-  const items = [];
-
-  items.push(data.eosinophils !== null ? `blood eosinophils ${data.eosinophils} cells/uL` : "blood eosinophils not documented");
-  items.push(data.feno !== null ? `FeNO ${data.feno} ppb` : "FeNO not documented");
-  items.push(data.totalIge !== null ? `total IgE ${data.totalIge} IU/mL` : "total IgE not documented");
-
-  if (data.weightKg !== null) {
-    items.push(`weight ${data.weightKg} kg`);
-  }
-  if (data.allergenDriven) {
-    items.push("allergen-driven features present");
-  }
-  if (data.sensitizationConfirmed) {
-    items.push("objective sensitization documented");
-  }
-  if (data.nasalPolyps) {
-    items.push("nasal polyps or upper-airway Type 2 disease present");
-  }
-  if (data.atopicDermatitis) {
-    items.push("atopic dermatitis present");
-  }
-  if (data.egpa) {
-    items.push("EGPA present or strongly suspected");
-  }
-  if (data.endemicAreaExposure) {
-    items.push("history of living or residing in an endemic area for parasitic infection");
-  }
-
-  return joinClinicalList(items);
-}
-
-function buildModifierSummary(data) {
-  const items = [];
-
-  if (data.poorAdherence) {
-    items.push("adherence is suboptimal");
-  }
-  if (data.poorTechnique) {
-    items.push("inhaler technique is incorrect or inconsistent");
-  }
-  if (data.icsSideEffects) {
-    items.push("ICS adverse effects or steroid-toxicity concerns are present");
-  }
-  if (data.maintenanceOcs) {
-    items.push("maintenance oral corticosteroids are required");
-  }
-
-  return items.length > 0 ? joinClinicalList(items) : "";
-}
-
-function buildSubjectiveNarrative(data, rec) {
-  const sentences = [];
-  const selectedControlFeatures = getSelectedControlFeatures(data);
-  const managementPhase = rec.effectiveManagementPhase || data.managementPhase;
-
-  sentences.push(managementPhase === "followup"
-    ? "Seen for follow-up asthma management."
-    : "Seen for initial asthma management.");
-
-  if (managementPhase === "initial") {
-    sentences.push(data.typicalSymptoms
-      ? "Typical variable respiratory symptoms are reported."
-      : "Typical variable respiratory symptoms are not clearly documented.");
-
-    const frequencyParts = [];
-    if (data.symptomDaysCategory !== "not-entered") {
-      frequencyParts.push(`daytime symptoms ${getSymptomDaysClinicalLabel(data.symptomDaysCategory)}`);
-    }
-    if (data.nightWakingCategory !== "not-entered") {
-      if (data.nightWakingCategory === "none") {
-        frequencyParts.push("no night waking");
-      } else {
-        frequencyParts.push(`night waking ${getNightWakingClinicalLabel(data.nightWakingCategory)}`);
-      }
-    }
-
-    if (frequencyParts.length > 0) {
-      sentences.push(`For initial treatment selection, ${joinClinicalList(frequencyParts)} were documented.`);
-    }
-    if (data.acuteExacerbationToday) {
-      sentences.push("Treatment is being started or restarted during an acute exacerbation or shortly after urgent clinical worsening.");
-    }
-  }
-
-  if (selectedControlFeatures.length > 0) {
-    sentences.push(`Over the last 4 weeks, the patient reports ${joinClinicalList(selectedControlFeatures)}.`);
-  } else {
-    sentences.push("Over the last 4 weeks, the patient denies daytime symptoms more than twice weekly, night waking due to asthma, reliever use more than twice weekly, and activity limitation.");
-  }
-
-  sentences.push(data.urgentRedFlags
-    ? "Red-flag symptoms are present today."
-    : "Denies red-flag symptoms today.");
-
-  sentences.push(buildExacerbationSummary(data));
-
-  if (data.smokingStatus === "current") {
-    sentences.push("Currently smoking.");
-  } else if (data.smokingStatus === "former") {
-    sentences.push("Former smoker.");
-  }
-
-  return sentences.join(" ");
-}
-
-function buildObjectiveBullets(data, rec, control, bdAssessment) {
-  const bullets = [];
-  const managementPhase = rec.effectiveManagementPhase || data.managementPhase;
-  const shouldIncludeObjectiveTesting = managementPhase === "initial" ||
-    data.fev1Pre !== null ||
-    data.fev1Post !== null ||
-    data.fvcPre !== null ||
-    data.fvcPost !== null ||
-    data.fev1Predicted !== null ||
-    data.fvcPredicted !== null ||
-    data.bronchoprovocation !== "not-entered" ||
-    data.icsResponse;
-
-  bullets.push(`Visit context: ${managementPhase === "followup" ? "follow-up asthma management" : "initial asthma management"}; ${data.age !== null ? `age ${data.age} years` : "age not documented"}; current regimen ${getRegimenClinicalLabel(data.currentRegimen)}; ${getSmokingClinicalLabel(data.smokingStatus)}.`);
-  bullets.push(`Diagnostic support: ${sanitizeForClinicalNote(rec.diagnosticNoteLine)}`);
-
-  if (shouldIncludeObjectiveTesting) {
-    const objectiveParts = [];
-    const spirometrySummary = buildSpirometrySummary(data);
-    if (spirometrySummary) {
-      objectiveParts.push(spirometrySummary);
-    }
-    objectiveParts.push(`bronchodilator response ${getBronchodilatorResponseClinicalLabel(bdAssessment)}`);
-    objectiveParts.push(`bronchoprovocation ${getBronchoprovocationClinicalLabel(data.bronchoprovocation)}`);
-    objectiveParts.push(data.bronchodilatorHeld
-      ? "pre-spirometry bronchodilator washout documented"
-      : "pre-spirometry bronchodilator washout not documented");
-    objectiveParts.push(data.icsResponse
-      ? "clinical improvement to ICS documented"
-      : "clinical improvement to ICS not documented");
-    bullets.push(`Objective testing: ${joinClinicalList(objectiveParts)}.`);
-  }
-
-  bullets.push(`GINA symptom control: ${control.classification}; ${sanitizeForClinicalNote(rec.symptomNoteLine)}`);
-  bullets.push(`Exacerbation history and risk: ${buildExacerbationSummary(data)}`);
-  bullets.push(`Biomarkers and phenotype: ${buildBiomarkerPhenotypeSummary(data)}.`);
-
-  const modifierSummary = buildModifierSummary(data);
-  if (modifierSummary) {
-    bullets.push(`Modifiers: ${modifierSummary}.`);
-  }
-
-  return bullets;
-}
-
-function formatAssessmentSupportItem(item) {
-  const map = {
-    "positive bronchodilator response": "positive bronchodilator response",
-    "positive response after 4 weeks of ICS-containing treatment": "clinical improvement with ICS-containing therapy",
-    "positive bronchoprovocation testing": "positive bronchoprovocation testing",
-    "bronchodilator response on spirometry": "bronchodilator response on spirometry",
-    "clinical improvement to ICS-containing treatment": "clinical improvement to ICS-containing therapy",
-    "positive bronchoprovocative testing": "positive bronchoprovocation testing"
-  };
-
-  return map[item] || sanitizeForClinicalNote(item);
-}
-
-function buildAssessmentDiagnosisSentence(data, rec, bdAssessment) {
-  const ageDescriptor = data.age !== null ? `${data.age}-year-old` : "Adult";
-  const managementPhase = rec.effectiveManagementPhase || data.managementPhase;
-  const visitPhrase = managementPhase === "followup"
-    ? "seen for follow-up asthma management"
-    : "presenting for initial asthma management";
-  const supportItems = [];
-
-  if (data.typicalSymptoms) {
-    supportItems.push("typical symptoms");
-  }
-  if (bdAssessment.positive) {
-    supportItems.push("positive bronchodilator response");
-  }
-  if (data.icsResponse) {
-    supportItems.push("clinical improvement with ICS-containing therapy");
-  }
-  if (data.bronchoprovocation === "positive") {
-    supportItems.push("positive bronchoprovocation testing");
-  }
-
-  if (rec.diagnosticLabel === "Urgent red flags present") {
-    return `${ageDescriptor} patient ${visitPhrase} with red-flag features concerning for acute instability.`;
-  }
-
-  if (managementPhase === "followup") {
-    const documentedSupportItems = getFollowUpDiagnosisSupport(data).map(formatAssessmentSupportItem);
-    if (documentedSupportItems.length > 0) {
-      return `${ageDescriptor} patient ${visitPhrase} with asthma previously diagnosed based on ${joinClinicalList(documentedSupportItems)}.`;
-    }
-    if (supportItems.length > 0) {
-      return `${ageDescriptor} patient ${visitPhrase} with asthma diagnosed based on ${joinClinicalList(supportItems)}.`;
-    }
-    return `${ageDescriptor} patient ${visitPhrase} with prior asthma diagnosis not objectively documented in the submitted history.`;
-  }
-
-  if (rec.diagnosticLabel === "Asthma objectively confirmed" && supportItems.length > 0) {
-    return `${ageDescriptor} patient ${visitPhrase} with asthma diagnosed based on ${joinClinicalList(supportItems)}.`;
-  }
-  if (rec.diagnosticLabel === "Asthma likely but not yet objectively confirmed") {
-    return `${ageDescriptor} patient ${visitPhrase} with clinically suspected asthma based on typical symptoms, though objective confirmation is not yet documented.`;
-  }
-  if (rec.diagnosticLabel === "Objective variability present, but symptom pattern is atypical") {
-    return `${ageDescriptor} patient ${visitPhrase} with objective airflow variability documented, though the symptom pattern entered is atypical for asthma.`;
-  }
-  if (rec.diagnosticLabel === "Diagnosis uncertain") {
-    return `${ageDescriptor} patient ${visitPhrase} with symptoms and testing insufficient to confirm asthma at this time.`;
-  }
-
-  return `${ageDescriptor} patient ${visitPhrase} with ${sanitizeForClinicalNote(rec.diagnosticLabel).toLowerCase()}.`;
-}
-
-function buildAssessmentControlSentence(data, control) {
-  if (data.urgentRedFlags) {
-    return "Red-flag features are present today and routine outpatient step adjustment should be deferred pending urgent evaluation.";
-  }
-
-  return `No red-flag features identified today and the GINA symptom control checker indicates asthma is ${control.classification}.`;
-}
-
-function buildAssessmentExacerbationSentence(data) {
-  const moderateKnown = data.moderateExac !== null;
-  const severeKnown = data.severeExac !== null;
-  const moderateCount = moderateKnown ? data.moderateExac : 0;
-  const severeCount = severeKnown ? data.severeExac : 0;
-
-  if (!moderateKnown && !severeKnown) {
-    return "Recent exacerbation history is not documented.";
-  }
-
-  if (!moderateKnown || !severeKnown) {
-    return `Recent exacerbation history is incompletely documented; recorded counts include ${moderateKnown ? moderateCount : "an undocumented number of"} oral corticosteroid-treated and ${severeKnown ? severeCount : "an undocumented number of"} hospitalization-level exacerbations.`;
-  }
-
-  if (moderateCount === 0 && severeCount === 0) {
-    return "The patient has not experienced recent exacerbations requiring oral corticosteroids or hospitalization.";
-  }
-
-  return `In the previous 12 months, the patient experienced ${moderateCount} oral corticosteroid-treated and ${severeCount} hospitalization-level exacerbations.`;
-}
-
-function buildAssessmentManagementSentence(data, rec) {
-  if (rec.trackStep === "Emergency evaluation required") {
-    return "Current management focus is urgent evaluation rather than routine outpatient step adjustment.";
-  }
-
-  if (data.currentRegimen === "naive") {
-    const plannedRegimen = getPlannedRegimenClinicalLabel(rec.trackStep);
-    if (plannedRegimen) {
-      return `Current management focus is planned initiation of ${rec.trackStep} with ${plannedRegimen}, as no maintenance controller therapy is currently documented.`;
-    }
-    return `Current management focus is ${rec.trackStep}; no maintenance controller therapy is currently documented.`;
-  }
-
-  const currentTrackStep = getRegimenTrackStepLabel(data.currentRegimen);
-  if (currentTrackStep) {
-    return `Current management focus is ${currentTrackStep} with ${getRegimenClinicalLabel(data.currentRegimen)}.`;
-  }
-
-  return `Current management focus is ${getRegimenClinicalLabel(data.currentRegimen)}.`;
-}
-
-function buildAssessmentPhenotypeSentence(data) {
-  const items = [];
-
-  if (data.eosinophils !== null) {
-    items.push(`blood eosinophils ${data.eosinophils} cells/uL`);
-  }
-  if (data.feno !== null) {
-    items.push(`FeNO ${data.feno} ppb`);
-  }
-  if (data.totalIge !== null) {
-    items.push(`total IgE ${data.totalIge} IU/mL`);
-  }
-  if (data.allergenDriven) {
-    items.push("allergen-driven features");
-  }
-  if (data.sensitizationConfirmed) {
-    items.push("documented objective sensitization");
-  }
-  if (data.nasalPolyps) {
-    items.push("nasal polyps or upper-airway Type 2 disease");
-  }
-  if (data.atopicDermatitis) {
-    items.push("atopic dermatitis");
-  }
-  if (data.egpa) {
-    items.push("possible EGPA");
-  }
-
-  return items.length > 0
-    ? `Phenotypic considerations include ${joinClinicalList(items)}.`
-    : "";
-}
-
-function buildAssessmentModifierSentence(data) {
-  const modifierSummary = buildModifierSummary(data);
-  if (!modifierSummary) {
-    return "";
-  }
-
-  return `Additional medication and management considerations include ${modifierSummary}.`;
-}
-
-function buildAssessmentNarrative(data, rec, control, bdAssessment) {
-  return [
-    buildAssessmentDiagnosisSentence(data, rec, bdAssessment),
-    buildAssessmentControlSentence(data, control),
-    buildAssessmentExacerbationSentence(data),
-    buildAssessmentManagementSentence(data, rec),
-    buildAssessmentPhenotypeSentence(data),
-    buildAssessmentModifierSentence(data)
-  ].filter(Boolean).join(" ");
-}
-
-function buildMedicationPlanItems(rec, data) {
-  const items = rec.medicationDetails.map((item) => sanitizeForClinicalNote(item));
-  return uniqueItems(items.filter(Boolean));
-}
-
-function buildPreventionMonitoringItems(rec) {
-  return uniqueItems([
-    ...rec.prevention.map((item) => sanitizeForClinicalNote(item)),
-    ...rec.nonPharm.map((item) => sanitizeForClinicalNote(item))
-  ].filter(Boolean));
-}
-
-function buildClinicalCautionItems(rec) {
-  const noteCautions = rec.cautions.filter((item) =>
-    item !== DEFAULT_NO_WARNING &&
-    item !== "Initial mode was selected, but maintenance therapy is already documented; follow-up management logic was used."
-  );
-  return uniqueItems(noteCautions.map((item) => sanitizeForClinicalNote(item)).filter(Boolean));
-}
-
-function buildStep5BiologicPlanItem(data, rec) {
-  if (rec.trackStep !== "Step 5 / severe-asthma pathway" || !rec.biologicGuidance.show) {
-    return "";
-  }
-
-  const preferredAgent = getFutureAddOnDirectionLabel(rec.biologicGuidance);
-  if (!preferredAgent) {
-    return "";
-  }
-
-  const phenotypeFeatures = [];
-  if (data.eosinophils !== null) {
-    phenotypeFeatures.push(`blood eosinophils ${data.eosinophils} cells/uL`);
-  }
-  if (data.feno !== null) {
-    phenotypeFeatures.push(`FeNO ${data.feno} ppb`);
-  }
-  if (data.allergenDriven && data.sensitizationConfirmed) {
-    phenotypeFeatures.push("documented allergic sensitization");
-  }
-  if (data.nasalPolyps) {
-    phenotypeFeatures.push("nasal polyps");
-  }
-  if (data.atopicDermatitis) {
-    phenotypeFeatures.push("atopic dermatitis");
-  }
-  if (data.maintenanceOcs) {
-    phenotypeFeatures.push("maintenance oral corticosteroid requirement");
-  }
-
-  const phenotypeLeadIn = phenotypeFeatures.length > 0
-    ? `Phenotype features include ${joinClinicalList(phenotypeFeatures)}.`
-    : "Current phenotype data support Type 2 inflammation.";
-
-  if (data.currentRegimen === "biologic-other") {
-    return `${phenotypeLeadIn} Given inadequate control on Step 5 therapy, plan to reassess biologic selection and favor ${preferredAgent} as the most suitable phenotype-directed option.`;
-  }
-
-  return `${phenotypeLeadIn} Given inadequate control on Step 5 therapy, plan to initiate ${preferredAgent} as the most suitable biologic therapy.`;
-}
-
-function buildPlanItems(rec, data) {
-  const notePlanItems = rec.plan.filter((item) => !item.startsWith("Preferred biologic direction:"));
-  const items = notePlanItems.map((item) => sanitizeForClinicalNote(item)).filter(Boolean);
-  const step5BiologicPlanItem = buildStep5BiologicPlanItem(data, rec);
-  if (step5BiologicPlanItem) {
-    items.push(step5BiologicPlanItem);
-  }
-  return uniqueItems(items);
-}
-
-function buildNoteText(data, rec) {
-  const bdAssessment = getBronchodilatorAssessment(data);
-  const control = classifyControl(data);
-  const objectiveBullets = buildObjectiveBullets(data, rec, control, bdAssessment);
-  const planItems = buildPlanItems(rec, data);
-  const medicationItems = buildMedicationPlanItems(rec, data);
-  const preventionMonitoringItems = buildPreventionMonitoringItems(rec);
-  const cautionItems = buildClinicalCautionItems(rec);
-  const lines = [];
-
-  lines.push("Subjective:");
-  lines.push(buildSubjectiveNarrative(data, rec));
-  lines.push("");
-  lines.push("Objective:");
-  objectiveBullets.forEach((item) => {
-    lines.push(`- ${item}`);
-  });
-  lines.push("");
-  lines.push("Assessment:");
-  lines.push(buildAssessmentNarrative(data, rec, control, bdAssessment));
-  lines.push("");
-  lines.push("Plan:");
-  planItems.forEach((item, index) => {
-    lines.push(`${index + 1}. ${item}`);
-  });
-
-  if (medicationItems.length > 0) {
-    lines.push("");
-    lines.push("Medication details:");
-    medicationItems.forEach((item) => {
-      lines.push(`- ${item}`);
-    });
-  }
-
-  if (preventionMonitoringItems.length > 0) {
-    lines.push("");
-    lines.push("Prevention and monitoring:");
-    preventionMonitoringItems.forEach((item) => {
-      lines.push(`- ${item}`);
-    });
-  }
-
-  if (cautionItems.length > 0) {
-    lines.push("");
-    lines.push("Clinical cautions:");
-    cautionItems.forEach((item) => {
-      lines.push(`- ${item}`);
-    });
-  }
-
-  return lines.join("\n");
-}
-
-function renderRecommendation(rec, data) {
-  document.getElementById("group-output").textContent = `Management phase: ${rec.phaseLabel}. Diagnosis status: ${rec.diagnosticLabel}. Recommendation anchor: ${rec.trackStep}.`;
-  document.getElementById("symptom-output").textContent = rec.symptomSummary;
-  document.getElementById("risk-output").textContent = rec.riskSummary;
-
-  fillList("plan-list", rec.plan, "No management changes were triggered.");
-  fillList("medication-list", rec.medicationDetails, "No medication-specific dosing instructions were triggered by the current scenario.");
-  fillList("prevention-list", rec.prevention, "No additional prevention gaps were triggered from the entered fields.");
-  fillList("rationale-list", rec.rationale, "No additional rationale notes were needed.");
-  fillList("caution-list", rec.cautions, "No cautions identified.");
-  fillList("nonpharm-list", rec.nonPharm, "No additional non-pharmacologic recommendations were triggered.");
-
-  const biologicCard = document.getElementById("biologic-guidance-card");
-  if (rec.biologicGuidance.show) {
-    document.getElementById("biologic-summary").textContent = rec.biologicGuidance.summary;
-    fillList("biologic-preferred-list", rec.biologicGuidance.preferred, "No preferred biologic stood out from the entered data.");
-    fillList("biologic-secondary-list", rec.biologicGuidance.secondary, "No clear secondary biologic options were generated.");
-    fillList("biologic-considerations-list", rec.biologicGuidance.considerations, "No additional biologic-specific considerations were generated.");
-    biologicCard.classList.remove("hidden");
-  } else {
-    biologicCard.classList.add("hidden");
-    document.getElementById("biologic-summary").textContent = "";
-    document.getElementById("biologic-preferred-list").innerHTML = "";
-    document.getElementById("biologic-secondary-list").innerHTML = "";
-    document.getElementById("biologic-considerations-list").innerHTML = "";
-  }
-
-  document.getElementById("note-output").value = buildNoteText(data, rec);
-  document.getElementById("copy-note-status").textContent = "";
-
-  document.getElementById("results").classList.remove("hidden");
-  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-async function copyNoteOutput() {
+(function () {
+  "use strict";
+
+  const form = document.getElementById("asthma-form");
+  const schema = window.asthmaInputSchema;
+  const results = document.getElementById("results");
+  const copyButton = document.getElementById("copy-note-btn");
   const noteOutput = document.getElementById("note-output");
-  const status = document.getElementById("copy-note-status");
+  const status = document.getElementById("recommendation-status");
+  const copyStatus = document.getElementById("copy-note-status");
+  let snapshot = null;
+  let recommendation = null;
+  let selectedBiologicId = null;
+  let inputWarnings = [];
+  let stale = false;
+  let copying = false;
+  let movingVitals = false;
+  let revision = 0;
 
-  if (!noteOutput.value.trim()) {
-    status.textContent = "Generate a recommendation before copying the note.";
-    return;
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
   }
+
+  function fieldId(key) {
+    return key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+  }
+
+  function createField(key) {
+    const definition = schema[key];
+    if (!definition) throw new Error(`Unknown form field: ${key}`);
+    const label = element("label", definition.type === "history" ? "checkbox-row" : "clinical-field");
+    const id = fieldId(key);
+    label.htmlFor = id;
+    const title = element("span", "field-label", definition.label);
+    let input;
+    if (definition.type === "enum" || definition.type === "boolean") {
+      input = element("select");
+      const options = definition.type === "boolean"
+        ? [["unknown", "Not assessed / not documented"], ["yes", "Yes"], ["no", "No"]]
+        : definition.options;
+      options.forEach(([value, text]) => {
+        const option = element("option", "", text);
+        option.value = value;
+        input.append(option);
+      });
+      input.value = definition.defaultValue || "unknown";
+    } else if (definition.type === "textarea") {
+      input = element("textarea");
+      input.rows = definition.rows;
+    } else {
+      input = element("input");
+      input.type = definition.type === "history" ? "checkbox" : definition.type;
+      if (definition.type === "number") {
+        input.min = definition.min;
+        if (definition.max !== undefined) input.max = definition.max;
+        input.step = definition.step;
+        input.inputMode = definition.integer ? "numeric" : "decimal";
+      }
+    }
+    input.id = id;
+    input.name = key;
+    if (definition.type === "history") label.append(input, title);
+    else label.append(title, input);
+    const describedBy = [];
+    if (definition.hint) {
+      const hint = element("span", "hint", definition.hint);
+      hint.id = `${id}-help`;
+      describedBy.push(hint.id);
+      label.append(hint);
+    }
+    if (definition.type === "number") {
+      const feedback = element("span", "field-feedback hidden");
+      feedback.id = `${id}-feedback`;
+      describedBy.push(feedback.id);
+      label.append(feedback);
+    }
+    if (describedBy.length) input.setAttribute("aria-describedby", describedBy.join(" "));
+    return label;
+  }
+
+  function buildForm() {
+    const rendered = new Set();
+    form.querySelectorAll("[data-fields]").forEach((container) => {
+      const fields = container.dataset.fields.trim().split(/\s+/);
+      fields.forEach((key) => {
+        if (rendered.has(key)) throw new Error(`Duplicate form field: ${key}`);
+        rendered.add(key);
+        container.append(createField(key));
+      });
+    });
+    const omitted = Object.keys(schema).filter((key) => !rendered.has(key));
+    if (omitted.length) throw new Error(`Missing form fields: ${omitted.join(", ")}`);
+  }
+
+  function control(key) {
+    return form.elements.namedItem(key);
+  }
+
+  function value(key) {
+    return control(key).value;
+  }
+
+  function show(id, visible) {
+    document.getElementById(id).classList.toggle("hidden", !visible);
+  }
+
+  function updateConditionalFields() {
+    const controller = value("controller");
+    const reliever = value("reliever");
+    show("ics-dose-fields", ["ics", "ics-formoterol", "ics-laba", "triple"].includes(controller));
+    show("laba-type-fields", ["ics-laba", "triple"].includes(controller));
+    show("biologic-duration-fields", !["unknown", "none"].includes(value("currentBiologic")));
+    show("ocs-dose-fields", value("maintenanceOcs") === "yes");
+    show("saba-control-fields", reliever === "saba");
+    show("air-use-fields", ["ics-formoterol", "ics-saba"].includes(reliever));
+    const acute = ["active", "recent"].includes(value("acutePresentation"));
+    show("acute-fields", acute);
+    // Reuse measured vitals rather than maintain competing copies of the same values.
+    const slot = document.getElementById(acute ? "acute-vitals-slot" : "encounter-vitals-slot");
+    const vitals = document.getElementById("visit-vitals");
+    if (vitals.parentElement !== slot && !movingVitals) {
+      // Moving a focused field may synchronously dispatch its pending change event.
+      movingVitals = true;
+      try { slot.append(vitals); } finally { movingVitals = false; }
+    }
+    Object.keys(schema).filter((key) => schema[key].type === "number").forEach(validateNumber);
+  }
+
+  function validateNumber(key) {
+    const field = control(key);
+    const definition = schema[key];
+    const feedback = document.getElementById(`${field.id}-feedback`);
+    const raw = field.value.trim();
+    let error = "";
+    let warning = "";
+    let parsed = raw === "" ? null : Number(raw);
+    const inactive = Boolean(field.closest(".hidden"));
+    if (inactive) parsed = null;
+    else if (field.validity.badInput || (raw !== "" && !Number.isFinite(parsed))) {
+      error = "Enter a valid numeric value or leave blank if unavailable.";
+    } else if (parsed !== null) {
+      if (definition.integer && !Number.isInteger(parsed)) error = "Enter a whole number.";
+      else if (parsed < definition.min) error = `Enter a value of ${definition.min} or greater.`;
+      else if (definition.max !== undefined && parsed > definition.max) error = `Enter a value no greater than ${definition.max}.`;
+      else if ((definition.usualMin !== undefined && parsed < definition.usualMin) ||
+        (definition.usualMax !== undefined && parsed > definition.usualMax)) {
+        warning = "Unusual value: verify the number and units. This value will be retained.";
+      } else if ((definition.concernLow !== undefined && parsed < definition.concernLow) ||
+        (definition.concernHigh !== undefined && parsed >= definition.concernHigh)) {
+        warning = "Clinically concerning value: review in context. This value will be retained.";
+      }
+    }
+    field.setCustomValidity(error);
+    field.classList.toggle("numeric-alert", Boolean(error));
+    field.classList.toggle("numeric-warning", Boolean(warning));
+    field.closest("label").classList.toggle("numeric-alert-label", Boolean(error));
+    if (error) field.setAttribute("aria-invalid", "true");
+    else field.removeAttribute("aria-invalid");
+    feedback.textContent = error || warning;
+    feedback.className = `field-feedback${error ? " feedback-error" : warning ? " feedback-warning" : " hidden"}`;
+    return {
+      value: error ? null : parsed,
+      error: error ? `${definition.label}: ${error}` : null,
+      warning: warning ? `${definition.label}: ${warning}` : null,
+      field
+    };
+  }
+
+  function emptyFieldValue(definition) {
+    if (definition.type === "enum") return definition.defaultValue || "unknown";
+    if (definition.type === "textarea") return "";
+    return null;
+  }
+
+  function readInputState() {
+    const data = window.asthmaLogic.createEmptyState();
+    const errors = [];
+    const warnings = [];
+    Object.entries(schema).forEach(([key, definition]) => {
+      const field = control(key);
+      if (definition.type === "number") {
+        const result = validateNumber(key);
+        data[key] = result.value;
+        if (result.error) errors.push({ text: result.error, field });
+        if (result.warning) warnings.push(result.warning);
+      } else if (field.closest(".hidden")) {
+        data[key] = emptyFieldValue(definition);
+      } else if (definition.type === "boolean") {
+        data[key] = field.value === "yes" ? true : field.value === "no" ? false : null;
+      } else if (definition.type === "history") {
+        data[key] = field.checked ? true : null;
+      } else if (definition.type === "enum") {
+        const valid = definition.options.some(([option]) => option === field.value);
+        data[key] = valid ? field.value : emptyFieldValue(definition);
+        if (!valid) errors.push({ text: `${definition.label}: choose an available option.`, field });
+      } else {
+        data[key] = field.value.trim();
+      }
+    });
+    if (data.controller === "ics-formoterol") data.labaType = "formoterol";
+    return { data, errors, warnings };
+  }
+
+  function updateInputSummaries() {
+    const symptomKeys = ["symptomDays", "nightWaking", "activityLimitation"];
+    if (value("reliever") === "saba") symptomKeys.push("sabaFrequency");
+    const documented = symptomKeys.filter((key) => value(key) !== "unknown").length;
+    document.getElementById("control-input-summary").textContent = documented
+      ? `${documented} of ${symptomKeys.length} applicable symptom inputs documented. Control and risk will be assessed separately when recommendations are generated.`
+      : "Symptom control is not yet assessed.";
+    const evidence = ["dxBd", "dxIcsObjective", "dxChallenge", "dxPef"].filter((key) => control(key).checked).length;
+    document.getElementById("diagnostic-input-summary").textContent = evidence
+      ? `${evidence} historical evidence item${evidence === 1 ? "" : "s"} documented. New testing can be entered during initial or follow-up care.`
+      : "Diagnostic findings will be interpreted with the documented history when recommendations are generated.";
+  }
+
+  function markStale() {
+    revision += 1;
+    if (!snapshot) return;
+    if (!stale) {
+      stale = true;
+      results.classList.add("is-stale");
+      document.getElementById("results-status").textContent = "Inputs changed. These results reflect the previous assessment; regenerate before copying or selecting a biologic.";
+      status.textContent = "Inputs changed. Generate again to update recommendations and the SOAP note.";
+      copyStatus.textContent = "Copy is unavailable until recommendations are regenerated.";
+    }
+    copyButton.disabled = true;
+    document.getElementById("biologic-options").disabled = true;
+    noteOutput.value = "";
+    noteOutput.placeholder = "Clinical inputs have changed. Regenerate recommendations to create an updated SOAP note before copying.";
+  }
+
+  function openAndFocus(field) {
+    let parent = field.parentElement;
+    while (parent) {
+      if (parent.tagName === "DETAILS") parent.open = true;
+      parent = parent.parentElement;
+    }
+    field.focus();
+  }
+
+  function showErrors(errors, urgent = false) {
+    const box = document.getElementById("form-errors");
+    box.replaceChildren();
+    box.append(element("p", "", urgent
+      ? "Urgent care takes priority. Do not delay escalation to correct these form entries:"
+      : "Review the following entries before generating recommendations:"));
+    const list = element("ul");
+    errors.forEach(({ text, field }) => {
+      const item = element("li");
+      if (field) {
+        const link = element("a", "", text);
+        link.href = `#${field.id}`;
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          openAndFocus(field);
+        });
+        item.append(link);
+      } else item.textContent = text;
+      list.append(item);
+    });
+    box.append(list);
+    box.classList.remove("hidden");
+    status.textContent = urgent
+      ? "Urgent escalation is recommended despite the form errors. The clinical note remains unavailable."
+      : "Recommendations were not generated. Review the entries listed above.";
+    if (!urgent && errors[0].field) openAndFocus(errors[0].field);
+  }
+
+  function renderList(id, items) {
+    const list = document.getElementById(id);
+    list.replaceChildren();
+    items.forEach((item) => list.append(element("li", "", item)));
+  }
+
+  function safeSourceLink(source) {
+    try {
+      const url = new URL(source.url, window.location.href);
+      if (!["https:", "http:"].includes(url.protocol)) return null;
+      const link = element("a", "", source.title);
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      return link;
+    } catch {
+      return null;
+    }
+  }
+
+  function renderActions(actions) {
+    const container = document.getElementById("management-steps");
+    const groups = [
+      ["urgent", ["urgent"], "Urgent assessment"],
+      ["acute", ["acute"], "Acute exacerbation management"],
+      ["management", ["management", "alternative"], "Medication management"],
+      ["testing", ["testing"], "Testing and reassessment"],
+      ["monitoring", ["monitoring", "followup"], "Monitoring and follow-up"]
+    ];
+    const supportedKinds = [...groups.flatMap(([, kinds]) => kinds), "counseling", "prevention"];
+    if (actions.some((action) => !supportedKinds.includes(action.kind))) {
+      throw new Error("A recommendation category could not be displayed. Refresh the page and regenerate before using the note.");
+    }
+    container.replaceChildren();
+    let number = 1;
+    groups.forEach(([id, kinds, title]) => {
+      const items = actions.filter((action) => kinds.includes(action.kind));
+      if (!items.length) return;
+      const section = element("section", `action-group action-group-${id}`);
+      section.append(element("h3", "result-subtitle", title));
+      const list = element("ol");
+      list.start = number;
+      items.forEach((action) => list.append(element("li", "", action.text)));
+      number += items.length;
+      section.append(list);
+      container.append(section);
+    });
+    if (!container.children.length) container.append(element("p", "", "Additional clinical information is needed to generate management steps."));
+  }
+
+  function candidates(rec) {
+    const seen = new Set();
+    return rec.biologicCandidates.filter((candidate) => {
+      if (typeof candidate.id !== "string" || !candidate.id || seen.has(candidate.id)) return false;
+      seen.add(candidate.id);
+      return true;
+    });
+  }
+
+  function biologicOption(candidate) {
+    const label = element("label", "biologic-option");
+    const input = element("input");
+    input.type = "radio";
+    input.name = "biologic-selection";
+    input.value = candidate ? candidate.id : "";
+    input.checked = candidate ? selectedBiologicId === candidate.id : selectedBiologicId === null;
+    const body = element("span", "biologic-option-body");
+    body.append(element("strong", "", candidate ? candidate.name : "No agent selected"));
+    if (!candidate) body.append(element("span", "hint", "Document consideration of suitable therapy without naming a definite treatment choice."));
+    else {
+      body.append(element("span", "hint", candidate.reason));
+      const timing = candidate.future ? "Future add-on consideration" : candidate.ready ? "Documented criteria support consideration" : "Prerequisites require review";
+      body.append(element("span", "option-status", timing));
+      if (candidate.prerequisites.length) {
+        const list = element("ul", "prerequisite-list");
+        candidate.prerequisites.forEach((text) => list.append(element("li", "", text)));
+        body.append(list);
+      }
+    }
+    label.append(input, body);
+    const choice = element("div", "biologic-choice");
+    choice.append(label);
+    const medication = candidate && window.asthmaLogic.MEDICATIONS[candidate.id];
+    if (medication?.detail) {
+      // Keep the disclosure outside the label so reviewing dosing cannot select an agent.
+      const reference = element("details", "clinical-drawer biologic-reference");
+      reference.append(element("summary", "", "U.S. dosing and prescribing reference"));
+      const detail = element("div", "drawer-body");
+      if (medication.offLabel) detail.append(element("span", "off-label-tag", "Off-label use"));
+      detail.append(element("p", "", medication.detail));
+      const sources = element("ul", "source-list");
+      medication.sourceIds.forEach((id) => {
+        const source = window.asthmaLogic.SOURCES[id];
+        const link = source && safeSourceLink(source);
+        if (link) {
+          const item = element("li");
+          item.append(link);
+          sources.append(item);
+        }
+      });
+      if (sources.children.length) detail.append(sources);
+      reference.append(detail);
+      choice.append(reference);
+    }
+    return choice;
+  }
+
+  function renderBiologics(rec) {
+    const options = candidates(rec);
+    show("biologic-guidance-card", options.length > 0);
+    const primary = document.getElementById("biologic-primary-options");
+    const additional = document.getElementById("biologic-additional-options");
+    primary.replaceChildren();
+    additional.replaceChildren();
+    primary.append(biologicOption(null));
+    options.slice(0, 3).forEach((candidate) => primary.append(biologicOption(candidate)));
+    options.slice(3).forEach((candidate) => additional.append(biologicOption(candidate)));
+    show("biologic-more-options", options.length > 3);
+    document.getElementById("biologic-more-summary").textContent = `Additional options (${Math.max(0, options.length - 3)})`;
+    if (options.slice(3).some((candidate) => candidate.id === selectedBiologicId)) document.getElementById("biologic-more-options").open = true;
+    document.getElementById("biologic-options").disabled = stale || rec.invalid === true;
+  }
+
+  function renderRecommendation(rec, note) {
+    const summary = document.getElementById("assessment-summary");
+    summary.replaceChildren();
+    rec.summary.forEach((text) => summary.append(element("p", "", text)));
+    renderActions(rec.actions);
+    const medications = document.getElementById("medication-list");
+    medications.replaceChildren();
+    rec.medications.forEach((medication) => {
+      const item = element("li");
+      item.append(element("strong", "medication-name", medication.name));
+      if (medication.offLabel) item.append(element("span", "off-label-tag", "Off-label use"));
+      item.append(element("p", "", medication.detail));
+      medications.append(item);
+    });
+    show("medication-card", rec.medications.length > 0);
+    const prevention = rec.actions.filter((action) => action.kind === "prevention").map((action) => action.text);
+    const counseling = rec.actions.filter((action) => action.kind === "counseling").map((action) => action.text);
+    const cautions = [...new Set([...rec.cautions, ...inputWarnings])];
+    renderList("prevention-list", prevention);
+    renderList("nonpharm-list", counseling);
+    renderList("caution-list", cautions);
+    renderList("rationale-list", rec.rationale);
+    show("prevention-card", prevention.length > 0);
+    show("nonpharm-card", counseling.length > 0);
+    show("caution-card", cautions.length > 0);
+    const sources = document.getElementById("source-list");
+    sources.replaceChildren();
+    rec.sources.forEach((source) => {
+      const item = element("li");
+      const link = safeSourceLink(source);
+      if (link) item.append(link);
+      else item.textContent = source.title;
+      sources.append(item);
+    });
+    show("rationale-card", rec.rationale.length > 0 || rec.sources.length > 0);
+    show("emergency-output", rec.emergency === true);
+    document.getElementById("emergency-output").textContent = rec.emergency
+      ? rec.invalid
+        ? "Urgent evaluation / transfer takes priority. Do not delay care to correct form entries. The SOAP note is unavailable until the data-quality errors are corrected."
+        : "Urgent assessment or higher-level care is recommended. Review the clinical safety and acute management steps before routine outpatient planning."
+      : "";
+    renderBiologics(rec);
+    noteOutput.value = note;
+    noteOutput.placeholder = rec.invalid ? "Correct the data-quality errors and regenerate recommendations to create a SOAP note." : "";
+    results.classList.remove("hidden", "is-stale");
+    document.getElementById("results-status").textContent = rec.invalid
+      ? "Data-quality errors need correction. Review Safety Checks and regenerate before using the recommendations or copying a note."
+      : "Recommendations and note reflect the documented inputs.";
+    copyButton.disabled = stale || copying || rec.invalid === true || !note;
+  }
+
+  function assertClinicalModules() {
+    if (typeof window.asthmaLogic?.createEmptyState !== "function" || typeof window.asthmaLogic?.buildRecommendation !== "function" ||
+      typeof window.asthmaNotes?.buildNoteText !== "function") {
+      throw new Error("The clinical recommendation or note module is unavailable. Refresh the page and try again.");
+    }
+  }
+
+  function buildForSnapshot(data, selected) {
+    let rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected });
+    if (rec.invalid === true) return { rec, selected: null, note: "" };
+    if (selected && !candidates(rec).some((candidate) => candidate.id === selected)) {
+      selected = null;
+      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: null });
+    }
+    if (rec.invalid === true) return { rec, selected: null, note: "" };
+    const note = window.asthmaNotes.buildNoteText(data, rec);
+    if (typeof note !== "string" || !note.trim()) throw new Error("The clinical note could not be generated. Review the inputs and try again.");
+    return { rec, selected, note };
+  }
+
+  function publishRecommendation(data, output, warnings) {
+    snapshot = data;
+    recommendation = output.rec;
+    selectedBiologicId = output.selected;
+    inputWarnings = warnings;
+    stale = false;
+    revision += 1;
+    renderRecommendation(recommendation, output.note);
+    copyStatus.textContent = recommendation.invalid
+      ? "SOAP note unavailable until data-quality errors are corrected and recommendations regenerated."
+      : "SOAP note ready. Review the documented assessment and plan before copying.";
+    status.textContent = recommendation.invalid
+      ? recommendation.emergency
+        ? "Urgent escalation is recommended. Do not delay care for form correction; the SOAP note remains unavailable."
+        : "Data-quality errors were identified. Review Safety Checks, correct the inputs, and generate again."
+      : "Recommendations and SOAP note generated.";
+    const heading = document.getElementById("results-heading");
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+
+  function generate(event) {
+    event.preventDefault();
+    document.getElementById("form-errors").classList.add("hidden");
+    try {
+      assertClinicalModules();
+      updateConditionalFields();
+      const input = readInputState();
+      if (input.errors.length) {
+        markStale();
+        // Invalid fields are null; retain usable observations for urgent safety assessment.
+        const assessed = window.asthmaLogic.buildRecommendation(input.data, { selectedBiologicId: null });
+        if (assessed.emergency) {
+          const rec = { ...assessed, invalid: true, cautions: [...input.errors.map((error) => error.text), ...assessed.cautions] };
+          showErrors(input.errors, true);
+          publishRecommendation(Object.freeze({ ...input.data }), { rec, selected: null, note: "" }, input.warnings);
+          return;
+        }
+        showErrors(input.errors);
+        return;
+      }
+      const data = Object.freeze({ ...input.data });
+      const output = buildForSnapshot(data, selectedBiologicId);
+      publishRecommendation(data, output, input.warnings);
+    } catch (error) {
+      markStale();
+      showErrors([{ text: error.message || "Recommendations could not be generated. Please try again." }]);
+    }
+  }
+
+  function chooseBiologic(event) {
+    if (event.target.name !== "biologic-selection") return;
+    if (!snapshot || stale || recommendation.invalid === true) return;
+    const selected = event.target.value || null;
+    if (selected && !candidates(recommendation).some((candidate) => candidate.id === selected)) {
+      status.textContent = "Choose an agent from the currently displayed options.";
+      renderBiologics(recommendation);
+      return;
+    }
+    try {
+      const restoreFocus = document.activeElement === event.target;
+      const output = buildForSnapshot(snapshot, selected);
+      selectedBiologicId = output.selected;
+      recommendation = output.rec;
+      revision += 1;
+      renderRecommendation(recommendation, output.note);
+      if (restoreFocus) {
+        const selectedOption = Array.from(document.getElementById("biologic-options").querySelectorAll("input"))
+          .find((input) => input.value === (selectedBiologicId || ""));
+        selectedOption?.focus({ preventScroll: true });
+      }
+      const name = candidates(recommendation).find((candidate) => candidate.id === selectedBiologicId)?.name;
+      copyStatus.textContent = name ? `SOAP note updated for discussion of ${name}.` : "SOAP note updated without a specific biologic selection.";
+    } catch (error) {
+      renderBiologics(recommendation);
+      copyStatus.textContent = "The note could not be updated. Regenerate recommendations before copying.";
+      markStale();
+      status.textContent = error.message || "The biologic selection could not be applied.";
+    }
+  }
+
+  function copyFallback() {
+    const previousFocus = document.activeElement;
+    noteOutput.focus();
+    noteOutput.select();
+    let copied = false;
+    try { copied = document.execCommand("copy") === true; } catch { /* Manual selection remains available. */ }
+    if (copied && previousFocus?.focus) previousFocus.focus({ preventScroll: true });
+    return copied;
+  }
+
+  async function copyNote() {
+    if (!snapshot || stale || recommendation.invalid === true || copying || !noteOutput.value) return;
+    copying = true;
+    copyButton.disabled = true;
+    const copiedRevision = revision;
+    let copied = false;
+    try {
+      if (window.isSecureContext && typeof navigator.clipboard?.writeText === "function") {
+        try {
+          await navigator.clipboard.writeText(noteOutput.value);
+          copied = true;
+        } catch { copied = copyFallback(); }
+      } else copied = copyFallback();
+      copyStatus.textContent = copied
+        ? copiedRevision === revision ? "SOAP note copied." : "The previously generated note was copied. Review the updated assessment before copying again."
+        : "Copy could not be confirmed. The note is selected; use your device's Copy command.";
+    } finally {
+      copying = false;
+      copyButton.disabled = stale || recommendation.invalid === true || !noteOutput.value;
+    }
+  }
+
+  form.addEventListener("submit", generate);
 
   try {
-    await navigator.clipboard.writeText(noteOutput.value);
-    status.textContent = "Note copied to clipboard.";
+    if (!schema) throw new Error("The input form could not be loaded. Refresh the page and try again.");
+    buildForm();
+    updateConditionalFields();
+    updateInputSummaries();
+    const onInput = (event) => {
+      if (!event.target.name || !schema[event.target.name]) return;
+      markStale();
+      updateConditionalFields();
+      if (event.target.name === "diagnosisContext" && value("diagnosisContext") === "suspected") document.getElementById("testing-details").open = true;
+      updateInputSummaries();
+    };
+    form.addEventListener("input", onInput);
+    form.addEventListener("change", onInput);
+    document.getElementById("set-symptoms-negative-btn").addEventListener("click", () => {
+      control("symptomDays").value = "none";
+      control("nightWaking").value = "none";
+      control("activityLimitation").value = "no";
+      if (value("reliever") === "saba") control("sabaFrequency").value = "none";
+      markStale();
+      updateInputSummaries();
+      if (!stale) status.textContent = "No current symptoms documented using the shortcut. Other findings remain as entered.";
+    });
+    document.getElementById("set-exac-zero-btn").addEventListener("click", () => {
+      control("ocsExacerbations").value = "0";
+      control("hospitalExacerbations").value = "0";
+      validateNumber("ocsExacerbations");
+      validateNumber("hospitalExacerbations");
+      markStale();
+      if (!stale) status.textContent = "Both 12-month exacerbation counts documented as zero. Other risk findings remain as entered.";
+    });
+    document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
+    copyButton.addEventListener("click", copyNote);
   } catch (error) {
-    noteOutput.select();
-    document.execCommand("copy");
-    status.textContent = "Note copied using fallback copy.";
+    document.getElementById("generate-btn").disabled = true;
+    showErrors([{ text: error.message || "The form could not be initialized." }]);
   }
-}
-
-document.getElementById("asthma-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = getInputState();
-  const recommendation = buildRecommendation(data);
-  renderRecommendation(recommendation, data);
-});
-
-document.getElementById("copy-note-btn").addEventListener("click", copyNoteOutput);
-
-initHelpers();
-initExacerbationHelpers();
+})();

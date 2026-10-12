@@ -216,7 +216,7 @@ a {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--muted);
 }
 
 .spirometry-subgrid {
@@ -675,5 +675,471 @@ input.numeric-alert:focus {
 
   .score-chip {
     width: auto;
+  }
+}
+
+.asthma-page .skip-link {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  z-index: 10;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  transform: translateY(-150%);
+}
+
+.asthma-page .skip-link:focus {
+  transform: translateY(0);
+}
+
+.asthma-page :is(button, a, summary, input, select, textarea):focus-visible {
+  outline: 3px solid #336797;
+  outline-offset: 3px;
+}
+
+.asthma-page :is(.app-shell, .panel, .grid, .clinical-field, .result-card, .biologic-option-body) {
+  min-width: 0;
+}
+
+.asthma-page :is(.panel, .result-card, .footer, .workflow-status, .field-label) {
+  overflow-wrap: anywhere;
+}
+
+.asthma-page :is(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+
+.asthma-page textarea {
+  resize: vertical;
+}
+
+.asthma-page .form-instructions {
+  margin: 0;
+  padding: 2px 6px 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.asthma-page .full-width {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.asthma-page .grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.asthma-page .clinical-field > .field-label {
+  display: block;
+  line-height: 1.4;
+}
+
+.asthma-page .checkbox-row {
+  cursor: pointer;
+  align-items: flex-start;
+  min-height: 48px;
+}
+
+.asthma-page .checkbox-row input,
+.asthma-page .biologic-option input {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.asthma-page .clinical-drawer {
+  margin-top: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.asthma-page .clinical-drawer > summary {
+  padding: 14px 16px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.asthma-page summary::marker {
+  color: #527599;
+}
+
+.asthma-page .drawer-body {
+  padding-top: 4px;
+}
+
+.asthma-page .clinical-drawer > .drawer-body {
+  padding: 0 16px 16px;
+}
+
+.asthma-page .panel-drawer > summary {
+  color: var(--accent);
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.asthma-page .panel-drawer > summary .hint {
+  margin: 6px 0 0 18px;
+}
+
+.asthma-page .drawer-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.asthma-page .input-summary {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.asthma-page .vitals-fieldset {
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: #f6f9fd;
+}
+
+.asthma-page .vitals-fieldset legend {
+  padding: 0 6px;
+  color: var(--accent);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.asthma-page .vitals-fieldset > .hint {
+  margin-top: 0;
+}
+
+.asthma-page .clinical-callout {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-left: 3px solid #ae8246;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #694412;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.asthma-page input.numeric-warning {
+  border-color: #ae8246;
+  background: #fffbf5;
+}
+
+.asthma-page .field-feedback {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.asthma-page .feedback-error {
+  color: var(--danger);
+}
+
+.asthma-page .feedback-warning {
+  color: #774b0b;
+}
+
+.asthma-page .field-feedback.hidden {
+  display: none;
+}
+
+.asthma-page .generate-bar {
+  display: grid;
+  gap: 10px;
+}
+
+.asthma-page .generate-bar .primary-btn {
+  width: 100%;
+  min-height: 52px;
+}
+
+.asthma-page .workflow-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.asthma-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.asthma-page .form-errors,
+.asthma-page .emergency-output {
+  padding: 18px 20px;
+  border: 1px solid #c68c85;
+  border-radius: 14px;
+  background: var(--dangerBg);
+  color: #80271e;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.asthma-page .form-errors p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.asthma-page .form-errors ul {
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+
+.asthma-page .results-heading-row h2 {
+  margin: 6px 0 10px;
+  color: var(--accent);
+  font-size: 25px;
+  line-height: 1.3;
+  scroll-margin-top: 20px;
+}
+
+.asthma-page .results-status {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #f8fbff;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.asthma-page .is-stale .results-status {
+  border-color: #cba26a;
+  background: var(--warningBg);
+  color: #774b0b;
+  font-weight: 700;
+}
+
+.asthma-page .is-stale .note-output {
+  border-style: dashed;
+  background: #f4f5f6;
+}
+
+.asthma-page .is-stale .result-card:not(.note-card) {
+  opacity: 0.82;
+}
+
+.asthma-page .action-group + .action-group {
+  margin-top: 20px;
+  padding-top: 2px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.asthma-page .action-group h3 {
+  margin-top: 14px;
+}
+
+.asthma-page .action-group-urgent h3 {
+  color: var(--danger);
+}
+
+.asthma-page .action-group ol {
+  margin: 8px 0 0;
+  padding-left: 24px;
+}
+
+.asthma-page .medication-list li + li {
+  margin-top: 18px;
+}
+
+.asthma-page .medication-name {
+  color: var(--accent);
+}
+
+.asthma-page .off-label-tag,
+.asthma-page .option-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid #c7d8e5;
+  border-radius: 7px;
+  background: #edf4fa;
+  color: #2d5275;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.asthma-page .off-label-tag {
+  margin-left: 8px;
+}
+
+.asthma-page .option-status {
+  margin-top: 10px;
+}
+
+.asthma-page .biologic-options {
+  min-width: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.asthma-page .biologic-option {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.asthma-page .biologic-option:has(input:checked) {
+  border-color: #406891;
+  background: #eef5fc;
+  box-shadow: inset 3px 0 0 #406891;
+}
+
+.asthma-page .biologic-options:disabled .biologic-option {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.asthma-page .biologic-option-body {
+  display: block;
+  flex: 1;
+}
+
+.asthma-page .biologic-option-body > strong {
+  display: block;
+  font-size: 16px;
+}
+
+.asthma-page .biologic-reference {
+  margin: 0 0 14px 30px;
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+}
+
+.asthma-page .biologic-reference > summary {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.asthma-page .biologic-reference p {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.asthma-page .prerequisite-list {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.asthma-page .prerequisite-list li {
+  margin: 4px 0;
+}
+
+.asthma-page .source-list {
+  padding-top: 12px;
+  font-size: 14px;
+}
+
+.asthma-page .source-list a {
+  color: #0f4f96;
+}
+
+.asthma-page .note-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.asthma-page .note-toolbar h2 {
+  margin: 0;
+}
+
+.asthma-page .note-output {
+  min-height: 420px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.asthma-page .evidence-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 14px 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .asthma-page .grid-three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asthma-page .clinical-drawer > summary {
+    padding: 12px;
+  }
+
+  .asthma-page .clinical-drawer > .drawer-body {
+    padding: 0 12px 14px;
+  }
+
+  .asthma-page .vitals-fieldset {
+    padding: 12px;
+  }
+
+  .asthma-page .biologic-option {
+    padding: 12px;
+  }
+
+  .asthma-page .note-output {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .asthma-page :is(.hero, .panel, .result-card, .footer) {
+    padding: 18px 14px;
+  }
+
+  .asthma-page .subsection {
+    padding: 14px 12px;
+  }
+
+  .asthma-page .grid-three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .asthma-page .note-toolbar button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asthma-page :is(input, select, textarea, button) {
+    transition: none;
   }
 }
