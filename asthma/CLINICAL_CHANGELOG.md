@@ -1,8 +1,17 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 12, 2026. Asset version: `20261012-3`.
+Clinical reference review: October 12, 2026. Asset version: `20261012-4`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Point-of-Care Usability Refinements
+
+- Added **None** (no ICS controller / reliever) and **As-needed SABA** (SABA reliever without an ICS controller) as current-regimen shortcuts. Like AIR/SMART shortcuts, they change only controller, reliever, ICS intensity, and LABA context. Other findings, add-ons, biologics, OCS exposure, counts, and urgent observations remain intact. Neither selection is an endorsement of absent ICS protection; the existing ICS-containing treatment recommendations remain in force. [GINA 2026, SABA-only treatment](https://ginasthma.org/2026-gina-strategy-report/).
+- Redesigned the five shortcuts as readable regimen tiles with short descriptions and an accessible pressed state. The highlight follows manual controller/reliever/intensity changes; it indicates the recorded category, not verification of an exact product or prescription. Reapplying an unchanged shortcut preserves the current note, while actual changes still invalidate it.
+- Converted daytime symptoms, night waking, SABA frequency, and exacerbation context to directly selectable options. Every prior value and explicit **Not assessed** state is retained. No additional negatives or zero counts are inferred. Normalized radio sizing corrects oversized circles while keeping labelled touch targets at least 44 px high.
+- Added section links for treatment, diagnosis, symptoms, acute care, biomarkers, and vaccines. Links open optional sections when needed and move keyboard focus without changing inputs or invalidating the note. Generated results include a direct SOAP-note link, hidden when the output is stale or invalid.
+- Preserved the established navy/serif visual identity, strengthened selected-state contrast, and organized the controls into responsive grids. Clinical thresholds, treatment actions, medication schedules, and copy/stale safeguards are unchanged. The note now describes a confirmed absence of controller/reliever clearly rather than printing "the reliever was no reliever."
+- Added regression checks for the new presets, retained urgent priority and incomplete history, keyboard use, matched highlights, disclosure/navigation without note changes, accessible tap targets, and layouts at 320/390/768/1280 px. Delivery remains preview-only.
 
 ## Clinician Treatment References
 

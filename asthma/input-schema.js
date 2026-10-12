@@ -69,14 +69,14 @@
     symptomDays: choice("Daytime symptoms (last 4 weeks)", [
       ["none", "None"], ["one-two", "1-2 days/week"], ["three", "3 days/week"],
       ["four-six", "4-6 days/week"], ["daily", "Every day"]
-    ]),
+    ], { compact: true, quickChoices: true }),
     nightWaking: choice("Night waking due to asthma (last 4 weeks)", [
       ["none", "None"], ["less-weekly", "Less than once/week"], ["weekly-plus", "Once/week or more"]
-    ]),
+    ], { compact: true, quickChoices: true }),
     activityLimitation: exception("Activity limitation due to asthma (last 4 weeks)"),
     sabaFrequency: choice("SABA use for symptoms (last 4 weeks)", [
       ["none", "None"], ["one-two", "1-2 times/week"], ["more-two", "More than twice/week"]
-    ], { hint: "Exclude use before exercise. This control question applies to a SABA reliever." }),
+    ], { hint: "Exclude use before exercise. This control question applies to a SABA reliever.", compact: true, quickChoices: true }),
     airUsesPerWeek: number("ICS-containing reliever use (times/week)", { usualMax: 100, hint: "As-needed use only; exclude scheduled maintenance doses. Frequent use warrants clinical review but is not counted as the SABA-frequency control item." }),
     sabaCanisters: number("SABA canisters dispensed (past 12 months)", { step: 1, integer: true, usualMax: 24 }),
     ocsExacerbations: number("Exacerbations requiring oral corticosteroids", { step: 1, integer: true, usualMax: 20, hint: "Past 12 months. Enter 0 if none." }),
@@ -110,7 +110,7 @@
     covid: vaccine("COVID-19 vaccine status"),
     respiratoryRate: number("Respiratory rate (breaths/min)", { usualMin: 6, usualMax: 60, concernLow: 8, concernHigh: 25 }),
     spo2: number("SpO2 (%)", { max: 100, usualMin: 50, concernLow: 92 }),
-    acutePresentation: choice("Exacerbation context", [["none", "Routine visit"], ["active", "Active exacerbation"], ["recent", "Resolved exacerbation follow-up"]], { hint: "Active = an ongoing attack requiring severity assessment. Resolved follow-up = recovery and maintenance review, not an acute discharge assessment." }),
+    acutePresentation: choice("Exacerbation context", [["none", "Routine visit"], ["active", "Active exacerbation"], ["recent", "Resolved exacerbation follow-up"]], { hint: "Active = an ongoing attack requiring severity assessment. Resolved follow-up = recovery and maintenance review, not an acute discharge assessment.", compact: true, quickChoices: true }),
     acuteReassessmentAvailable: confirmation("Post-treatment reassessment data available", "Check only when actual post-treatment observations are available. This is not required to generate initial guidance."),
     urgentRedFlags: yesNo("Urgent red-flag features today", "Severe distress, cyanosis, altered mental status, silent chest, or unstable oxygenation."),
     acuteSpeech: choice("Speech", [["sentences", "Sentences"], ["phrases", "Phrases"], ["unable", "Unable to speak normally"]]),

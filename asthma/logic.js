@@ -16,6 +16,8 @@
     phenotypeReviewed: { allergenDriven: false, nasalPolyps: false, atopicDermatitis: false, endemicExposure: false }
   };
   const TREATMENT_PRESETS = {
+    none: { controller: "none", reliever: "none", icsDose: "unknown", labaType: "unknown" },
+    saba: { controller: "saba-only", reliever: "saba", icsDose: "unknown", labaType: "unknown" },
     air: { controller: "none", reliever: "ics-formoterol", icsDose: "unknown", labaType: "unknown" },
     smartLow: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "low", labaType: "formoterol" },
     smartMedium: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol" }

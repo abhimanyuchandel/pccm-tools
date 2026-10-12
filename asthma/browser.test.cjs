@@ -54,12 +54,30 @@ async function main() {
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
     assert.equal(await page.locator("#air-smart-reference").evaluate(node => node.open), false);
     assert.equal(await page.locator("#ics-dose-fields").isVisible(), false);
+    assert.equal(await page.locator("[data-treatment-preset]").count(), 5);
+    assert.equal(await page.locator('[data-treatment-preset][aria-pressed="true"]').count(), 0);
+    const noneShortcut = page.locator('[data-treatment-preset="none"]');
+    await noneShortcut.focus(); await page.keyboard.press("Enter");
+    assert.equal(await page.locator("#controller").inputValue(), "none");
+    assert.equal(await page.locator("#reliever").inputValue(), "none");
+    assert.equal(await noneShortcut.getAttribute("aria-pressed"), "true");
+    await page.locator('[data-treatment-preset="saba"]').click();
+    assert.equal(await page.locator("#controller").inputValue(), "saba-only");
+    assert.equal(await page.locator("#reliever").inputValue(), "saba");
+    assert.equal(await page.locator('[name="sabaFrequency"][value="unknown"]').isChecked(), true);
+    assert.equal(await page.locator("#ocs-exacerbations").inputValue(), "");
+    assert.equal(await page.locator('[name="symptomDays"]').count(), 6);
+    assert.equal(await page.locator('[name="nightWaking"]').count(), 4);
+    assert.equal(await page.locator('[name="acutePresentation"]').count(), 4);
+    await page.locator('[name="symptomDays"][value="three"]').check();
+    await page.locator('[name="symptomDays"][value="unknown"]').check();
     await generate();
     assert.match(await text(), /could not be fully classified/);
     assert.doesNotMatch(await text(), /No urgent red-flag|Examination: normal|No exacerbations requiring/);
 
     await setInputs(page, state); await generate();
     assert.match(await text(), /GINA Track 1 Step 4/); assert.match(await text(), /was well controlled/);
+    assert.equal(await page.locator('[data-treatment-preset="smartMedium"]').getAttribute("aria-pressed"), "true");
     assert.equal((await text()).match(/\*\*\*/g).length, 3);
     const priorNote = await text();
     await page.locator("#air-smart-reference > summary").click();
@@ -70,10 +88,20 @@ async function main() {
     assert.match(await page.locator("#air-smart-reference").textContent(), /12 total inhalations in 24 hours/);
     assert.match(await page.locator("#ics-dose-reference").textContent(), /Examples are not dose-equivalent substitutions/);
     assert.equal(await text(), priorNote); assert.equal(await page.locator("#copy-note-btn").isDisabled(), false);
+    await page.locator('.workflow-nav a[href="#preventive-panel"]').click();
+    assert.equal(await page.locator("#preventive-panel").evaluate(node => node.open), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), "preventive-panel");
+    await page.locator('.workflow-nav a[href="#phenotype-panel"]').click();
+    assert.equal(await page.locator("#phenotype-panel").evaluate(node => node.open), true);
+    assert.equal(await text(), priorNote);
+    await page.locator("#note-jump-link").click();
+    assert.equal(await page.evaluate(() => document.activeElement.id), "note-heading");
+    assert.equal(await text(), priorNote);
     await page.locator("#copy-note-btn").click();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
     await setInputs(page, { riskReviewed: false, treatmentReviewed: false });
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await text(), "");
+    assert.equal(await page.locator("#note-jump-link").isVisible(), false);
     await generate();
     assert.match(await text(), /could not be fully classified/);
     assert.doesNotMatch(await text(), /No prior ICU|No controller-adherence concern|No inhaler-technique concern/);
@@ -87,9 +115,24 @@ async function main() {
     assert.equal(await page.locator("#prior-icu").isChecked(), true);
     assert.equal(await page.locator('[name="icsDose"][value="low"]').isChecked(), true);
     assert.equal(await page.locator("#controller").inputValue(), "ics-formoterol");
+    await generate();
+    const unchangedShortcutNote = await text();
+    await page.locator('[data-treatment-preset="smartLow"]').click();
+    assert.equal(await text(), unchangedShortcutNote);
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), false);
+    await capture(page.locator("#asthma-form > section").first(), "selected-regimen-desktop");
     await page.locator('[data-treatment-preset="air"]').click();
     assert.equal(await page.locator("#controller").inputValue(), "none");
     assert.equal(await page.locator("#reliever").inputValue(), "ics-formoterol");
+    assert.equal(await page.locator('[data-treatment-preset="air"]').getAttribute("aria-pressed"), "true");
+    await page.locator('[data-treatment-preset="none"]').click();
+    assert.equal(await page.locator("#prior-icu").isChecked(), true);
+    assert.equal(await page.locator("#ocs-exacerbations").inputValue(), "0");
+    assert.equal(await page.locator('[name="symptomDays"][value="none"]').isChecked(), true);
+    await page.locator('[data-treatment-preset="saba"]').click();
+    assert.equal(await page.locator("#prior-icu").isChecked(), true);
+    await setInputs(page, { controller: "ics" });
+    assert.equal(await page.locator('[data-treatment-preset][aria-pressed="true"]').count(), 0);
 
     await load(); await setInputs(page, { ...state, symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true,
       ocsExacerbations: 2, eosinophils: 450, feno: 45 }); await generate();
@@ -131,6 +174,8 @@ async function main() {
       await page.setViewportSize({ width, height: 900 });
       const sizing = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
       assert.ok(sizing.scroll <= sizing.client + 1, `horizontal overflow at ${width}: ${JSON.stringify(sizing)}`);
+      const sizes = await page.locator('.workflow-nav a, [data-treatment-preset], .choice-option').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => ({ height: node.getBoundingClientRect().height, width: node.getBoundingClientRect().width })));
+      assert.ok(sizes.every(size => size.height >= 44 && size.width >= 44), `small tap target at ${width}`);
       const rows = await page.locator(".vaccine-table tbody tr").count(); assert.equal(rows, 4);
       for (const table of [".vaccine-table", ".regimen-table", ".ics-example-table"]) {
         assert.equal(await page.locator(table).getByRole("rowheader").count(), table === ".vaccine-table" ? 4 : 3);
@@ -141,6 +186,8 @@ async function main() {
         await capture(page.locator("#biologic-guidance-card"), `biologics-${width}`);
         await capture(page.locator("#air-smart-reference"), `air-smart-${width}`);
         await capture(page.locator("#ics-dose-reference"), `ics-examples-${width}`);
+        await capture(page.locator(".workflow-nav"), `navigation-${width}`);
+        await capture(page.locator('#symptoms-heading').locator('..'), `symptoms-${width}`);
       }
     }
     assert.doesNotMatch(await text(), /Capvaxive|Arexvy|Shingrix|CDC adult schedule|Examples are not dose-equivalent|single maintenance and reliever therapy/);
@@ -169,12 +216,13 @@ async function main() {
     await setInputs(page, { ocsExacerbations: -1 }); await generate();
     assert.equal(await page.locator("#emergency-output").isVisible(), true);
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await text(), "");
+    assert.equal(await page.locator("#note-jump-link").isVisible(), false);
     assert.match(await page.locator("#recommendation-status").textContent(), /Do not delay care/);
 
     await load(); await setInputs(page, { ...state, eosinophils: 8000 }); await generate();
     assert.match(await text(), /8000 cells\/uL/); assert.match(await page.locator("#caution-list").textContent(), /Unusual value/);
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: treatment references, unchanged notes on disclosure, reviewed groups, shortcuts, SOAP placeholders, conditional inputs, dosing/stale safeguards, clipboard, keyboard, memory-only data, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: five regimen shortcuts and matched highlights, direct-choice inputs, section/note navigation, accessible tap targets, clinical and stale/copy safeguards, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

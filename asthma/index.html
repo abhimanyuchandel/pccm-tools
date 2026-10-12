@@ -14,12 +14,12 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-3">
-  <script src="/asthma/input-schema.js?v=20261012-3" defer></script>
-  <script src="/asthma/medications.js?v=20261012-3" defer></script>
-  <script src="/asthma/logic.js?v=20261012-3" defer></script>
-  <script src="/asthma/notes.js?v=20261012-3" defer></script>
-  <script src="/asthma/app.js?v=20261012-3" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-4">
+  <script src="/asthma/input-schema.js?v=20261012-4" defer></script>
+  <script src="/asthma/medications.js?v=20261012-4" defer></script>
+  <script src="/asthma/logic.js?v=20261012-4" defer></script>
+  <script src="/asthma/notes.js?v=20261012-4" defer></script>
+  <script src="/asthma/app.js?v=20261012-4" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -44,20 +44,35 @@
       </header>
 
       <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
+      <nav class="workflow-nav" aria-label="Clinical input sections">
+        <span class="workflow-nav-label">Jump to</span>
+        <div class="workflow-nav-links">
+          <a href="#encounter-heading">Treatment</a>
+          <a href="#diagnosis-heading">Diagnosis</a>
+          <a href="#symptoms-heading">Symptoms</a>
+          <a href="#acute-heading">Acute</a>
+          <a href="#phenotype-panel">Biomarkers</a>
+          <a href="#preventive-panel">Vaccines</a>
+        </div>
+      </nav>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
         <p id="form-instructions" class="form-instructions">Enter the patient's current findings and treatment. Check findings that are present, then confirm each group you have reviewed to document the remaining listed findings as absent. Unassessed answers and blank numbers remain unknown. Complete the note's *** placeholders in your EMR.</p>
 
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
           <div class="grid" data-fields="managementPhase age"></div>
-          <div class="treatment-shortcuts" aria-label="Common treatment shortcuts">
-            <span class="hint">Optional shortcuts: record the current regimen without changing other clinical findings.</span>
-            <div class="shortcut-buttons">
-              <button type="button" class="ghost-btn" data-treatment-preset="air">AIR Only</button>
-              <button type="button" class="ghost-btn" data-treatment-preset="smartLow">Low-Dose SMART</button>
-              <button type="button" class="ghost-btn" data-treatment-preset="smartMedium">Medium-Dose SMART</button>
+          <div class="treatment-shortcuts">
+            <h3 id="shortcut-heading" class="subsection-title">Optional current-treatment shortcuts</h3>
+            <p id="shortcut-help" class="hint">Records the current controller, reliever, and ICS intensity. Other findings and add-ons are preserved. These are not treatment recommendations.</p>
+            <div class="shortcut-buttons" role="group" aria-labelledby="shortcut-heading" aria-describedby="shortcut-help">
+              <button type="button" class="ghost-btn" data-treatment-preset="none" aria-pressed="false"><span class="preset-label">None</span><span class="preset-detail">No ICS controller or reliever</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="saba" aria-pressed="false"><span class="preset-label">As-needed SABA</span><span class="preset-detail">Reliever only, e.g., albuterol</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="air" aria-pressed="false"><span class="preset-label">AIR Only</span><span class="preset-detail">As-needed ICS-formoterol</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="smartLow" aria-pressed="false"><span class="preset-label">Low-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 3)</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="smartMedium" aria-pressed="false"><span class="preset-label">Medium-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 4)</span></button>
             </div>
-            <p class="hint"><strong>AIR-only:</strong> as-needed anti-inflammatory relief, without scheduled maintenance. <strong>SMART:</strong> the same ICS-formoterol inhaler for daily maintenance and as-needed relief.</p>
+            <p class="hint">SABA (e.g., albuterol) provides relief without ICS protection. <a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA recommends an ICS-containing strategy for asthma</a>.</p>
+            <p class="hint"><strong>AIR-only:</strong> ICS-formoterol as needed. <strong>SMART:</strong> the same inhaler for daily maintenance and as-needed relief.</p>
             <details id="air-smart-reference" class="clinical-drawer treatment-reference">
               <summary>AIR and SMART: definitions and adult dosing</summary>
               <div class="drawer-body">
@@ -207,7 +222,7 @@
           </div>
         </section>
 
-        <details class="panel panel-drawer">
+        <details id="phenotype-panel" class="panel panel-drawer">
           <summary><span class="drawer-title">5) Phenotype and Modifiers</span><span class="hint">Biomarkers, comorbidities, and relevant exposures</span></summary>
           <div class="drawer-body">
             <div class="grid" data-fields="eosinophils historicalEosinophils feno"></div>
@@ -217,7 +232,7 @@
           </div>
         </details>
 
-        <details class="panel panel-drawer">
+        <details id="preventive-panel" class="panel panel-drawer">
           <summary><span class="drawer-title">6) Preventive Care Status</span><span class="hint">Documented vaccine history; unknown does not mean incomplete</span></summary>
           <div class="drawer-body">
             <div class="grid" data-fields="pneumococcal rsv zoster tdap flu covid"></div>
@@ -251,6 +266,7 @@
       <section id="results" class="results hidden" aria-labelledby="results-heading" aria-describedby="results-status">
         <div class="results-heading-row">
           <h2 id="results-heading" tabindex="-1">Generated Management Recommendations</h2>
+          <a id="note-jump-link" class="ghost-btn note-jump hidden" href="#note-heading">Go to SOAP Note</a>
           <p id="results-status" class="results-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
         <div id="emergency-output" class="emergency-output hidden" role="alert"></div>
@@ -306,7 +322,7 @@
         </details>
         <article class="result-card note-card">
           <div class="note-toolbar">
-            <h2 id="note-heading" class="note-title">Copy/Paste Clinical Note</h2>
+            <h2 id="note-heading" class="note-title" tabindex="-1">Copy/Paste Clinical Note</h2>
             <button type="button" id="copy-note-btn" class="secondary-btn" disabled>Copy SOAP Note</button>
           </div>
           <p class="hint">Editable clinical draft: complete the *** placeholders and verify the facts and plan in your EMR. The note records recommendations, not confirmation that treatment or counseling occurred.</p>

@@ -408,7 +408,7 @@ test("treatment shortcuts set only controller, intensity, reliever and LABA cont
     const data = { ...raw, ...preset };
     for (const key of Object.keys(raw).filter(key => !Object.hasOwn(preset, key))) assert.equal(data[key], raw[key], `${id}: ${key}`);
     const tx = L.getTreatmentContext(data);
-    assert.equal(tx.track, 1); assert.equal(tx.incompatible, false);
+    assert.equal(tx.track, ["none", "saba"].includes(id) ? null : 1); assert.equal(tx.incompatible, false);
     assert.equal(tx.effectivePhase, "followup");
   }
 });
@@ -485,4 +485,44 @@ test("clinician-facing treatment references explain the existing regimens withou
   }
   assert.match(html, /Examples are not dose-equivalent substitutions/);
   assert.match(html, /Leave intensity as not assessed if the regimen cannot be verified/);
+});
+
+test("none and SABA shortcuts record current treatment without treating it as guideline-preferred care", () => {
+  for (const id of ["none", "saba"]) {
+    const data = { ...base({ managementPhase: "initial", currentBiologic: "none" }), ...L.TREATMENT_PRESETS[id] };
+    const rec = L.buildRecommendation(data);
+    assert.equal(rec.findings.treatment.maintenance, false);
+    assert.equal(rec.findings.treatment.effectivePhase, "initial");
+    assert.equal(rec.findings.severe.established, false);
+    assert.ok(rec.findings.risk.factors.includes("absence of ICS protection"));
+    assert.ok(ids(rec).includes("start-controller"));
+    assert.equal(rec.findings.proposedMedicationId, "air");
+    assert.equal(rec.findings.control.complete, false);
+    assert.equal(data.sabaFrequency, "unknown");
+    const text = note(data);
+    assert.doesNotMatch(text, /reliever was no reliever|Recommended continuation of.*SABA-only/);
+    if (id === "none") assert.match(text, /No maintenance ICS-containing controller or reliever was documented/);
+    else assert.match(text, /reliever was SABA/);
+  }
+});
+
+test("new shortcut options preserve biologics, OCS exposure, urgent findings, and unknown counts", () => {
+  const raw = { ...L.createEmptyState(), currentBiologic: "mepolizumab", maintenanceOcs: true, maintenanceOcsDose: 10, priorIcu: true, spo2: 85, acutePresentation: "active" };
+  for (const id of ["none", "saba"]) {
+    const d = { ...raw, ...L.TREATMENT_PRESETS[id] }, rec = L.buildRecommendation(d);
+    assert.equal(d.currentBiologic, "mepolizumab"); assert.equal(d.maintenanceOcsDose, 10); assert.equal(d.priorIcu, true);
+    assert.equal(d.ocsExacerbations, null); assert.equal(d.hospitalExacerbations, null);
+    assert.equal(rec.emergency, true); assert.ok(ids(rec).includes("urgent"));
+    assert.ok(!ids(rec).includes("start-controller"));
+  }
+});
+
+test("direct-choice questions retain every original value and explicit unknown option", () => {
+  const context = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), context);
+  for (const [key, values] of Object.entries({ symptomDays: ["unknown", "none", "one-two", "three", "four-six", "daily"], nightWaking: ["unknown", "none", "less-weekly", "weekly-plus"], sabaFrequency: ["unknown", "none", "one-two", "more-two"], acutePresentation: ["unknown", "none", "active", "recent"] })) {
+    const field = context.window.asthmaInputSchema[key];
+    assert.equal(field.compact, true); assert.equal(field.quickChoices, true);
+    assert.deepEqual(Array.from(field.options, option => option[0]), values);
+    assert.equal(L.createEmptyState()[key], "unknown");
+  }
 });

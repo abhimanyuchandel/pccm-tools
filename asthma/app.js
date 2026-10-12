@@ -34,7 +34,7 @@
     if (definition.type === "boolean" || definition.compact) {
       const group = element("fieldset", "clinical-field choice-field");
       group.append(element("legend", "field-label", definition.label));
-      const choices = element("div", "choice-options");
+      const choices = element("div", `choice-options${definition.quickChoices ? " quick-choices" : ""}`);
       const options = definition.type === "boolean" ? [["unknown", "Not assessed"], ["yes", "Yes"], ["no", "No"]] : definition.options.map(([value, title]) => [value, value === "unknown" ? "Not assessed" : title]);
       options.forEach(([value, title]) => {
         const label = element("label", "choice-option");
@@ -246,6 +246,12 @@
     const symptomKeys = ["symptomDays", "nightWaking", "activityLimitation"];
     if (value("reliever") === "saba") symptomKeys.push("sabaFrequency");
     const state = window.asthmaLogic.normalizeState(rawClinicalState());
+    document.querySelectorAll("[data-treatment-preset]").forEach(button => {
+      const id = button.dataset.treatmentPreset, preset = window.asthmaLogic.TREATMENT_PRESETS[id];
+      const controllerMatches = state.controller === preset.controller || ["air", "saba"].includes(id) && ["none", "saba-only"].includes(state.controller);
+      const selected = controllerMatches && state.reliever === preset.reliever && (preset.icsDose === "unknown" || state.icsDose === preset.icsDose);
+      button.setAttribute("aria-pressed", String(selected));
+    });
     const documented = symptomKeys.filter((key) => state[key] !== "unknown" && state[key] !== null).length;
     document.getElementById("control-input-summary").textContent = documented
       ? `${documented} of ${symptomKeys.length} applicable symptom inputs documented. Control and risk will be assessed separately when recommendations are generated.`
@@ -267,6 +273,7 @@
       copyStatus.textContent = "Copy is unavailable until recommendations are regenerated.";
     }
     copyButton.disabled = true;
+    show("note-jump-link", false);
     document.getElementById("biologic-options").disabled = true;
     noteOutput.value = "";
     noteOutput.placeholder = "Clinical inputs have changed. Regenerate recommendations to create an updated SOAP note before copying.";
@@ -485,6 +492,7 @@
       ? "Data-quality errors need correction. Review Safety Checks and regenerate before using the recommendations or copying a note."
       : "Recommendations and note reflect the documented inputs.";
     copyButton.disabled = stale || copying || rec.invalid === true || !note;
+    show("note-jump-link", !stale && !rec.invalid && Boolean(note));
   }
 
   function assertClinicalModules() {
@@ -659,9 +667,19 @@
     document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
     document.querySelectorAll("[data-treatment-preset]").forEach(button => button.addEventListener("click", () => {
       const preset = window.asthmaLogic.TREATMENT_PRESETS[button.dataset.treatmentPreset];
+      const changed = Object.entries(preset).some(([key, next]) => value(key) !== next);
       Object.entries(preset).forEach(([key, next]) => setValue(key, next));
-      markStale(); updateConditionalFields(); updateInputSummaries();
-      if (!stale) status.textContent = `${button.textContent} applied to current treatment. Other clinical findings were preserved.`;
+      if (changed) markStale();
+      updateConditionalFields(); updateInputSummaries();
+      if (!stale) status.textContent = `${button.querySelector(".preset-label").textContent} recorded as current treatment. Other clinical findings were preserved.`;
+    }));
+    document.querySelectorAll(".workflow-nav a").forEach(link => link.addEventListener("click", event => {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const target = document.getElementById(link.hash.slice(1));
+      if (!target) return;
+      if (target.tagName === "DETAILS") target.open = true;
+      target.tabIndex = -1;
+      target.focus({ preventScroll: true });
     }));
     copyButton.addEventListener("click", copyNote);
   } catch (error) {
