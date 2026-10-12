@@ -14,12 +14,12 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-2">
-  <script src="/asthma/input-schema.js?v=20261012-2" defer></script>
-  <script src="/asthma/medications.js?v=20261012-2" defer></script>
-  <script src="/asthma/logic.js?v=20261012-2" defer></script>
-  <script src="/asthma/notes.js?v=20261012-2" defer></script>
-  <script src="/asthma/app.js?v=20261012-2" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-3">
+  <script src="/asthma/input-schema.js?v=20261012-3" defer></script>
+  <script src="/asthma/medications.js?v=20261012-3" defer></script>
+  <script src="/asthma/logic.js?v=20261012-3" defer></script>
+  <script src="/asthma/notes.js?v=20261012-3" defer></script>
+  <script src="/asthma/app.js?v=20261012-3" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -45,21 +45,60 @@
 
       <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
-        <p id="form-instructions" class="form-instructions">Enter the clinical essentials. Check exceptions, then confirm any routine group you have reviewed. Unreviewed findings and blank numbers remain unknown; documentation can be completed in your EMR.</p>
+        <p id="form-instructions" class="form-instructions">Enter the patient's current findings and treatment. Check findings that are present, then confirm each group you have reviewed to document the remaining listed findings as absent. Unassessed answers and blank numbers remain unknown. Complete the note's *** placeholders in your EMR.</p>
 
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
           <div class="grid" data-fields="managementPhase age"></div>
           <div class="treatment-shortcuts" aria-label="Common treatment shortcuts">
-            <span class="hint">Optional current-treatment shortcuts</span>
+            <span class="hint">Optional shortcuts: record the current regimen without changing other clinical findings.</span>
             <div class="shortcut-buttons">
               <button type="button" class="ghost-btn" data-treatment-preset="air">AIR Only</button>
               <button type="button" class="ghost-btn" data-treatment-preset="smartLow">Low-Dose SMART</button>
               <button type="button" class="ghost-btn" data-treatment-preset="smartMedium">Medium-Dose SMART</button>
             </div>
+            <p class="hint"><strong>AIR-only:</strong> as-needed anti-inflammatory relief, without scheduled maintenance. <strong>SMART:</strong> the same ICS-formoterol inhaler for daily maintenance and as-needed relief.</p>
+            <details id="air-smart-reference" class="clinical-drawer treatment-reference">
+              <summary>AIR and SMART: definitions and adult dosing</summary>
+              <div class="drawer-body">
+                <p class="hint"><strong>AIR</strong> means anti-inflammatory reliever. <strong>SMART</strong> means single maintenance and reliever therapy; GINA calls this <strong>MART</strong> (maintenance-and-reliever therapy). These shortcuts use budesonide-formoterol <strong>160/4.5 mcg per inhalation</strong> (Symbicort or Breyna).</p>
+                <table class="clinical-reference-table regimen-table">
+                  <caption class="sr-only">Adult budesonide-formoterol regimens represented by the current-treatment shortcuts</caption>
+                  <thead><tr><th scope="col">Regimen</th><th scope="col">Scheduled maintenance</th><th scope="col">As-needed relief</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">AIR-only<span class="table-detail">GINA Track 1, Steps 1-2</span></th><td data-label="Scheduled maintenance">None.</td><td data-label="As-needed relief">1 inhalation for symptoms or before exercise.</td></tr>
+                    <tr><th scope="row">Low-dose SMART<span class="table-detail">GINA Track 1, Step 3</span></th><td data-label="Scheduled maintenance">1 inhalation twice daily.</td><td data-label="As-needed relief">1 additional inhalation for symptoms or before exercise, using the same inhaler.</td></tr>
+                    <tr><th scope="row">Medium-dose SMART<span class="table-detail">GINA Track 1, Step 4; may continue with Step 5 add-ons</span></th><td data-label="Scheduled maintenance">2 inhalations twice daily.</td><td data-label="As-needed relief">1 additional inhalation for symptoms or before exercise, using the same inhaler.</td></tr>
+                  </tbody>
+                </table>
+                <p class="reference-safety"><strong>Daily limit:</strong> 12 total inhalations in 24 hours, counting maintenance and relief together. Seek medical assessment for worsening symptoms or need beyond this limit; do not delay urgent care until the limit is reached.</p>
+                <p class="hint"><strong>U.S. prescribing:</strong> AIR/SMART reliever use is guideline-supported but off-label. The labeled adult maintenance schedule is 2 inhalations twice daily. Do not use ICS-formoterol relief with a different LABA controller (for example, Advair or Breo), or assume that another ICS-LABA or triple inhaler can be used for SMART. Use a spacer with a pressurized metered-dose inhaler.</p>
+                <p class="reference-links"><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026: Track 1 regimens</a> <a href="https://www.nhlbi.nih.gov/resources/clinician-guide-2020-focused-updates-asthma-management-guidelines" target="_blank" rel="noopener noreferrer">NHLBI SMART guidance</a> <a href="https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fafa4cf1-99c2-43d5-73ad-51f256de3be0" target="_blank" rel="noopener noreferrer">U.S. Symbicort labeling</a></p>
+              </div>
+            </details>
           </div>
           <div class="grid" data-fields="controller reliever"></div>
-          <div id="ics-dose-fields" class="grid hidden" data-fields="icsDose"></div>
+          <div id="ics-dose-fields" class="hidden">
+            <div class="grid" data-fields="icsDose"></div>
+            <details id="ics-dose-reference" class="clinical-drawer treatment-reference">
+              <summary>ICS dose intensity: common adult maintenance examples</summary>
+              <div class="drawer-body">
+                <p class="hint"><strong>ICS intensity describes the inhaled corticosteroid dose, not symptom severity or the number of drugs in the inhaler.</strong> Classify the prescribed scheduled maintenance dose using the exact corticosteroid, strength, device, and daily inhalations. Review as-needed use separately; AIR-only has no scheduled maintenance dose.</p>
+                <table class="clinical-reference-table ics-example-table">
+                  <caption class="sr-only">Illustrative adult maintenance schedules for choosing low, medium, or high ICS intensity</caption>
+                  <thead><tr><th scope="col">ICS intensity</th><th scope="col">Budesonide-formoterol 160/4.5 mcg<span class="table-detail">Symbicort / Breyna</span></th><th scope="col">Fluticasone propionate-salmeterol DPI<span class="table-detail">Advair Diskus / Wixela Inhub</span></th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Low</th><td data-label="Budesonide-formoterol 160/4.5 mcg">1 inhalation twice daily (low-dose SMART when also used as the reliever).</td><td data-label="Fluticasone propionate-salmeterol DPI">100/50 mcg: 1 inhalation twice daily (200 mcg/day fluticasone propionate).</td></tr>
+                    <tr><th scope="row">Medium</th><td data-label="Budesonide-formoterol 160/4.5 mcg">2 inhalations twice daily (medium-dose SMART when also used as the reliever).</td><td data-label="Fluticasone propionate-salmeterol DPI">250/50 mcg: 1 inhalation twice daily (500 mcg/day fluticasone propionate).</td></tr>
+                    <tr><th scope="row">High</th><td data-label="Budesonide-formoterol 160/4.5 mcg">Do not create a high-dose regimen by exceeding 2 scheduled inhalations twice daily. Medium-dose SMART is not high-dose ICS.</td><td data-label="Fluticasone propionate-salmeterol DPI">500/50 mcg: 1 inhalation twice daily (1,000 mcg/day fluticasone propionate).</td></tr>
+                  </tbody>
+                </table>
+                <p class="hint">The budesonide-formoterol examples describe guideline-supported SMART. Reliever use and the 1-inhalation twice-daily maintenance schedule are off-label in the U.S.; the labeled adult maintenance schedule is 2 inhalations twice daily.</p>
+                <p class="hint"><strong>Examples are not dose-equivalent substitutions.</strong> For other inhalers, use GINA's product-specific dose categories and U.S. prescribing information. Metered and delivered dose conventions differ; do not compare microgram values across corticosteroids or devices without checking the formulation. A triple inhaler does not automatically mean high-dose ICS. Leave intensity as not assessed if the regimen cannot be verified.</p>
+                <p class="reference-links"><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026: ICS dose categories (Box 4-2) and AIR/MART doses (Box 4-8)</a> <a href="https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fafa4cf1-99c2-43d5-73ad-51f256de3be0" target="_blank" rel="noopener noreferrer">U.S. Symbicort labeling</a> <a href="https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4eeb5f6a-593f-4a9e-9692-adefa2caf8fc" target="_blank" rel="noopener noreferrer">U.S. Advair Diskus labeling</a></p>
+              </div>
+            </details>
+          </div>
           <div id="laba-type-fields" class="grid hidden" data-fields="labaType"></div>
           <details class="clinical-drawer">
             <summary>Add-ons and treatment optimization</summary>
@@ -70,7 +109,7 @@
               <div id="ocs-dose-fields" class="grid hidden" data-fields="maintenanceOcsDose"></div>
               <div class="grid checkbox-grid" data-fields="adherence technique accessBarrier icsSideEffects"></div>
               <div class="review-confirmation" data-fields="treatmentReviewed"></div>
-              <p class="hint">Group review confirms no unchecked treatment or barrier concern, including no current biologic when none is specified. Longitudinal optimization remains a separate confirmation.</p>
+              <p class="hint">Confirm only after reviewing the listed add-ons and barriers. If no current biologic is documented, this confirmation records no biologic treatment. Optimization over 3-6 months must still be confirmed separately.</p>
               <div class="grid checkbox-grid" data-fields="optimizedTherapy severeAsthmaEstablished"></div>
             </div>
           </details>
@@ -82,7 +121,7 @@
           <details class="clinical-drawer">
             <summary>Previously documented diagnostic evidence</summary>
             <div class="drawer-body">
-              <p class="hint">Check only positive historical evidence. An unchecked box means evidence has not been documented here.</p>
+              <p class="hint">Check verified positive results from prior testing. An unchecked box means no positive result is documented here, not that the test was negative.</p>
               <div class="grid checkbox-grid" data-fields="dxBd dxIcsObjective dxChallenge dxPef"></div>
             </div>
           </details>
@@ -117,7 +156,7 @@
                 </div>
               </details>
               <div class="grid" data-fields="bronchoprovocation pefVariability icsObjectiveResponse clinicalIcsResponse"></div>
-              <p class="hint">GINA bronchodilator diagnostic support and ATS/ERS responsiveness are reported separately. Symptom improvement alone is distinct from objective improvement after ICS.</p>
+              <p class="hint">GINA's bronchodilator criterion supports asthma diagnosis; the ATS/ERS responsiveness criterion is reported separately. Symptom improvement alone does not confirm variable airflow limitation.</p>
             </div>
           </details>
           <p id="diagnostic-input-summary" class="input-summary">Diagnostic findings will be interpreted with the documented history when recommendations are generated.</p>
@@ -131,7 +170,7 @@
           <div class="calc-actions helper-actions">
             <button type="button" id="set-symptoms-negative-btn" class="ghost-btn" aria-describedby="symptom-shortcut-help">Document No Current Symptoms</button>
           </div>
-          <p id="symptom-shortcut-help" class="hint">Sets no daytime symptoms, night waking, or activity limitation; also sets no symptomatic SABA use when applicable.</p>
+          <p id="symptom-shortcut-help" class="hint">Use only after confirming no daytime symptoms, nocturnal waking, or activity limitation in the last 4 weeks. With a SABA reliever, this also records no use for symptoms; pre-exercise use is excluded.</p>
           <p id="control-input-summary" class="input-summary">Symptom control is not yet assessed.</p>
           <div class="subsection">
             <h3 class="subsection-title">Exacerbations in the Past 12 Months</h3>
@@ -148,21 +187,21 @@
             </div>
           </details>
           <div class="review-confirmation" data-fields="riskReviewed"></div>
-          <p class="hint">Review covers unchecked activity, exacerbation-history and stability flags. It does not turn blank exacerbation counts into zero or confirm stable lung function.</p>
+          <p class="hint">Confirm only after reviewing activity limitation and the listed risk/stability findings. Enter annual exacerbation counts separately; blank does not mean zero. Stable lung function requires its own assessment.</p>
         </section>
 
         <section class="panel" aria-labelledby="acute-heading">
           <h2 id="acute-heading">4) Exacerbation Context</h2>
           <div class="grid" data-fields="acutePresentation urgentRedFlags"></div>
           <div id="acute-fields" class="hidden">
-            <p id="acute-retained-warning" class="clinical-callout hidden">Previously entered urgent observations still require assessment, even outside active-exacerbation mode. Review or update them if they no longer represent the current encounter.</p>
-            <p class="clinical-callout">Assess the most severe feature and response to treatment. Incomplete observations do not establish safe outpatient management or discharge readiness.</p>
+            <p id="acute-retained-warning" class="clinical-callout hidden">Previously documented urgent findings still require assessment even if the encounter type changes. Update them only if they no longer describe the current encounter.</p>
+            <p class="clinical-callout">Use the most severe documented feature to assess the attack. Missing observations cannot establish a mild exacerbation, safe outpatient care, or readiness for discharge.</p>
             <div class="grid" data-fields="respiratoryRate spo2 roomAir"></div>
             <div class="grid" data-fields="acuteSpeech acuteCanLieDown acuteUnableToLieDown acuteCannotDrink acuteCyanosis acuteMentalStatus acuteRespiratoryEffort acuteAccessoryMuscles acuteAirEntry acuteWheeze"></div>
             <div class="grid" data-fields="acuteLungFunctionPercent acuteLungFunctionType acuteLungFunctionReference"></div>
             <div class="review-confirmation" data-fields="acuteReassessmentAvailable"></div>
             <div id="acute-reassessment-fields" class="clinical-callout hidden">
-              <p class="hint">Actual reassessment only. Missing observations cannot establish discharge readiness.</p>
+              <p class="hint">Enter observed post-treatment findings, not expected responses. Incomplete reassessment cannot establish readiness for discharge.</p>
               <div class="grid" data-fields="acuteResponse observationMinutes postTreatmentSpo2 postTreatmentRoomAir postTreatmentRespiratoryRate postTreatmentLungFunctionPercent postTreatmentMildFeatures homeSupport"></div>
             </div>
           </div>
@@ -174,7 +213,7 @@
             <div class="grid" data-fields="eosinophils historicalEosinophils feno"></div>
             <div class="grid" data-fields="allergenDriven perennialSensitization nasalPolyps atopicDermatitis egpa endemicExposure smoking"></div>
             <div class="review-confirmation" data-fields="phenotypeReviewed"></div>
-            <p class="hint">Sensitization, EGPA status and smoking history still require an explicit assessment. Biologic-specific dosing inputs appear with the selected agent.</p>
+            <p class="hint">Group review does not confirm allergy testing, EGPA status, or smoking history; assess these separately. Weight and pretreatment IgE are requested only when the chosen biologic needs them for dosing.</p>
           </div>
         </details>
 
@@ -186,7 +225,7 @@
               <summary>Adult asthma vaccine quick reference</summary>
               <div class="drawer-body">
                 <p class="hint">General guidance, not a record of vaccination. Prior products, immune status and local protocols affect the individual schedule.</p>
-                <table class="vaccine-table">
+                <table class="vaccine-table clinical-reference-table">
                   <caption class="sr-only">General CDC adult vaccination guidance relevant to asthma</caption>
                   <thead><tr><th scope="col">Vaccine</th><th scope="col">Who</th><th scope="col">Product and schedule</th></tr></thead>
                   <tbody>
@@ -229,7 +268,7 @@
         </article>
         <article id="biologic-guidance-card" class="result-card biologic-card hidden">
           <h2>Biologic Considerations</h2>
-          <p id="biologic-instructions">Select one agent to discuss in the note, if appropriate. Eligibility, outstanding prerequisites, and timing still apply.</p>
+          <p id="biologic-instructions">Choose an agent to document in the plan, if appropriate. A phenotype match is not automatic eligibility: verify treatment optimization, required testing, product criteria, and coverage before prescribing. Without a selection, the note documents consideration of suitable therapy.</p>
           <fieldset id="biologic-options" class="biologic-options" aria-describedby="biologic-instructions">
             <legend class="sr-only">Agent for clinical note</legend>
             <div id="biologic-primary-options"></div>
@@ -240,7 +279,7 @@
           </fieldset>
           <div id="biologic-dosing" class="biologic-dosing hidden">
             <h3 id="biologic-dosing-heading" class="result-subtitle">Drug-specific dosing check</h3>
-            <p class="hint">Optional for discussing an option; required before finalizing a patient-specific dose. Changing these inputs requires regeneration. Information is retained only in this page.</p>
+            <p class="hint">These measurements are not required to discuss an option, but must be verified before finalizing its dose. After editing them, regenerate the recommendations and note. Patient inputs remain only in this open page.</p>
             <div class="grid" data-fields="weightKg"></div>
             <div id="omalizumab-dosing-fields" class="grid hidden" data-fields="totalIge igePretreatment"></div>
             <button type="submit" form="asthma-form" class="secondary-btn">Regenerate With Dosing Inputs</button>

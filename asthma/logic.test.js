@@ -468,3 +468,21 @@ test("SOAP templates express past recommendations without inventing completed ca
     assert.match(text, /recommended|Recommended|Planned/);
   }
 });
+
+test("clinician-facing treatment references explain the existing regimens without changing clinical state", () => {
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  assert.match(html, /AIR<\/strong> means anti-inflammatory reliever/);
+  assert.match(html, /SMART<\/strong> means single maintenance and reliever therapy/);
+  assert.match(html, /GINA calls this <strong>MART<\/strong>/);
+  assert.match(html, /12 total inhalations in 24 hours, counting maintenance and relief together/);
+  assert.match(html, /AIR\/SMART reliever use is guideline-supported but off-label/);
+  assert.match(html, /Medium-dose SMART is not high-dose ICS/);
+  for (const [id, dose] of [["smartLow", "1 inhalation twice daily"], ["smartMedium", "2 inhalations twice daily"]]) {
+    const context = L.getTreatmentContext({ ...base(), ...L.TREATMENT_PRESETS[id] });
+    assert.equal(context.step, id === "smartLow" ? "3" : "4");
+    assert.ok(M.MEDICATIONS[id].noteSchedule.includes(dose));
+    assert.ok(html.includes(dose));
+  }
+  assert.match(html, /Examples are not dose-equivalent substitutions/);
+  assert.match(html, /Leave intensity as not assessed if the regimen cannot be verified/);
+});

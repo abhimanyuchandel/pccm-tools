@@ -844,7 +844,7 @@ input.numeric-alert:focus {
   margin-top: 16px;
 }
 
-.asthma-page .vaccine-table {
+.asthma-page .clinical-reference-table {
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
@@ -852,7 +852,7 @@ input.numeric-alert:focus {
   line-height: 1.5;
 }
 
-.asthma-page .vaccine-table :is(th, td) {
+.asthma-page .clinical-reference-table :is(th, td) {
   padding: 12px 10px;
   text-align: left;
   vertical-align: top;
@@ -860,11 +860,11 @@ input.numeric-alert:focus {
   overflow-wrap: anywhere;
 }
 
-.asthma-page .vaccine-table th:first-child {
+.asthma-page .clinical-reference-table th:first-child {
   width: 19%;
 }
 
-.asthma-page .vaccine-table thead th:nth-child(2) {
+.asthma-page .clinical-reference-table thead th:nth-child(2) {
   width: 28%;
 }
 
@@ -873,36 +873,71 @@ input.numeric-alert:focus {
   margin-top: 6px;
 }
 
+.asthma-page .treatment-reference .clinical-reference-table thead th:nth-child(2) {
+  width: 38%;
+}
+
+.asthma-page .table-detail {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.asthma-page .reference-safety {
+  margin: 14px 0;
+  padding: 12px;
+  border-left: 3px solid #527599;
+  border-radius: 0 8px 8px 0;
+  color: var(--ink);
+  background: #edf4fb;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.asthma-page .reference-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.asthma-page .reference-links a {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 600px) {
-  .asthma-page .vaccine-table :is(tbody, tr, th, td) {
+  .asthma-page .clinical-reference-table :is(tbody, tr, th, td) {
     display: block;
     width: 100%;
   }
-  .asthma-page .vaccine-table thead {
+  .asthma-page .clinical-reference-table thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .asthma-page .vaccine-table tr {
+  .asthma-page .clinical-reference-table tbody tr {
     margin-top: 12px;
     border: 1px solid var(--line-soft);
     border-radius: 10px;
     overflow: hidden;
   }
-  .asthma-page .vaccine-table th:first-child {
+  .asthma-page .clinical-reference-table th:first-child {
     width: 100%;
     background: #edf4fb;
   }
-  .asthma-page .vaccine-table td::before {
+  .asthma-page .clinical-reference-table td::before {
     content: attr(data-label);
     display: block;
     color: var(--accent);
     font-weight: 700;
     margin-bottom: 4px;
   }
-  .asthma-page .vaccine-table td:last-child {
+  .asthma-page .clinical-reference-table td:last-child {
     border-bottom: 0;
   }
 }

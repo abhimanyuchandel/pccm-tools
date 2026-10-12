@@ -1,8 +1,15 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 12, 2026. Asset version: `20261012-2`.
+Clinical reference review: October 12, 2026. Asset version: `20261012-3`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Clinician Treatment References
+
+- Added visible AIR-only / SMART definitions beside the current-treatment shortcuts and an expandable adult budesonide-formoterol 160/4.5 mcg schedule table. The table distinguishes no scheduled maintenance, 1 inhalation twice daily, and 2 inhalations twice daily; reliever use, the shared 12-inhalation daily limit, U.S. off-label status, and LABA compatibility are explicit. SMART and GINA's MART terminology are linked. These are reference examples for recording the existing regimen, not new automatic prescriptions. [GINA 2026, Boxes 4-8A/B](https://ginasthma.org/2026-gina-strategy-report/); [NHLBI SMART guidance](https://www.nhlbi.nih.gov/resources/clinician-guide-2020-focused-updates-asthma-management-guidelines); [U.S. Symbicort prescribing information](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fafa4cf1-99c2-43d5-73ad-51f256de3be0).
+- Added an ICS-intensity reference beside the dose selection. Common U.S. budesonide-formoterol and fluticasone propionate-salmeterol DPI maintenance examples clarify low, medium, and high categories. The text distinguishes scheduled maintenance from as-needed exposure, dose intensity from symptom severity, and product-specific categories from dose-equivalent substitutions. Metered/delivered dose and device differences require verification; triple therapy alone does not establish high-dose ICS. [GINA 2026, Box 4-2](https://ginasthma.org/2026-gina-strategy-report/); [U.S. Advair Diskus prescribing information](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4eeb5f6a-593f-4a9e-9692-adefa2caf8fc).
+- Revised form instructions and help text to explain controller/reliever terminology, group confirmation, longitudinal optimization, positive historical evidence, biomarkers, active versus resolved exacerbations, observed reassessment, and biologic prerequisites in clinician-facing language. The new tables use labelled stacked rows on mobile and are not copied into the SOAP note.
+- No clinical decision logic, medication schedules, or SOAP composition was changed. Verification includes reference visibility, unchanged notes when drawers are opened, accessible table headers, and mobile/tablet/desktop overflow checks. Delivery remains preview-only.
 
 ## Rule Changes and Sources
 

@@ -52,6 +52,8 @@ async function main() {
     assert.equal(await page.locator('#heart-rate, #systolic-bp, #temperature, #hpi, #exam').count(), 0);
     assert.equal(await page.locator("#acute-fields").isVisible(), false);
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
+    assert.equal(await page.locator("#air-smart-reference").evaluate(node => node.open), false);
+    assert.equal(await page.locator("#ics-dose-fields").isVisible(), false);
     await generate();
     assert.match(await text(), /could not be fully classified/);
     assert.doesNotMatch(await text(), /No urgent red-flag|Examination: normal|No exacerbations requiring/);
@@ -59,6 +61,15 @@ async function main() {
     await setInputs(page, state); await generate();
     assert.match(await text(), /GINA Track 1 Step 4/); assert.match(await text(), /was well controlled/);
     assert.equal((await text()).match(/\*\*\*/g).length, 3);
+    const priorNote = await text();
+    await page.locator("#air-smart-reference > summary").click();
+    await page.locator("#ics-dose-reference > summary").click();
+    assert.equal(await page.locator(".regimen-table tbody tr").count(), 3);
+    assert.equal(await page.locator(".ics-example-table tbody tr").count(), 3);
+    assert.match(await page.locator("#air-smart-reference").textContent(), /single maintenance and reliever therapy/);
+    assert.match(await page.locator("#air-smart-reference").textContent(), /12 total inhalations in 24 hours/);
+    assert.match(await page.locator("#ics-dose-reference").textContent(), /Examples are not dose-equivalent substitutions/);
+    assert.equal(await text(), priorNote); assert.equal(await page.locator("#copy-note-btn").isDisabled(), false);
     await page.locator("#copy-note-btn").click();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
     await setInputs(page, { riskReviewed: false, treatmentReviewed: false });
@@ -121,13 +132,18 @@ async function main() {
       const sizing = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
       assert.ok(sizing.scroll <= sizing.client + 1, `horizontal overflow at ${width}: ${JSON.stringify(sizing)}`);
       const rows = await page.locator(".vaccine-table tbody tr").count(); assert.equal(rows, 4);
-      if (width < 600) assert.equal(await page.locator(".vaccine-table tbody tr").first().evaluate(node => getComputedStyle(node).display), "block");
+      for (const table of [".vaccine-table", ".regimen-table", ".ics-example-table"]) {
+        assert.equal(await page.locator(table).getByRole("rowheader").count(), table === ".vaccine-table" ? 4 : 3);
+        if (width < 600) assert.equal(await page.locator(`${table} tbody tr`).first().evaluate(node => getComputedStyle(node).display), "block");
+      }
       if ([390, 1280].includes(width)) {
         await capture(page.locator(".vaccine-reference"), `vaccines-${width}`);
         await capture(page.locator("#biologic-guidance-card"), `biologics-${width}`);
+        await capture(page.locator("#air-smart-reference"), `air-smart-${width}`);
+        await capture(page.locator("#ics-dose-reference"), `ics-examples-${width}`);
       }
     }
-    assert.doesNotMatch(await text(), /Capvaxive|Arexvy|Shingrix|CDC adult schedule/);
+    assert.doesNotMatch(await text(), /Capvaxive|Arexvy|Shingrix|CDC adult schedule|Examples are not dose-equivalent|single maintenance and reliever therapy/);
 
     await load();
     await page.setViewportSize({ width: 390, height: 900 });
@@ -158,7 +174,7 @@ async function main() {
     await load(); await setInputs(page, { ...state, eosinophils: 8000 }); await generate();
     assert.match(await text(), /8000 cells\/uL/); assert.match(await page.locator("#caution-list").textContent(), /Unusual value/);
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: reviewed groups, shortcuts, SOAP placeholders, conditional acute/biologic inputs, dosing/stale safeguards, clipboard, keyboard, memory-only data, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: treatment references, unchanged notes on disclosure, reviewed groups, shortcuts, SOAP placeholders, conditional inputs, dosing/stale safeguards, clipboard, keyboard, memory-only data, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
