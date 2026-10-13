@@ -735,6 +735,7 @@ input.numeric-alert:focus {
 
 .asthma-page .clinical-field > .field-label {
   display: block;
+  font-size: 15px;
   line-height: 1.4;
 }
 
@@ -853,13 +854,88 @@ input.numeric-alert:focus {
   flex: 1;
 }
 
-.asthma-page .checkbox-row:has(.hint) {
-  flex-wrap: wrap;
+.asthma-page .checkbox-field .checkbox-row {
+  margin: 0;
 }
 
-.asthma-page .checkbox-row .hint {
-  flex-basis: 100%;
-  margin-left: 28px;
+.asthma-page .checkbox-field > .hint {
+  display: block;
+  margin: 7px 0 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.asthma-page .field-stack:not(.hidden) {
+  display: grid;
+  gap: 12px;
+}
+
+.asthma-page .field-stack + .field-stack:not(.hidden) {
+  margin-top: 12px;
+}
+
+.asthma-page .form-subgroup {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.asthma-page .form-section-grid {
+  align-items: stretch;
+}
+
+.asthma-page .drawer-body > .form-subgroup {
+  margin-top: 14px;
+}
+
+.asthma-page .form-subgroup > .grid:first-of-type {
+  margin-top: 0;
+}
+
+.asthma-page .checkbox-row > .field-label {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.asthma-page .form-subgroup > .subsection-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.asthma-page .form-subgroup > .grid:last-child {
+  margin-bottom: 0;
+}
+
+.asthma-page .drawer-body > .form-subgroup + .form-section-grid {
+  margin-top: 14px;
+}
+
+.asthma-page .compact-reference {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.asthma-page .compact-reference > summary {
+  padding: 0;
+  color: var(--accent);
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.asthma-page .reference-examples {
+  margin: 12px 0;
+  padding-left: 19px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.asthma-page .reference-examples li + li {
+  margin-top: 8px;
 }
 
 .asthma-page .review-confirmation {
@@ -871,8 +947,17 @@ input.numeric-alert:focus {
 }
 
 .asthma-page .review-confirmation .checkbox-row {
-  min-height: 28px;
+  min-height: 44px;
   margin: 0;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.asthma-page .review-confirmation:has(input:checked) {
+  border-color: #527599;
+  background: #edf4fb;
 }
 
 .asthma-page .treatment-shortcuts {
@@ -924,6 +1009,10 @@ input.numeric-alert:focus {
 .asthma-page .checkbox-row:has(input:checked) {
   border-color: #527599;
   background: #edf4fb;
+}
+
+.asthma-page .review-confirmation .checkbox-row:has(input:checked) {
+  background: transparent;
 }
 
 .asthma-page .biologic-dosing {
@@ -1453,6 +1542,10 @@ input.numeric-alert:focus {
 
   .asthma-page .subsection {
     padding: 14px 12px;
+  }
+
+  .asthma-page .form-subgroup {
+    padding: 12px;
   }
 
   .asthma-page .grid-three {

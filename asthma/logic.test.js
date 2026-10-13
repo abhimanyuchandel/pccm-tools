@@ -22,6 +22,7 @@ const note = (data, selectedBiologicId) => N.buildNoteText(data, L.buildRecommen
 test("defaults contain unknown findings and no fabricated negatives", () => {
   const data = L.createEmptyState();
   assert.equal(data.urgentRedFlags, null); assert.equal(data.activityLimitation, null); assert.equal(data.ocsExacerbations, null);
+  assert.equal(data.currentBiologic, "none");
   assert.equal(L.classifyControl(data).classification, "not fully assessed");
   assert.doesNotMatch(note(data), /No urgent|Never smoked|No exacerbations requiring|Examination: normal/i);
 });
@@ -342,6 +343,49 @@ test("unconfirmed asthma directs prevention to CDC / local criteria", () => {
   const data = base({ diagnosisContext: "suspected", dxChallenge: false, typicalSymptoms: null, age: 30 });
   const rec = L.buildRecommendation(data); assert.ok(ids(rec).includes("vaccine-diagnostic")); assert.ok(!ids(rec).includes("vaccine-pneumococcal"));
 });
+test("due vaccines produce explicit shared product and schedule plans, never completed care", () => {
+  const data = base({ age: 68, flu: "due", covid: "due", pneumococcal: "due", rsv: "due", zoster: "due", tdap: "due" });
+  const rec = L.buildRecommendation(data), text = N.buildNoteText(data, rec);
+  for (const key of ["flu", "covid", "pneumococcal", "rsv", "zoster", "tdap"]) {
+    const item = rec.actions.find(action => action.id === `vaccine-${key}`);
+    assert.ok(item.vaccineGuidance);
+    assert.ok(text.includes(`Recommended ${item.vaccineGuidance.target}: ${item.vaccineGuidance.details}`));
+  }
+  for (const pattern of [/Fluzone High-Dose, Flublok, or Fluad/, /PCV20 \(Prevnar 20\)/, /PCV15.*PPSV23.*1 year later/, /1 dose Arexvy, Abrysvo, or mResvia/, /Shingrix: 2 doses, usually 2-6 months apart/, /Td or Tdap every 10 years/, /2 seasonal doses about 6 months apart/]) assert.match(text, pattern);
+  assert.doesNotMatch(text, /(?:was|were) (?:administered|vaccinated)|vaccination was completed|Counseled patient/);
+});
+test("vaccine uncertainty and completed doses do not become definite vaccination orders", () => {
+  for (const key of ["flu", "covid", "pneumococcal", "rsv", "zoster", "tdap"]) {
+    const unknown = L.getVaccineGuidance(base({ age: 68, [key]: "unknown" }), key);
+    assert.match(unknown.target, /record review and, if indicated/);
+    assert.equal(L.getVaccineGuidance(base({ age: 68, [key]: "complete" }), key), null);
+    assert.ok(!ids(L.buildRecommendation(base({ age: 68, [key]: "complete" }))).includes(`vaccine-${key}`));
+  }
+  assert.match(L.getVaccineGuidance(base({ age: 68, rsv: "due" }), "rsv").details, /do not repeat after a previous dose/);
+  assert.match(L.getVaccineGuidance(base({ age: 68, zoster: "due" }), "zoster").details, /remaining dose without restarting/);
+});
+test("due vaccination outside documented age or risk criteria requires eligibility reconciliation", () => {
+  for (const [key, age, eligibleAge] of [["pneumococcal", 18, 19], ["rsv", 49, 50], ["zoster", 49, 50]]) {
+    const guidance = L.getVaccineGuidance(base({ age, [key]: "due" }), key);
+    assert.match(guidance.details, /do not establish routine eligibility/);
+    assert.doesNotMatch(L.getVaccineGuidance(base({ age: eligibleAge, [key]: "due" }), key).details, /do not establish routine eligibility/);
+  }
+  const suspected = base({ age: 30, diagnosisContext: "suspected", typicalSymptoms: null, dxChallenge: false, pneumococcal: "due" });
+  assert.match(L.getVaccineGuidance(suspected, "pneumococcal").details, /Confirm age at least 50/);
+  assert.match(note(suspected), /without assuming an asthma-specific indication/);
+});
+test("due-vaccine guidance accounts for pregnancy and current seasonal age schedules", () => {
+  const data = base({ age: 55, pregnant: true, pneumococcal: "due", zoster: "due", tdap: "due" });
+  assert.match(L.getVaccineGuidance(data, "pneumococcal").details, /no routine recommendation.*during pregnancy/);
+  assert.match(L.getVaccineGuidance(data, "zoster").details, /deferring Shingrix until after pregnancy/);
+  assert.match(L.getVaccineGuidance(data, "tdap").details, /this pregnancy.*27-36 weeks/);
+  assert.match(L.getVaccineGuidance(base({ age: 29, pregnant: true, rsv: "due" }), "rsv").details, /Abrysvo at 32 weeks 0 days through 36 weeks 6 days/);
+  assert.equal(L.getVaccineGuidance(base({ age: 29, pregnant: true, rsv: "complete" }), "rsv"), null);
+  assert.match(L.getVaccineGuidance(base({ age: 64, covid: "due" }), "covid").details, /1 seasonal dose/);
+  assert.match(L.getVaccineGuidance(base({ age: 65, covid: "due" }), "covid").details, /2 seasonal doses/);
+  assert.doesNotMatch(L.getVaccineGuidance(base({ age: 64, flu: "due" }), "flu").details, /High-Dose/);
+  assert.match(L.getVaccineGuidance(base({ age: 65, flu: "due" }), "flu").details, /High-Dose/);
+});
 test("SOAP note has full headings, editable placeholders, and retrospective recommendations", () => {
   const text = note(base({ eosinophils: 200 }));
   for (const heading of ["Subjective", "Objective", "Assessment", "Plan"]) assert.match(text, new RegExp(`(?:^|\\n)${heading}\\n`));
@@ -381,14 +425,14 @@ test("review confirmations centrally resolve only routine exceptions", () => {
     const reversed = L.normalizeState({ ...empty, [flag]: false });
     for (const key of Object.keys(defaults)) assert.equal(reversed[key], empty[key], key);
   }
-  const reviewed = L.normalizeState({ treatmentReviewed: true, riskReviewed: true, phenotypeReviewed: true });
+  const reviewed = L.normalizeState({ treatmentReviewed: true, riskReviewed: true });
   for (const key of ["optimizedTherapy", "severeAsthmaEstablished", "lungFunctionStable", "perennialSensitization", "igePretreatment", "urgentRedFlags", "roomAir", "ocsExacerbations", "hospitalExacerbations", "weightKg", "totalIge"]) assert.equal(reviewed[key], null, key);
   assert.equal(reviewed.dxBd, false); assert.equal(reviewed.typicalSymptoms, null);
   assert.equal(L.classifyControl(reviewed).classification, "not fully assessed");
 });
 test("positive exceptions and existing biologics persist with or without group confirmation", () => {
   for (const reviewed of [true, false]) {
-    const d = L.normalizeState({ treatmentReviewed: reviewed, riskReviewed: reviewed, phenotypeReviewed: reviewed,
+    const d = L.normalizeState({ treatmentReviewed: reviewed, riskReviewed: reviewed,
       maintenanceOcs: true, accessBarrier: true, adherence: "suboptimal", technique: "incorrect", currentBiologic: "mepolizumab",
       pregnant: true, priorIcu: true, activityLimitation: true, allergenDriven: true, nasalPolyps: true });
     for (const key of ["maintenanceOcs", "accessBarrier", "pregnant", "priorIcu", "activityLimitation", "allergenDriven", "nasalPolyps"]) assert.equal(d[key], true, key);
@@ -396,11 +440,47 @@ test("positive exceptions and existing biologics persist with or without group c
   }
 });
 test("group review does not bypass optimization, step-down or diagnostic safeguards", () => {
-  const d = severe({ optimizedTherapy: null, weightKg: null, treatmentReviewed: true, riskReviewed: true, phenotypeReviewed: true });
+  const d = severe({ optimizedTherapy: null, weightKg: null, treatmentReviewed: true, riskReviewed: true });
   assert.equal(L.classifySevereAsthmaState(d).established, false);
   assert.ok(L.buildRecommendation(d).biologicCandidates.every(item => !item.ready));
   assert.ok(!ids(L.buildRecommendation(base({ riskReviewed: true, stableMonths: 4, lungFunctionStable: null }))).includes("stepdown"));
-  assert.equal(L.assessDiagnosis({ phenotypeReviewed: true, typicalSymptoms: true }).confirmed, false);
+  assert.equal(L.assessDiagnosis({ treatmentReviewed: true, typicalSymptoms: true }).confirmed, false);
+});
+test("current biologic defaults to none but explicit unknown is not replaced by group review", () => {
+  assert.equal(L.normalizeState({}).currentBiologic, "none");
+  for (const treatmentReviewed of [true, false]) {
+    assert.equal(L.normalizeState({ treatmentReviewed, currentBiologic: "unknown" }).currentBiologic, "unknown");
+    assert.equal(L.normalizeState({ treatmentReviewed, currentBiologic: "dupilumab" }).currentBiologic, "dupilumab");
+  }
+  assert.ok(L.getBiologicCandidates(severe({ currentBiologic: "unknown", treatmentReviewed: true })).every(item => !item.ready));
+});
+test("phenotype findings require individual answers rather than a blanket negative assumption", () => {
+  for (const key of ["allergenDriven", "nasalPolyps", "atopicDermatitis", "endemicExposure", "perennialSensitization"]) {
+    assert.equal(L.normalizeState({ treatmentReviewed: true, riskReviewed: true, phenotypeReviewed: true })[key], null, key);
+    assert.equal(L.normalizeState({ [key]: true })[key], true);
+    assert.equal(L.normalizeState({ [key]: false })[key], false);
+    assert.equal(L.normalizeState({ [key]: "unknown" })[key], null);
+  }
+  assert.equal(Object.hasOwn(L.createEmptyState(), "phenotypeReviewed"), false);
+});
+test("routine-visit default applies only to an unanswered red-flag field without urgent findings", () => {
+  assert.deepEqual(L.getRoutineVisitDefaults({ acutePresentation: "none" }), { urgentRedFlags: false });
+  for (const patch of [{ acutePresentation: "active" }, { acutePresentation: "recent" }, { urgentRedFlags: true }, { urgentRedFlags: false }, { spo2: 85 }, { respiratoryRate: 32 }, { acuteAirEntry: "silent" }, { acuteResponse: "worsening" }]) {
+    assert.deepEqual(L.getRoutineVisitDefaults({ acutePresentation: "none", ...patch }), {}, JSON.stringify(patch));
+  }
+  const rec = L.buildRecommendation(base({ urgentRedFlags: false, spo2: 85 }));
+  assert.equal(rec.emergency, true);
+  assert.doesNotMatch(N.buildNoteText(base({ urgentRedFlags: false, spo2: 85 }), rec), /No urgent red-flag/);
+  assert.match(note(base()), /No urgent red-flag features were documented/);
+});
+test("prior severe-asthma examples remain explanatory and do not establish current eligibility", () => {
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  assert.match(html, /Examples of a prior severe-asthma diagnosis/);
+  assert.match(html, /Asthma that worsened when optimized high-dose ICS-LABA was reduced/);
+  const data = severe({ optimizedTherapy: null, severeAsthmaEstablished: true });
+  assert.equal(L.classifySevereAsthmaState(data).established, false);
+  assert.ok(L.buildRecommendation(data).biologicCandidates.every(item => !item.ready));
+  assert.doesNotMatch(note(data), /Asthma that worsened when optimized/);
 });
 test("treatment shortcuts set only controller, intensity, reliever and LABA context", () => {
   for (const [id, preset] of Object.entries(L.TREATMENT_PRESETS)) {
@@ -474,8 +554,10 @@ test("clinician-facing treatment references explain the existing regimens withou
   assert.match(html, /AIR<\/strong> means anti-inflammatory reliever/);
   assert.match(html, /SMART<\/strong> means single maintenance and reliever therapy/);
   assert.match(html, /GINA calls this <strong>MART<\/strong>/);
-  assert.match(html, /12 total inhalations in 24 hours, counting maintenance and relief together/);
-  assert.match(html, /AIR\/SMART reliever use is guideline-supported but off-label/);
+  const airTable = html.split('id="air-smart-reference"')[1].split("</details>")[0];
+  assert.doesNotMatch(airTable, /Daily limit:|U.S. prescribing:|12 total inhalations/);
+  assert.match(M.MEDICATIONS.smartMedium.detail, /Maximum 12 inhalations in 24 hours, including all scheduled and reliever doses/);
+  assert.match(M.MEDICATIONS.smartMedium.detail, /off-label/);
   assert.match(html, /Medium-dose SMART is not high-dose ICS/);
   for (const [id, dose] of [["smartLow", "1 inhalation twice daily"], ["smartMedium", "2 inhalations twice daily"]]) {
     const context = L.getTreatmentContext({ ...base(), ...L.TREATMENT_PRESETS[id] });

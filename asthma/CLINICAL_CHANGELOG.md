@@ -1,8 +1,19 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 12, 2026. Asset version: `20261012-4`.
+Clinical reference review: October 13, 2026. Asset version: `20261013-1`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Clinician Form and Vaccination Refinements
+
+- Removed the two repetitive daily-limit / U.S.-prescribing paragraphs beneath the AIR/SMART input table. The table and source links remain; product-specific limits, off-label status, spacer guidance, and incompatible-LABA safeguards remain in generated medication guidance and the SOAP medication plan.
+- Defaulted current biologic to **None** as requested. Explicitly changing it to an agent or **Not assessed** is preserved, including after treatment-group confirmation. This is a pragmatic input default, not a guideline inference.
+- Selecting **Routine visit** defaults an unanswered red-flag field to **No**, but never overwrites a positive finding or suppresses urgent observations. Changing to another encounter context clears only the automatic default; clinician-entered responses remain intact. The note says no red-flag features were **documented**, not that the patient denied them. This is a user-requested workflow assumption, not verification of acute safety.
+- Organized add-ons into separate maintenance-therapy, biologic, barrier, and treatment-readiness panels. Helper text sits outside checkbox labels, and the panels stack on mobile. Renamed the optimization confirmation to **Adequate trial of optimized treatment completed**, with its longitudinal requirements explained. Added hypothetical prior-severe-asthma examples; these do not enter the note or change severe-asthma prerequisites. [GINA 2026 severe-asthma guide, definition and optimization review](https://ginasthma.org/2026-gina-severe-asthma-guide/).
+- Removed blanket phenotype-group confirmation. Allergen-driven symptoms, polyps, dermatitis, and parasite exposure now have individual **Yes / No / Not assessed** choices. Sensitization, EGPA, smoking, and biomarkers retain their independent assessment; blank values remain unknown.
+- A confirmed **Due / incomplete** vaccine status now generates actionable product / schedule guidance in both recommendations and SOAP from one shared action. Unknown history continues to prompt record review, and **Current / complete** suppresses further doses. Unverified age/risk eligibility prompts reconciliation instead of an unsupported vaccination order. Pregnancy and previous-dose cautions remain conditional; no administered vaccination is inferred. [CDC pneumococcal](https://www.cdc.gov/pneumococcal/hcp/vaccine-recommendations/index.html), [RSV](https://www.cdc.gov/rsv/hcp/vaccine-clinical-guidance/adults.html), [zoster](https://www.cdc.gov/shingles/hcp/vaccine-considerations/index.html), [Tdap / adult notes](https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html).
+- Verified influenza's annual schedule / preferred older-adult formulations and the CDC's September 2026 adult COVID-19 update. COVID-19 advice uses the current seasonal, age-dependent schedule, not the older COVID block in the adult schedule notes; immune status and previous doses must be verified. [CDC influenza guidance](https://www.cdc.gov/flu/hcp/acip/), [CDC 2026-2027 COVID-19 guidance](https://www.cdc.gov/covid/hcp/vaccine-considerations/routine-guidance.html).
+- Regression coverage includes defaults and reversal, individually assessed phenotype, preserved urgency, shared vaccine actions/notes, vaccine age boundaries, prior-series safeguards, pregnancy, stale/copy behavior, and responsive add-on/phenotype layouts. No persistence, backend, or production promotion was introduced.
 
 ## Point-of-Care Usability Refinements
 

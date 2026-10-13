@@ -9,7 +9,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const REVIEW_DATE = "October 12, 2026";
+  const REVIEW_DATE = "October 13, 2026";
 
   const SOURCES = {
     gina: {
@@ -101,6 +101,21 @@
       id: "cdc",
       title: "CDC Adult Immunization Schedule Notes",
       url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html"
+    },
+    influenza: {
+      id: "influenza",
+      title: "CDC Seasonal Influenza Vaccine Guidance",
+      url: "https://www.cdc.gov/flu/hcp/acip/"
+    },
+    covidVaccine: {
+      id: "covidVaccine",
+      title: "CDC 2026-2027 Adult COVID-19 Vaccination Guidance",
+      url: "https://www.cdc.gov/covid/hcp/vaccine-considerations/routine-guidance.html"
+    },
+    zoster: {
+      id: "zoster",
+      title: "CDC Shingles Vaccine Recommendations",
+      url: "https://www.cdc.gov/shingles/hcp/vaccine-considerations/index.html"
     },
     rsv: {
       id: "rsv",

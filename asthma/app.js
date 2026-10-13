@@ -15,6 +15,7 @@
   let stale = false;
   let copying = false;
   let revision = 0;
+  let routineRedFlagsDefaulted = false;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -53,6 +54,7 @@
       return group;
     }
     const checkbox = ["history", "exception", "confirmation", "review"].includes(definition.type);
+    const wrapper = checkbox ? element("div", "clinical-field checkbox-field") : null;
     const label = element("label", checkbox ? "checkbox-row" : "clinical-field");
     label.htmlFor = id;
     const title = element("span", "field-label", definition.label);
@@ -81,12 +83,13 @@
     input.setAttribute("form", "asthma-form");
     if (checkbox) label.append(input, title);
     else label.append(title, input);
+    if (wrapper) wrapper.append(label);
     const describedBy = [];
     if (definition.hint) {
       const hint = element("span", "hint", definition.hint);
       hint.id = `${id}-help`;
       describedBy.push(hint.id);
-      label.append(hint);
+      (wrapper || label).append(hint);
     }
     if (definition.type === "number") {
       const feedback = element("span", "field-feedback hidden");
@@ -95,7 +98,7 @@
       label.append(feedback);
     }
     if (describedBy.length) input.setAttribute("aria-describedby", describedBy.join(" "));
-    return label;
+    return wrapper || label;
   }
 
   function buildForm() {
@@ -638,7 +641,20 @@
     const onInput = (event) => {
       if (!event.target.name || !schema[event.target.name]) return;
       delete event.target.dataset.explicitNo;
-      if (event.target.name === "acutePresentation" && value("acutePresentation") === "recent") setValue("recentExacerbation", true);
+      if (event.target.name === "urgentRedFlags") routineRedFlagsDefaulted = false;
+      if (event.target.name === "acutePresentation") {
+        const context = value("acutePresentation");
+        if (context !== "none" && routineRedFlagsDefaulted) {
+          setValue("urgentRedFlags", "unknown");
+          routineRedFlagsDefaulted = false;
+        }
+        const defaults = window.asthmaLogic.getRoutineVisitDefaults(rawClinicalState());
+        if (defaults.urgentRedFlags === false) {
+          setValue("urgentRedFlags", false);
+          routineRedFlagsDefaulted = true;
+        }
+        if (context === "recent") setValue("recentExacerbation", true);
+      }
       markStale();
       updateConditionalFields();
       if (event.target.name === "diagnosisContext" && value("diagnosisContext") === "suspected") document.getElementById("testing-details").open = true;

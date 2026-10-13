@@ -15,7 +15,7 @@
     if (symptoms.length) lines.push(`During the preceding 4 weeks, the patient had ${symptoms.join("; ")}.`);
     if (f.control.sabaApplicable && d.sabaFrequency !== "unknown") lines.push({ none: "No symptomatic SABA use was reported.", "one-two": "Symptomatic SABA use was reported 1-2 times/week.", "more-two": "Symptomatic SABA use was reported more than twice/week." }[d.sabaFrequency] + " Pre-exercise use was excluded.");
     if (!f.control.sabaApplicable && d.airUsesPerWeek !== null) lines.push(`ICS-containing reliever use was reported ${d.airUsesPerWeek} times/week.`);
-    if (d.urgentRedFlags === false && !f.acute.emergency) lines.push("No urgent red-flag symptoms were reported.");
+    if (d.urgentRedFlags === false && !f.acute.emergency) lines.push("No urgent red-flag features were documented.");
     if (d.urgentRedFlags === true) lines.push("Urgent red-flag symptoms were reported.");
     if (f.risk.complete && !f.risk.anyExacerbation) lines.push("No exacerbations requiring oral corticosteroids or hospitalization were reported in the preceding 12 months.");
     else {
@@ -188,17 +188,9 @@
     "vaccine-diagnostic": () => "Preventive vaccination review was recommended using local protocol and CDC age/condition guidance, without assuming an asthma-specific indication while diagnosis remained unconfirmed."
   };
 
-  function vaccinePlan(id, d) {
-    const key = id.slice("vaccine-".length);
-    const plans = {
-      flu: "current-season influenza vaccination",
-      covid: "current COVID-19 vaccination guidance and individual decision-making",
-      pneumococcal: "pneumococcal vaccination according to age, qualifying disease, and previous products/intervals",
-      rsv: "a single eligible RSV vaccine dose, not annual vaccination or an automatic repeat",
-      zoster: "the indicated 2-dose recombinant zoster series",
-      tdap: "the tetanus primary series, at least one Tdap dose, subsequent boosters, and pregnancy-specific timing"
-    };
-    return `Recommended ${d[key] === "unknown" ? "record review and, if indicated, " : "confirmation of prior doses before "}${plans[key]}.`;
+  function vaccinePlan(action) {
+    const guidance = action.vaccineGuidance;
+    return guidance ? `Recommended ${guidance.target}: ${guidance.details}` : null;
   }
 
   function medicationSchedule(med, d, f) {
@@ -218,7 +210,7 @@
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
     rec.actions.filter(action => action.kind !== "alternative").forEach(action => {
       const template = ACTION_NOTES[action.id];
-      const text = template ? template(d, f, rec) : action.id.startsWith("vaccine-") ? vaccinePlan(action.id, d) : null;
+      const text = template ? template(d, f, rec) : action.id.startsWith("vaccine-") ? vaccinePlan(action) : null;
       if (!text) throw new Error(`Missing clinical documentation template: ${action.id}`);
       const heading = action.kind === "prevention" ? "Preventive care" : action.kind === "counseling" ? "Counseling and asthma action plan" : action.kind === "testing" ? "Testing" : ["followup", "monitoring"].includes(action.kind) ? "Monitoring and follow-up" : rec.emergency ? "Urgent management" : "Medication / management";
       append(heading, text);

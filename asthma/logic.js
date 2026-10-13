@@ -9,11 +9,10 @@
   const NUMBERS = "age biologicMonths maintenanceOcsDose fev1Pre fev1Post fvcPre fvcPost fev1Predicted fvcPredicted pefVariability airUsesPerWeek sabaCanisters ocsExacerbations hospitalExacerbations stableMonths eosinophils historicalEosinophils feno totalIge weightKg respiratoryRate spo2 acuteLungFunctionPercent postTreatmentSpo2 postTreatmentRespiratoryRate postTreatmentLungFunctionPercent observationMinutes".split(" ");
   const BOOLEANS = "lamaAddon maintenanceOcs accessBarrier optimizedTherapy severeAsthmaEstablished icsSideEffects typicalSymptoms icsObjectiveResponse clinicalIcsResponse bronchodilatorHeld activityLimitation recentExacerbation priorIcu persistentExacerbations lungFunctionStable pregnant respiratoryInfection travelling allergenDriven perennialSensitization igePretreatment nasalPolyps atopicDermatitis endemicExposure urgentRedFlags acuteCanLieDown acuteCannotDrink acuteUnableToLieDown acuteCyanosis roomAir postTreatmentRoomAir postTreatmentMildFeatures homeSupport".split(" ");
   const HISTORY = "dxBd dxIcsObjective dxChallenge dxPef".split(" ");
-  const REVIEW_FLAGS = ["treatmentReviewed", "riskReviewed", "phenotypeReviewed", "acuteReassessmentAvailable"];
+  const REVIEW_FLAGS = ["treatmentReviewed", "riskReviewed", "acuteReassessmentAvailable"];
   const REVIEW_DEFAULTS = {
-    treatmentReviewed: { lamaAddon: false, maintenanceOcs: false, accessBarrier: false, icsSideEffects: false, adherence: "adequate", technique: "correct", currentBiologic: "none" },
-    riskReviewed: { activityLimitation: false, recentExacerbation: false, priorIcu: false, persistentExacerbations: false, pregnant: false, respiratoryInfection: false, travelling: false },
-    phenotypeReviewed: { allergenDriven: false, nasalPolyps: false, atopicDermatitis: false, endemicExposure: false }
+    treatmentReviewed: { lamaAddon: false, maintenanceOcs: false, accessBarrier: false, icsSideEffects: false, adherence: "adequate", technique: "correct" },
+    riskReviewed: { activityLimitation: false, recentExacerbation: false, priorIcu: false, persistentExacerbations: false, pregnant: false, respiratoryInfection: false, travelling: false }
   };
   const TREATMENT_PRESETS = {
     none: { controller: "none", reliever: "none", icsDose: "unknown", labaType: "unknown" },
@@ -43,6 +42,7 @@
     HISTORY.forEach(key => { data[key] = false; });
     REVIEW_FLAGS.forEach(key => { data[key] = false; });
     Object.keys(ENUMS).forEach(key => { data[key] = ENUMS[key][0]; });
+    data.currentBiologic = "none";
     return data;
   }
 
@@ -259,6 +259,55 @@
     return "air";
   }
 
+  function getRoutineVisitDefaults(input) {
+    const d = normalizeState(input);
+    return d.acutePresentation === "none" && d.urgentRedFlags === null && !assessAcutePresentation(d).emergency
+      ? { urgentRedFlags: false } : {};
+  }
+
+  function getVaccineGuidance(input, key) {
+    const d = normalizeState(input), diagnosis = assessDiagnosis(d);
+    if (d[key] === "complete") return null;
+    const eligibility = {
+      pneumococcal: d.age !== null && (d.age >= 50 || d.age >= 19 && diagnosis.supported),
+      rsv: d.age !== null && (d.age >= 75 || d.age >= 50 && diagnosis.supported),
+      zoster: d.age !== null && d.age >= 50
+    };
+    const sourceIds = { pneumococcal: ["cdc", "pneumococcal"], rsv: ["cdc", "rsv"], zoster: ["cdc", "zoster"], flu: ["influenza"], covid: ["covidVaccine"], tdap: ["cdc"] }[key];
+    const subjects = {
+      flu: "current-season influenza vaccination", covid: "current-season COVID-19 vaccination",
+      pneumococcal: "pneumococcal vaccination", rsv: "a single RSV vaccine dose",
+      zoster: "Shingrix vaccination", tdap: "Tdap / Td vaccination"
+    };
+    if (key === "rsv" && d.pregnant === true) return {
+      target: "pregnancy-specific RSV prevention review",
+      details: "Confirm prior maternal RSV vaccination, gestational age, and local season. If eligible and not previously vaccinated, use Abrysvo at 32 weeks 0 days through 36 weeks 6 days, generally September-January in the continental U.S.; coordinate infant protection with obstetric care. Do not substitute Arexvy or mResvia for maternal vaccination.",
+      sourceIds
+    };
+    if (eligibility[key] === false) {
+      if (d[key] !== "due") return null;
+      const criteria = {
+        pneumococcal: "age at least 50, or age 19-49 with asthma or another qualifying risk condition",
+        rsv: "age at least 75, or age 50-74 with asthma or another qualifying risk condition",
+        zoster: "age at least 50, or age at least 19 with a qualifying immunocompromising condition"
+      }[key];
+      return { target: `reconciliation of the documented ${subjects[key]} gap`, details: `Confirm ${criteria} and previous doses before scheduling vaccination; the available inputs do not establish routine eligibility.`, sourceIds };
+    }
+    if (d[key] === "unknown") return { target: `record review and, if indicated, ${subjects[key]}`, details: "Confirm previous products, doses, and timing using current CDC guidance.", sourceIds };
+    const details = {
+      flu: `Use an age-appropriate injectable vaccine annually.${d.age >= 65 ? " Prefer Fluzone High-Dose, Flublok, or Fluad at age 65 or older; use another age-appropriate product if unavailable." : ""}`,
+      covid: `Offer a 2026-2027 vaccine after confirming previous doses and immune status.${d.age === null ? " Use the age-appropriate CDC schedule." : d.age >= 65 ? " For adults without immunocompromise, CDC recommends 2 seasonal doses about 6 months apart; confirm product-specific minimum intervals and off-label repeat-dose use." : " For adults without immunocompromise, CDC recommends 1 seasonal dose (Spikevax, Comirnaty, Nuvaxovid, or mNexspike); if previously vaccinated, wait at least 8 weeks after the last dose, or 3 months for mNexspike."} Use the separate immunocompromised schedule when applicable.`,
+      pneumococcal: "If pneumococcal vaccine-naive, give 1 dose PCV20 (Prevnar 20) or PCV21 (Capvaxive), or PCV15 (Vaxneuvance) followed by PPSV23 (Pneumovax 23) ordinarily 1 year later. If previously vaccinated, use CDC catch-up guidance for the recorded products and intervals; do not repeat a completed PCV20/PCV21 series.",
+      rsv: "If never vaccinated for RSV, give 1 dose Arexvy, Abrysvo, or mResvia. This is not an annual vaccine; do not repeat after a previous dose.",
+      zoster: "Complete Shingrix: 2 doses, usually 2-6 months apart. If 1 dose was already received, give the remaining dose without restarting the series; qualifying immunocompromised adults may use a 1-2-month interval.",
+      tdap: `Give 1 Tdap dose if none was previously received, then Td or Tdap every 10 years. If the primary series is incomplete, give the remaining doses of a 3-dose series: Tdap first, Td/Tdap at least 4 weeks later, then Td/Tdap 6-12 months later.${d.pregnant === true ? " Include Tdap during this pregnancy, preferably at 27-36 weeks, regardless of previous Tdap." : " Wound care may require an earlier booster."}`
+    }[key];
+    if (d.pregnant === true && ["pneumococcal", "zoster"].includes(key)) {
+      return { target: `${subjects[key]} planning after pregnancy-specific review`, details: key === "zoster" ? "Consider deferring Shingrix until after pregnancy; confirm previous doses before completing the series." : "CDC has no routine recommendation for PCV/PPSV23 during pregnancy; review timing with obstetric care rather than automatically vaccinating now.", sourceIds };
+    }
+    return { target: subjects[key], details, sourceIds };
+  }
+
   function buildRecommendation(input, selection = {}) {
     const d = normalizeState(input), quality = assessDataQuality(d), diagnosis = assessDiagnosis(d), control = classifyControl(d), risk = classifyExacerbationRisk(d), treatment = getTreatmentContext(d), acute = assessAcutePresentation(d);
     const severe = classifySevereAsthmaState(d, control, risk), findings = { data: d, diagnosis, control, risk, treatment, severe, acute, quality, selectedBiologicId: null, proposedMedicationId: null };
@@ -266,8 +315,10 @@
     const sourceIds = new Set(["gina"]), medIds = new Set();
     const action = (id, text, kind = "management", meds = [], sources = ["gina"]) => {
       if (result.actions.some(item => item.id === id)) return;
-      result.actions.push({ id, text, kind, medicationIds: meds, sourceIds: sources });
+      const item = { id, text, kind, medicationIds: meds, sourceIds: sources };
+      result.actions.push(item);
       meds.forEach(id => medIds.add(id)); sources.forEach(id => sourceIds.add(id));
+      return item;
     };
     const finish = () => {
       result.medications = [...medIds].map(id => catalog.MEDICATIONS[id]).filter(Boolean);
@@ -388,20 +439,14 @@
     action("technique-counsel", "Review inhaler technique with demonstration / teach-back, adherence, access, and spacer use where appropriate.", "counseling");
     action("action-plan", "Provide or update a written asthma action plan describing usual treatment, early worsening treatment, reliever limits, and when to return to the prior regimen or seek urgent care. Seek emergency care for severe breathlessness, inability to speak, cyanosis, altered mental status, or poor response to rescue treatment.", "counseling");
     action("nonpharmacologic", `Discuss exposure reduction and regular activity as tolerated; address relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors${d.smoking === "current" ? "; offer smoking cessation counseling and pharmacotherapy" : ""}.`, "counseling");
-    const vaccine = (key, text, eligible = true, sources = ["cdc"]) => {
-      if (!eligible || d[key] === "complete") return;
-      action(`vaccine-${key}`, `${d[key] === "unknown" ? "Review vaccination records; if due, " : "If not already administered, "}${text}`, "prevention", [], sources);
-    };
     if (!diagnosis.supported) action("vaccine-diagnostic", "Asthma is not yet confirmed. Base preventive vaccination decisions on current local protocol and the CDC schedule, including age and other qualifying conditions, rather than assuming an asthma-specific indication.", "prevention", [], ["cdc"]);
-    vaccine("flu", "offer current-season influenza vaccination per local / CDC guidance.");
-    vaccine("covid", "discuss current COVID-19 vaccination recommendations and individual decision-making under the current CDC schedule.");
-    vaccine("pneumococcal", "use the current CDC pneumococcal schedule based on age, chronic lung disease, and prior vaccine products / intervals.", d.age !== null && (d.age >= 50 || d.age >= 19 && diagnosis.supported), ["cdc", "pneumococcal"]);
-    vaccine("rsv", "consider a single RSV vaccine dose (not an annual dose) according to current age / risk guidance and prior RSV vaccination.", d.age !== null && (d.age >= 75 || d.age >= 50 && diagnosis.supported), ["cdc", "rsv"]);
-    vaccine("zoster", "complete the 2-dose recombinant zoster series as indicated.", d.age !== null && d.age >= 50);
-    vaccine("tdap", "review the primary tetanus series, at least one Tdap dose, 10-year Td / Tdap boosters, and pregnancy-specific Tdap timing.");
+    for (const key of ["flu", "covid", "pneumococcal", "rsv", "zoster", "tdap"]) {
+      const guidance = getVaccineGuidance(d, key);
+      if (guidance) action(`vaccine-${key}`, `Recommend ${guidance.target}: ${guidance.details}`, "prevention", [], guidance.sourceIds).vaccineGuidance = guidance;
+    }
     result.rationale.push("Symptoms and future exacerbation risk are assessed separately. Unknown answers are not negative findings.", "GINA treatment tracks are guideline pathways; U.S. labeling and pragmatic alternatives are stated separately. No free-text medication entry changes dosing or classification.");
     return finish();
   }
 
-  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, REVIEW_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
+  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getRoutineVisitDefaults, getVaccineGuidance, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, REVIEW_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
 });

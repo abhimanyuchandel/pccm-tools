@@ -14,12 +14,12 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261012-4">
-  <script src="/asthma/input-schema.js?v=20261012-4" defer></script>
-  <script src="/asthma/medications.js?v=20261012-4" defer></script>
-  <script src="/asthma/logic.js?v=20261012-4" defer></script>
-  <script src="/asthma/notes.js?v=20261012-4" defer></script>
-  <script src="/asthma/app.js?v=20261012-4" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-1">
+  <script src="/asthma/input-schema.js?v=20261013-1" defer></script>
+  <script src="/asthma/medications.js?v=20261013-1" defer></script>
+  <script src="/asthma/logic.js?v=20261013-1" defer></script>
+  <script src="/asthma/notes.js?v=20261013-1" defer></script>
+  <script src="/asthma/app.js?v=20261013-1" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -86,8 +86,6 @@
                     <tr><th scope="row">Medium-dose SMART<span class="table-detail">GINA Track 1, Step 4; may continue with Step 5 add-ons</span></th><td data-label="Scheduled maintenance">2 inhalations twice daily.</td><td data-label="As-needed relief">1 additional inhalation for symptoms or before exercise, using the same inhaler.</td></tr>
                   </tbody>
                 </table>
-                <p class="reference-safety"><strong>Daily limit:</strong> 12 total inhalations in 24 hours, counting maintenance and relief together. Seek medical assessment for worsening symptoms or need beyond this limit; do not delay urgent care until the limit is reached.</p>
-                <p class="hint"><strong>U.S. prescribing:</strong> AIR/SMART reliever use is guideline-supported but off-label. The labeled adult maintenance schedule is 2 inhalations twice daily. Do not use ICS-formoterol relief with a different LABA controller (for example, Advair or Breo), or assume that another ICS-LABA or triple inhaler can be used for SMART. Use a spacer with a pressurized metered-dose inhaler.</p>
                 <p class="reference-links"><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026: Track 1 regimens</a> <a href="https://www.nhlbi.nih.gov/resources/clinician-guide-2020-focused-updates-asthma-management-guidelines" target="_blank" rel="noopener noreferrer">NHLBI SMART guidance</a> <a href="https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fafa4cf1-99c2-43d5-73ad-51f256de3be0" target="_blank" rel="noopener noreferrer">U.S. Symbicort labeling</a></p>
               </div>
             </details>
@@ -115,17 +113,45 @@
             </details>
           </div>
           <div id="laba-type-fields" class="grid hidden" data-fields="labaType"></div>
-          <details class="clinical-drawer">
+          <details id="treatment-addons" class="clinical-drawer">
             <summary>Add-ons and treatment optimization</summary>
             <div class="drawer-body">
-              <div class="grid" data-fields="lamaAddon currentBiologic"></div>
-              <div id="biologic-duration-fields" class="grid hidden" data-fields="biologicMonths"></div>
-              <div class="grid" data-fields="maintenanceOcs"></div>
-              <div id="ocs-dose-fields" class="grid hidden" data-fields="maintenanceOcsDose"></div>
-              <div class="grid checkbox-grid" data-fields="adherence technique accessBarrier icsSideEffects"></div>
-              <div class="review-confirmation" data-fields="treatmentReviewed"></div>
-              <p class="hint">Confirm only after reviewing the listed add-ons and barriers. If no current biologic is documented, this confirmation records no biologic treatment. Optimization over 3-6 months must still be confirmed separately.</p>
-              <div class="grid checkbox-grid" data-fields="optimizedTherapy severeAsthmaEstablished"></div>
+              <div class="grid form-section-grid">
+                <section class="form-subgroup" aria-labelledby="additional-therapy-heading">
+                  <h3 id="additional-therapy-heading" class="subsection-title">Additional maintenance therapy</h3>
+                  <div class="field-stack" data-fields="lamaAddon maintenanceOcs"></div>
+                  <div id="ocs-dose-fields" class="field-stack hidden" data-fields="maintenanceOcsDose"></div>
+                </section>
+                <section class="form-subgroup" aria-labelledby="current-biologic-heading">
+                  <h3 id="current-biologic-heading" class="subsection-title">Biologic treatment</h3>
+                  <div class="field-stack" data-fields="currentBiologic"></div>
+                  <div id="biologic-duration-fields" class="field-stack hidden" data-fields="biologicMonths"></div>
+                </section>
+              </div>
+              <section class="form-subgroup" aria-labelledby="treatment-barriers-heading">
+                <h3 id="treatment-barriers-heading" class="subsection-title">Treatment barriers and adverse effects</h3>
+                <div class="grid checkbox-grid" data-fields="adherence technique accessBarrier icsSideEffects"></div>
+                <div class="review-confirmation" data-fields="treatmentReviewed"></div>
+                <p class="hint">Confirm after reviewing the additional maintenance therapies and treatment barriers. Biologic status is recorded separately above.</p>
+              </section>
+              <div class="grid form-section-grid">
+                <section class="form-subgroup" aria-label="Optimized treatment trial">
+                  <div data-fields="optimizedTherapy"></div>
+                </section>
+                <section class="form-subgroup" aria-label="Prior severe-asthma assessment">
+                  <div data-fields="severeAsthmaEstablished"></div>
+                  <details id="severe-asthma-examples" class="compact-reference">
+                    <summary>Examples of a prior severe-asthma diagnosis</summary>
+                    <ul class="reference-examples">
+                      <li>Persistent poor control or repeated steroid-treated exacerbations despite an adequate trial of high-dose ICS-LABA, with adherence and technique verified and contributing conditions addressed.</li>
+                      <li>Asthma that worsened when optimized high-dose ICS-LABA was reduced.</li>
+                      <li>Asthma now controlled on a biologic after a documented assessment established severe asthma.</li>
+                    </ul>
+                    <p class="hint">A previous ICU admission, a triple inhaler, or biologic use alone does not establish this diagnosis.</p>
+                    <a class="hint" href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe-asthma definition</a>
+                  </details>
+                </section>
+              </div>
             </div>
           </details>
         </section>
@@ -225,10 +251,17 @@
         <details id="phenotype-panel" class="panel panel-drawer">
           <summary><span class="drawer-title">5) Phenotype and Modifiers</span><span class="hint">Biomarkers, comorbidities, and relevant exposures</span></summary>
           <div class="drawer-body">
-            <div class="grid" data-fields="eosinophils historicalEosinophils feno"></div>
-            <div class="grid" data-fields="allergenDriven perennialSensitization nasalPolyps atopicDermatitis egpa endemicExposure smoking"></div>
-            <div class="review-confirmation" data-fields="phenotypeReviewed"></div>
-            <p class="hint">Group review does not confirm allergy testing, EGPA status, or smoking history; assess these separately. Weight and pretreatment IgE are requested only when the chosen biologic needs them for dosing.</p>
+            <div class="grid grid-three" data-fields="eosinophils historicalEosinophils feno"></div>
+            <section class="form-subgroup" aria-labelledby="allergic-phenotype-heading">
+              <h3 id="allergic-phenotype-heading" class="subsection-title">Allergic phenotype and Type 2 comorbidities</h3>
+              <div class="grid" data-fields="allergenDriven perennialSensitization nasalPolyps atopicDermatitis"></div>
+            </section>
+            <section class="form-subgroup" aria-labelledby="phenotype-modifiers-heading">
+              <h3 id="phenotype-modifiers-heading" class="subsection-title">Other modifiers</h3>
+              <div class="grid" data-fields="egpa smoking"></div>
+              <div class="grid full-width" data-fields="endemicExposure"></div>
+            </section>
+            <p class="hint">Answer each item individually; unassessed findings remain unknown. Weight and pretreatment IgE are requested only when the chosen biologic needs them for dosing.</p>
           </div>
         </details>
 
@@ -333,7 +366,7 @@
 
       <footer class="footer">
         <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; and current CDC adult immunization guidance.</p>
-        <p><strong>Application last updated:</strong> October 12, 2026.</p>
+        <p><strong>Application last updated:</strong> October 13, 2026.</p>
         <ul class="evidence-links">
           <li><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026 strategy</a></li>
           <li><a href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe asthma guide</a></li>
