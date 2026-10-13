@@ -76,7 +76,8 @@
     const core = "Smoking cessation has been recommended. Planned discussion of a quit date or gradual quit approach, triggers, medication access, and behavioral support, with referral to 1-800-QUIT-NOW when acceptable. Follow-up within 1 to 2 weeks of the quit attempt was recommended to review smoking, cravings, adverse effects, and adherence.";
     if (!option) return core + " The preferred medication plan remained to be chosen after shared decision making and safety review.";
     if (option.id === "behavioral") return core + " Behavioral support without medication was recommended for now, with readiness and pharmacotherapy options to be revisited.";
-    return core + ` ${option.ready ? `${option.name} has been recommended` : `${option.name} was considered, conditional on completing ${option.prerequisites.join(" and ").toLowerCase()}`} before prescribing. Proposed course: ${option.schedule}`;
+    if (!option.ready) return core + ` ${option.name} was considered. A definitive prescription and dose were deferred pending medication-specific safety and dosing review.`;
+    return core + ` ${option.name} has been recommended, subject to final prescribing review. Proposed course: ${option.schedule}`;
   }
 
   return { buildSupport, planText };

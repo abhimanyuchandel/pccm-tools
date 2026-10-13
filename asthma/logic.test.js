@@ -529,8 +529,10 @@ test("missing cessation safety review permits discussion but not a definite medi
   const rec = L.buildRecommendation(smoker({ smokingSafetyReviewed: false, smokingRenal: "unknown" }), { selectedSmokingPlanId: "varenicline" });
   assert.ok(rec.smokingSupport.selected); assert.equal(rec.smokingSupport.selected.ready, false);
   const text = N.buildNoteText(smoker({ smokingSafetyReviewed: false, smokingRenal: "unknown" }), rec);
-  assert.match(text, /Varenicline was considered, conditional on/);
+  assert.match(text, /Varenicline was considered.*prescription and dose were deferred/);
   assert.doesNotMatch(text, /Varenicline has been recommended/);
+  assert.doesNotMatch(text, /1 mg twice daily from day 8/);
+  assert.match(rec.smokingSupport.selected.schedule, /1 mg twice daily from day 8/);
 });
 test("pregnancy and breastfeeding require individualized medication review", () => {
   for (const patch of [{ pregnant: true }, { pregnant: null }, { smokingBreastfeeding: true }]) {
@@ -563,6 +565,7 @@ test("varenicline uses renal-specific references and bupropion needs organ-funct
     if (["severe", "dialysis"].includes(smokingRenal)) assert.doesNotMatch(rec.smokingSupport.selected.schedule, /1 mg twice daily/);
   }
   assert.equal(L.buildRecommendation(smoker({ smokingRenal: "impaired" }), { selectedSmokingPlanId: "bupropion" }).smokingSupport.selected.ready, false);
+  assert.doesNotMatch(smokingNote(smoker({ smokingRenal: "impaired" }), "bupropion"), /bupropion SR 150 mg/);
 });
 test("combination NRT dosing follows smoking quantity and time to the first cigarette", () => {
   for (const [smokingCigarettesPerDay, patch] of [[10, /14 mg patch daily for 6 weeks/], [11, /21 mg patch daily for 6 weeks/]]) {
