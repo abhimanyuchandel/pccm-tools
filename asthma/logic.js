@@ -1,10 +1,11 @@
 (function (root, factory) {
   const catalog = typeof module !== "undefined" && module.exports ? require("./medications.js") : root.asthmaMedications;
   const smoking = typeof module !== "undefined" && module.exports ? require("./smoking.js") : root.asthmaSmoking;
-  const logic = factory(catalog, smoking);
+  const plans = typeof module !== "undefined" && module.exports ? require("./plans.js") : root.asthmaPlans;
+  const logic = factory(catalog, smoking, plans);
   if (typeof module !== "undefined" && module.exports) module.exports = logic;
   if (root) root.asthmaLogic = logic;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, smoking) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, smoking, plans) {
   "use strict";
 
   const NUMBERS = "age biologicMonths maintenanceOcsDose fev1Pre fev1Post fvcPre fvcPost fev1Predicted fvcPredicted pefVariability airUsesPerWeek sabaCanisters ocsExacerbations hospitalExacerbations stableMonths eosinophils historicalEosinophils feno totalIge weightKg respiratoryRate spo2 acuteLungFunctionPercent postTreatmentSpo2 postTreatmentRespiratoryRate postTreatmentLungFunctionPercent observationMinutes".split(" ");
@@ -12,10 +13,9 @@
   const HISTORY = "dxBd dxIcsObjective dxChallenge dxPef".split(" ");
   NUMBERS.push("smokingCigarettesPerDay");
   BOOLEANS.push("smokingBupropionContra", "smokingVareniclineReaction", "smokingSeizure", "smokingPsychiatric", "smokingCvdConcern", "smokingHepaticConcern", "smokingBreastfeeding");
-  const REVIEW_FLAGS = ["treatmentReviewed", "riskReviewed", "acuteReassessmentAvailable", "smokingSafetyReviewed"];
+  const REVIEW_FLAGS = ["treatmentReviewed", "acuteReassessmentAvailable", "smokingSafetyReviewed"];
   const REVIEW_DEFAULTS = {
     treatmentReviewed: { lamaAddon: false, maintenanceOcs: false, accessBarrier: false, icsSideEffects: false, adherence: "adequate", technique: "correct" },
-    riskReviewed: { activityLimitation: false, recentExacerbation: false, priorIcu: false, persistentExacerbations: false, pregnant: false, respiratoryInfection: false, travelling: false },
     smokingSafetyReviewed: { smokingBupropionContra: false, smokingVareniclineReaction: false, smokingSeizure: false, smokingPsychiatric: false, smokingCvdConcern: false, smokingHepaticConcern: false, smokingBreastfeeding: false }
   };
   const TREATMENT_PRESETS = {
@@ -23,8 +23,7 @@
     saba: { controller: "saba-only", reliever: "saba", icsDose: "unknown", labaType: "unknown" },
     air: { controller: "none", reliever: "ics-formoterol", icsDose: "unknown", labaType: "unknown" },
     smartLow: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "low", labaType: "formoterol" },
-    smartMedium: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol" },
-    highDose: { controller: "ics-laba", reliever: "saba", icsDose: "high", labaType: "non-formoterol" }
+    smartMedium: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol" }
   };
   const ENUMS = {
     managementPhase: ["initial", "followup"], controller: ["unknown", "none", "saba-only", "ics", "ics-formoterol", "ics-laba", "triple"],
@@ -177,8 +176,8 @@
       description = `${track ? `GINA Track ${track}${step ? ` Step ${step}` : ""}, ` : ""}${d.icsDose === "unknown" ? "dose not documented" : `${d.icsDose}-dose`} ICS-LABA${d.controller === "triple" ? "-LAMA" : ""}`;
     } else if (d.controller === "saba-only") description = "SABA-only treatment without ICS protection";
     else if (d.controller === "none") description = "No maintenance controller documented";
-    const step5 = combination && d.icsDose === "high" && (d.lamaAddon === true || d.controller === "triple" || d.maintenanceOcs === true || !["none", "unknown"].includes(d.currentBiologic));
-    if (step5) { step = "5"; description = `${track ? `GINA Track ${track} ` : "GINA "}Step 5, high-dose ICS-LABA with add-on treatment`; }
+    const step5 = combination && ["medium", "high"].includes(d.icsDose) && (d.lamaAddon === true || d.controller === "triple" || d.maintenanceOcs === true || !["none", "unknown"].includes(d.currentBiologic));
+    if (step5) { step = "5"; description = `${track ? `GINA Track ${track} ` : "GINA "}Step 5 add-on treatment with ${d.icsDose}-dose ${track === 1 && d.controller === "ics-formoterol" ? "ICS-formoterol MART" : "ICS-LABA"}${d.controller === "triple" ? "-LAMA maintenance (not triple-inhaler MART)" : ""}`; }
     return { maintenance, effectivePhase, combination, formoterol, incompatible, airOnly, track, step, step5, description, relieverName: { "ics-formoterol": "ICS-formoterol", "ics-saba": "albuterol-budesonide", saba: "SABA", none: "no reliever", unknown: "reliever not documented" }[d.reliever] };
   }
 
@@ -188,9 +187,10 @@
     const highIntensity = treatment.combination && d.icsDose === "high" && !unverifiedHighSmart;
     const optimized = d.optimizedTherapy === true && d.adherence === "adequate" && d.technique === "correct" && d.accessBarrier === false;
     const burden = control.poor || risk.frequent || d.persistentExacerbations === true || d.maintenanceOcs === true;
-    const established = highIntensity && optimized && burden;
+    const previouslyEstablished = d.severeAsthmaEstablished === true;
+    const established = assessDiagnosis(d).supported && !treatment.incompatible && (highIntensity || previouslyEstablished && treatment.combination && ["medium", "high"].includes(d.icsDose)) && optimized && burden && !unverifiedHighSmart;
     return { highIntensity, unverifiedHighSmart, optimized, burden, established, previouslyEstablished: d.severeAsthmaEstablished === true,
-      label: established ? "Severe asthma supported after high-dose treatment optimization" : d.severeAsthmaEstablished === true ? "Previously established severe asthma; current treatment context requires review" : "Severe asthma not established from the available treatment and optimization history" };
+      label: established ? previouslyEstablished ? "Documented longitudinal severe asthma with persistent burden despite optimized current treatment" : "Severe asthma supported after high-dose treatment optimization" : previouslyEstablished ? "Previously established severe asthma; current treatment context requires review" : "Severe asthma not established from the available treatment and optimization history" };
   }
 
   function getDupilumabEvidenceFlag(input) {
@@ -214,14 +214,16 @@
     if (tx.incompatible) common.push("Resolve the incompatible controller and reliever LABA combination");
     if (f.severe.unverifiedHighSmart) common.push("Verify a supported product-specific high-dose ICS-LABA regimen; standard budesonide-formoterol SMART at 2 inhalations twice daily is medium-dose, not high-dose SMART");
     if (!f.diagnosis.confirmed) common.push("Review objective diagnostic evidence");
-    if (!f.severe.highIntensity) common.push("Reassess after an appropriate high-dose ICS-LABA trial");
+    if (!f.severe.highIntensity && !f.severe.previouslyEstablished) common.push("Establish severe asthma with an adequate optimized high-dose ICS-LABA assessment or documented worsening when it was reduced");
+    if (!highOrMedium) common.push("Verify an appropriate current medium- or high-dose ICS-LABA foundation before biologic initiation");
     if (!f.severe.optimized) common.push("Document technique, adherence, access, and optimization over 3-6 months");
     if (d.pregnant === true) common.push("Review pregnancy-specific benefits, risks, and limited safety data before a new biologic");
+    if (d.pregnant === null) common.push("Confirm pregnancy status before planning a new biologic");
     if (!f.risk.complete) common.push("Complete the annual exacerbation history");
     if (!f.risk.frequent && d.maintenanceOcs !== true) common.push("Verify product-specific exacerbation / severe-asthma eligibility and payer criteria");
     const candidates = [], future = !f.severe.established;
     const add = (id, reason, additional = []) => {
-      const prerequisites = [...common, ...additional], ready = prerequisites.length === 0;
+      const prerequisites = [...common, ...additional], ready = f.severe.established && prerequisites.length === 0;
       const fit = ready ? "The documented phenotype, treatment intensity, optimization, and exacerbation burden support the usual clinical criteria. Confirm the exact product indication, safety, and payer requirements before prescribing." : future ? "The phenotype is a potential match for future treatment. Current data do not establish immediate prescribing eligibility." : "The phenotype is a match, but outstanding prerequisites prevent a definitive prescribing recommendation.";
       candidates.push({ id, name: catalog.MEDICATIONS[id].name, reason, prerequisites, ready, future, criteriaFit: fit, ...catalog.BIOLOGIC_CONSIDERATIONS[id] });
     };
@@ -338,6 +340,9 @@
       return item;
     };
     const finish = () => {
+      plans.applyPlan(result, selection);
+      medIds.clear();
+      result.actions.forEach(item => { item.medicationIds.forEach(id => medIds.add(id)); item.sourceIds.forEach(id => sourceIds.add(id)); });
       result.medications = [...medIds].map(id => catalog.MEDICATIONS[id]).filter(Boolean);
       result.medications.forEach(med => med.sourceIds.forEach(id => sourceIds.add(id)));
       result.sources = [...sourceIds].map(id => catalog.SOURCES[id]).filter(Boolean);
@@ -414,14 +419,14 @@
           findings.proposedMedicationId = proposed;
           action("stepup", `${prerequisitesIncomplete ? "Once technique, adherence, and access are verified, consider" : "Consider"} ${proposed === "smartLow" ? "low-dose" : "medium-dose"} budesonide-formoterol SMART for persistent inadequate control. When changing from another ICS-LABA, replace the controller rather than adding a second LABA. A suitable effective Track 2 regimen may be retained / adjusted when clinically preferred.`, "management", [proposed]);
         } else if (treatment.combination && ["medium", "high"].includes(d.icsDose)) {
-          action("step5-review", d.icsDose === "medium" ? "For persistent inadequate control on medium-dose ICS-LABA / MART, consider a limited, monitored trial of higher-dose ICS-LABA or an appropriate add-on after optimization. Do not exceed the product / MART daily ceiling; plan subsequent phenotype-directed decisions rather than indefinite inhaled-dose escalation." : "Reassess persistent inadequate control despite high-dose ICS-LABA, including objective diagnosis and treatment optimization; review phenotype-directed add-on therapy and cumulative steroid exposure.", "management", d.icsDose === "medium" ? ["highDose"] : []);
+          action("step5-review", d.icsDose === "medium" ? "For persistent inadequate control after optimization, assess Step 5 add-ons while retaining medium-dose MART when appropriate. Budesonide-formoterol 160/4.5 mcg, 2 inhalations twice daily plus 1 as needed is the adult Step 4-5 MART schedule. Review LAMA and phenotype-matched biologic eligibility; a limited high-dose ICS-LABA trial is an option, not a mandatory switch before every add-on." : "Reassess persistent inadequate control despite high-dose ICS-LABA, including objective diagnosis and treatment optimization; review phenotype-directed add-on therapy and cumulative steroid exposure.", "management");
           if (d.lamaAddon !== true && d.controller !== "triple") action("lama", "Consider adding tiotropium when appropriate; LAMA provides modest lung-function / exacerbation benefit and is not a reliever. Verify existing LAMA exposure first.", "management", ["tiotropium"]);
         } else action("clarify-regimen", "Clarify the maintenance controller, ICS dose intensity, and reliever before assigning an escalation step. Treating severe symptoms does not need to wait for form completion.", "testing");
       }
     } else if (control.complete && control.classification === "well controlled") {
       action("continue", "Continue the effective ICS-containing regimen while reviewing adherence, technique, future exacerbation risk, adverse effects, and treatment preferences. Do not change an effective Track 2 regimen solely to change tracks.");
-      const eligible = risk.complete && !risk.anyExacerbation && d.recentExacerbation === false && d.stableMonths >= 3 && d.lungFunctionStable === true && d.pregnant === false && d.respiratoryInfection === false && d.travelling === false && d.maintenanceOcs === false;
-      if (eligible && treatment.maintenance && !treatment.incompatible && d.icsDose !== "unknown") {
+      const eligible = !modifiable && !prerequisitesIncomplete && risk.complete && !risk.anyExacerbation && d.recentExacerbation === false && d.priorIcu !== null && d.stableMonths >= 3 && d.lungFunctionStable === true && d.pregnant === false && d.respiratoryInfection === false && d.travelling === false && d.maintenanceOcs === false;
+      if (eligible && treatment.maintenance && !treatment.incompatible && d.icsDose !== "unknown" && !treatment.step5 && !severe.previouslyEstablished) {
         const smart = d.controller === "ics-formoterol";
         const regimen = smart && treatment.track === 1 && treatment.step === "4" ? "If using budesonide-formoterol, reduce medium-dose SMART to 160/4.5 mcg, 1 inhalation twice daily plus 1 as needed (maximum 12 total inhalations/day)." : smart && treatment.track === 1 && treatment.step === "3" ? "If using budesonide-formoterol, consider 160/4.5 mcg, 1 maintenance inhalation once daily plus 1 as needed (maximum 12 total inhalations/day). Reassess control and future risk before a later reduction to as-needed-only ICS-formoterol." : "Reduce the maintenance ICS dose by about 25-50% using an available product-specific regimen; retain ICS protection, review the ongoing need for add-ons, and provide a compatible reliever.";
         action("stepdown", `With control sustained for at least 3 months and stable lung function, consider a supervised step-down: ${regimen} Record baseline symptoms / lung function, provide a written return-to-prior-treatment plan, and reassess in 4-8 weeks. Do not completely withdraw ICS.`, "management", smart && treatment.track === 1 && treatment.step === "4" ? ["smartLow"] : []);
@@ -437,8 +442,8 @@
     if (phenotypeNeeded) {
       sourceIds.add("severe");
       const phenotypeAvailable = d.eosinophils !== null || d.historicalEosinophils !== null || d.feno !== null || d.perennialSensitization === true;
-      if (!phenotypeAvailable) action("phenotype-testing", "Prioritize blood eosinophils, FeNO, and clinically relevant allergic phenotype testing now so subsequent Step 5 add-on decisions can be made efficiently if control remains inadequate on optimized high-dose ICS-LABA. Obtain pretreatment total IgE when considering omalizumab dosing.", "testing");
-      else if (!severe.established) action("future-biologic", `If control remains inadequate after optimized high-dose ICS-LABA, consider phenotype-matched biologic therapy at follow-up${result.biologicCandidates.length ? `; current data support reviewing ${result.biologicCandidates.map(item => item.name.split(" (")[0]).join(", ")}` : "; expand targeted testing to clarify suitable options"}. Current findings do not by themselves establish immediate severe-asthma eligibility.`, "management");
+      if (!phenotypeAvailable) action("phenotype-testing", "Obtain blood eosinophils, FeNO, and clinically relevant allergic phenotype testing to guide Step 5 add-on decisions. Review longitudinal severe-asthma evidence and treatment optimization; obtain pretreatment total IgE when considering omalizumab dosing.", "testing");
+      else if (!severe.established) action("future-biologic", `Review phenotype-matched biologic therapy at follow-up if control remains inadequate after treatment optimization and severe asthma is established${result.biologicCandidates.length ? `; current phenotype matches include ${result.biologicCandidates.map(item => item.name.split(" (")[0]).join(", ")}` : "; complete targeted testing"}. Document an adequate optimized high-dose ICS-LABA assessment or prior deterioration when it was reduced; do not exceed supported MART dosing.`, "management");
       else {
         const ready = result.biologicCandidates.filter(item => item.ready), existing = !["none", "unknown"].includes(d.currentBiologic);
         action("biologic-review", existing ? "Review the response to the current biologic and the suitability of a coordinated switch for persistent inadequate control. Do not add a second biologic routinely." : ready.length ? `Addition of a phenotype-matched biologic has been recommended based on the current severe-asthma assessment. Supported options include ${ready.map(item => item.name).join(", ")}. Select the preferred agent and confirm product safety and coverage before prescribing.` : "Biologic treatment remains conditional on completing the listed eligibility prerequisites. Review the phenotype-matched options, required testing, product criteria, and payer requirements before prescribing.", "management");
@@ -448,13 +453,14 @@
       if (d.egpa === "confirmed") action("egpa-care", "Coordinate treatment of confirmed EGPA using its indication-specific regimen; asthma dosing must not be substituted for EGPA dosing.", "management");
       const dup = getDupilumabEvidenceFlag(d); if (dup.caution) result.cautions.push(dup.caution);
       if (d.allergenDriven === true && d.perennialSensitization !== true) result.cautions.push("Allergen-driven symptoms are documented without objective sensitization confirmation; obtain skin prick testing or serum specific IgE testing before considering omalizumab.");
-      const selected = result.biologicCandidates.find(item => item.id === selection.selectedBiologicId);
-      if (selected) {
-        findings.selectedBiologicId = selected.id;
-        const existing = !["none", "unknown"].includes(d.currentBiologic);
-        action("selected-biologic", existing ? `Clinician-selected option: ${selected.name}. Review response to ${d.currentBiologic}${d.biologicMonths === null ? "" : ` after ${d.biologicMonths} months`}, eligibility, and a coordinated single-biologic strategy before any change; do not combine biologics routinely.` : selected.ready ? `${selected.name} has been recommended based on the current presentation, subject to shared decision-making, authorization, and product safety review before initiation.` : selected.future ? `Consider ${selected.name} at follow-up only if asthma remains inadequately controlled despite an appropriate optimized high-dose ICS-LABA trial. Complete the listed prerequisites before initiation.` : `Consider clinician-selected ${selected.name} after completing prerequisites: ${selected.prerequisites.join("; ")}. Do not initiate solely from this provisional match.`, "management", [selected.id], ["severe"]);
-        action("biologic-monitor", `${selected.ready ? "After initiation, review" : "If initiated after the prerequisites are met, review"} clinical response after ${selected.id === "depemokimab" ? "at least 6 months" : "about 4 months"}, including control, exacerbations, lung function, and steroid exposure.${selected.id === "depemokimab" ? "" : " Extend an uncertain trial to 6-12 months before declaring failure."}`, "monitoring", [], ["severe"]);
-      }
+    }
+    const selected = result.biologicCandidates.find(item => item.id === selection.selectedBiologicId);
+    if (selected) {
+      findings.selectedBiologicId = selected.id;
+      const existing = !["none", "unknown"].includes(d.currentBiologic);
+      const text = existing ? `Assess response to ${catalog.MEDICATIONS[d.currentBiologic].name}${d.biologicMonths === null ? "" : ` after ${d.biologicMonths} months`} before changing treatment. ${selected.name} is the preferred option for a coordinated single-agent strategy. Continuation or switch decision: ***. Do not routinely combine biologics.` : selected.ready ? `${selected.name} has been recommended for the current severe-asthma presentation. Initiate after product safety and authorization requirements are completed.` : selected.future ? `Reassess ${selected.name} at follow-up if control remains inadequate after optimization and severe asthma is established. Before initiation, complete: ${selected.prerequisites.join("; ")}.` : `Complete the following before initiating ${selected.name}: ${selected.prerequisites.join("; ")}. Initiation timing: ***.`;
+      action("selected-biologic", text, "management", [selected.id], ["severe"]).noteText = text;
+      action("biologic-monitor", `${selected.ready ? "After initiation, review" : "If initiated after the prerequisites are met, review"} clinical response after ${selected.id === "depemokimab" ? "at least 6 months" : "about 4 months"}, including control, exacerbations, lung function, and steroid exposure.${selected.id === "depemokimab" ? "" : " Extend an uncertain trial to 6-12 months before declaring failure."}`, "monitoring", [], ["severe"]);
     }
     if (!acute.active) action("routine-followup", acute.recentResolved ? "Individualize follow-up according to recovery and current control after the resolved exacerbation. Confirm an initial post-exacerbation review within 2-7 days of the episode if not already completed; review sooner for incomplete recovery or deterioration." : poor || treatment.effectivePhase === "initial" ? "Arrange follow-up in about 4-6 weeks after treatment initiation / adjustment, sooner for deterioration; reassess symptoms, exacerbations, adherence, technique, adverse effects, and lung function as appropriate." : "Arrange routine follow-up in about 3 months; use an earlier 4-8-week review after step-down or another treatment change.", "followup");
     action("technique-counsel", "Review inhaler technique with demonstration / teach-back, adherence, access, and spacer use where appropriate.", "counseling");

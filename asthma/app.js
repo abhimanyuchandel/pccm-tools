@@ -12,6 +12,7 @@
   let recommendation = null;
   let selectedBiologicId = null;
   let selectedSmokingPlanId = null;
+  let planSelections = {};
   let inputWarnings = [];
   let stale = false;
   let copying = false;
@@ -251,6 +252,13 @@
     const symptomKeys = ["symptomDays", "nightWaking", "activityLimitation"];
     if (value("reliever") === "saba") symptomKeys.push("sabaFrequency");
     const state = window.asthmaLogic.normalizeState(rawClinicalState());
+    Object.keys(schema).filter(key => schema[key].type === "exception").forEach(key => {
+      const wrapper = control(key).closest(".clinical-field");
+      let badge = wrapper.querySelector(".confirmed-finding");
+      if (!badge) { badge = element("span", "hint confirmed-finding"); wrapper.append(badge); }
+      badge.textContent = value(key) === false ? "Individually documented as absent." : "";
+      badge.classList.toggle("hidden", value(key) !== false);
+    });
     document.querySelectorAll("[data-treatment-preset]").forEach(button => {
       const id = button.dataset.treatmentPreset, preset = window.asthmaLogic.TREATMENT_PRESETS[id];
       const controllerMatches = state.controller === preset.controller || ["air", "saba"].includes(id) && ["none", "saba-only"].includes(state.controller);
@@ -281,6 +289,7 @@
     show("note-jump-link", false);
     document.getElementById("biologic-options").disabled = true;
     document.getElementById("smoking-options").disabled = true;
+    document.querySelectorAll("[data-plan-group]").forEach(group => { group.disabled = true; });
     noteOutput.value = "";
     noteOutput.placeholder = "Clinical inputs have changed. Regenerate recommendations to create an updated SOAP note before copying.";
   }
@@ -392,7 +401,7 @@
     input.checked = candidate ? selectedBiologicId === candidate.id : selectedBiologicId === null;
     const body = element("span", "biologic-option-body");
     body.append(element("strong", "", candidate ? candidate.name : "No agent selected"));
-    if (!candidate) body.append(element("span", "hint", "Document consideration of suitable therapy without naming a definite treatment choice."));
+    if (!candidate) body.append(element("span", "hint", "Leave the agent decision as *** in the note, or select an option below."));
     else {
       body.append(element("span", "hint", candidate.reason));
       const timing = candidate.future ? "Future add-on consideration" : candidate.ready ? "Documented criteria support consideration" : "Prerequisites require review";
@@ -501,6 +510,7 @@
       : "";
     renderBiologics(rec);
     renderSmoking(rec);
+    renderPlan(rec);
     updateConditionalFields();
     noteOutput.value = note;
     noteOutput.placeholder = rec.invalid ? "Correct the data-quality errors and regenerate recommendations to create a SOAP note." : "";
@@ -530,7 +540,7 @@
         body.append(element("span", "option-status", option.blockers.length ? "Not selectable with a documented contraindication" : option.ready ? "Available findings support this plan, subject to final prescribing review" : "Conditional option with safety or dosing review still needed"));
         const pending = [...option.blockers, ...option.prerequisites];
         if (pending.length) { const list = element("ul", "prerequisite-list"); pending.forEach(text => list.append(element("li", "", text))); body.append(list); }
-      } else body.append(element("span", "hint", "The note recommends cessation support without assuming a medication choice."));
+      } else body.append(element("span", "hint", "The note recommends cessation support and reserves *** for the treatment choice."));
       label.append(radio, body);
       const wrapper = element("div", "biologic-choice"); wrapper.append(label);
       if (option) {
@@ -557,21 +567,61 @@
     }
   }
 
+  function renderPlan(rec) {
+    const plan = rec.plan, container = document.getElementById("plan-options");
+    container.replaceChildren();
+    show("plan-card", plan.groups.length > 0 || plan.confirmations.length > 0);
+    plan.groups.forEach(group => {
+      const fieldset = element("fieldset", "plan-choice-group");
+      fieldset.dataset.planGroup = group.id;
+      fieldset.disabled = stale || rec.invalid;
+      fieldset.append(element("legend", "result-subtitle", group.title));
+      const choices = element("div", "plan-choice-grid");
+      [{ id: "", label: "Complete in EMR (***)", blockers: [] }, ...group.options].forEach(option => {
+        const label = element("label", "biologic-option plan-option");
+        const radio = element("input");
+        radio.type = "radio"; radio.name = `plan-${group.id}`; radio.value = option.id;
+        radio.checked = option.id === (group.selected?.id || "");
+        radio.disabled = option.blockers.length > 0;
+        const body = element("span", "biologic-option-body");
+        body.append(element("strong", "", option.label));
+        if (option.blockers.length) body.append(element("span", "hint", option.blockers.join(". ")));
+        label.append(radio, body); choices.append(label);
+      });
+      fieldset.append(choices); container.append(fieldset);
+    });
+    const confirmations = document.getElementById("plan-confirmation-fields");
+    confirmations.replaceChildren();
+    show("plan-confirmations", plan.confirmations.length > 0);
+    plan.confirmations.forEach(({ key, label }) => {
+      const group = element("fieldset", "clinical-field choice-field");
+      group.append(element("legend", "field-label", label));
+      const choices = element("div", "choice-options");
+      [["unknown", "Not assessed"], ["yes", "Present"], ["no", "Absent"]].forEach(([value, title]) => {
+        const label = element("label", "choice-option"), input = element("input");
+        input.type = "radio"; input.name = `confirm-${key}`; input.value = value;
+        input.dataset.confirmField = key; input.checked = value === "unknown";
+        label.append(input, element("span", "", title)); choices.append(label);
+      });
+      group.append(choices); confirmations.append(group);
+    });
+  }
+
   function buildForSnapshot(data, selected, smokingPlan = selectedSmokingPlanId) {
-    let rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: smokingPlan });
+    let rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: smokingPlan, planSelections });
     if (rec.invalid === true) return { rec, selected: null, smokingPlan: null, note: "" };
     if (selected && !candidates(rec).some((candidate) => candidate.id === selected)) {
       selected = null;
-      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: null, selectedSmokingPlanId: smokingPlan });
+      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: null, selectedSmokingPlanId: smokingPlan, planSelections });
     }
     if (smokingPlan && !rec.smokingSupport.selected) {
       smokingPlan = null;
-      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: null });
+      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: null, planSelections });
     }
     if (rec.invalid === true) return { rec, selected: null, smokingPlan: null, note: "" };
     const note = window.asthmaNotes.buildNoteText(data, rec);
     if (typeof note !== "string" || !note.trim()) throw new Error("The clinical note could not be generated. Review the inputs and try again.");
-    return { rec, selected, smokingPlan, note };
+    return { rec, selected, smokingPlan, note, planSelections: rec.plan.selections };
   }
 
   function publishRecommendation(data, output, warnings) {
@@ -579,6 +629,7 @@
     recommendation = output.rec;
     selectedBiologicId = output.selected;
     selectedSmokingPlanId = output.smokingPlan || null;
+    planSelections = output.planSelections || {};
     inputWarnings = warnings;
     stale = false;
     revision += 1;
@@ -639,6 +690,7 @@
       const output = buildForSnapshot(snapshot, selected);
       selectedBiologicId = output.selected;
       selectedSmokingPlanId = output.smokingPlan;
+      planSelections = output.planSelections;
       recommendation = output.rec;
       revision += 1;
       renderRecommendation(recommendation, output.note);
@@ -664,6 +716,7 @@
     try {
       const output = buildForSnapshot(snapshot, selectedBiologicId, selected);
       selectedBiologicId = output.selected; selectedSmokingPlanId = output.smokingPlan;
+      planSelections = output.planSelections;
       recommendation = output.rec; revision += 1;
       renderRecommendation(recommendation, output.note);
       Array.from(document.getElementById("smoking-options").querySelectorAll("input")).find(input => input.value === (selectedSmokingPlanId || ""))?.focus({ preventScroll: true });
@@ -679,6 +732,21 @@
     try { copied = document.execCommand("copy") === true; } catch { /* Manual selection remains available. */ }
     if (copied && previousFocus?.focus) previousFocus.focus({ preventScroll: true });
     return copied;
+  }
+
+  function choosePlan(event) {
+    const group = event.target.closest("[data-plan-group]");
+    if (!group || !snapshot || stale || recommendation.invalid) return;
+    const previous = planSelections;
+    planSelections = { ...planSelections, [group.dataset.planGroup]: event.target.value || null };
+    try {
+      const output = buildForSnapshot(snapshot, selectedBiologicId);
+      planSelections = output.planSelections; recommendation = output.rec; revision += 1;
+      const name = event.target.name, value = event.target.value;
+      renderRecommendation(recommendation, output.note);
+      Array.from(document.getElementById("plan-options").querySelectorAll("input")).find(input => input.name === name && input.value === value)?.focus({ preventScroll: true });
+      copyStatus.textContent = "SOAP note updated with the selected encounter plan.";
+    } catch (error) { planSelections = previous; markStale(); status.textContent = error.message || "Regenerate before choosing a treatment plan."; }
   }
 
   async function copyNote() {
@@ -754,6 +822,13 @@
     });
     document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
     document.getElementById("smoking-options").addEventListener("change", chooseSmokingPlan);
+    document.getElementById("plan-options").addEventListener("change", choosePlan);
+    document.getElementById("plan-confirmation-fields").addEventListener("change", event => {
+      const key = event.target.dataset.confirmField;
+      if (!key) return;
+      setValue(key, event.target.value === "yes" ? true : event.target.value === "no" ? false : null);
+      markStale(); updateConditionalFields(); updateInputSummaries();
+    });
     document.querySelectorAll("[data-treatment-preset]").forEach(button => button.addEventListener("click", () => {
       const preset = window.asthmaLogic.TREATMENT_PRESETS[button.dataset.treatmentPreset];
       const changed = Object.entries(preset).some(([key, next]) => value(key) !== next);

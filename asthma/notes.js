@@ -112,7 +112,7 @@
   }
 
   function assessment(d, f) {
-    const patient = d.age === null ? "The adult patient" : `The patient was ${d.age} years old and`;
+    const patient = d.age === null ? "The adult patient" : `A ${d.age} year old patient`;
     const diagnosis = f.diagnosis.confirmed ? `Asthma was supported by ${proseList(f.diagnosis.evidence)}.` : f.diagnosis.established ? "An established clinical asthma diagnosis was documented, with original objective evidence still to be verified." : "Asthma was suspected and required objective confirmation.";
     const reason = f.acute.active ? "an active exacerbation" : f.acute.recentResolved ? "follow up after a resolved exacerbation" : f.treatment.effectivePhase === "followup" ? "ongoing asthma management" : "initial asthma management";
     const parts = [`${patient} was evaluated for ${reason}.`, diagnosis];
@@ -136,6 +136,7 @@
     }
     const reliever = { "ics-formoterol": "an inhaled corticosteroid and formoterol combination", "ics-saba": "albuterol and budesonide", saba: "a short acting beta agonist", unknown: "not yet verified" }[d.reliever];
     if (reliever) parts.push(`The reliever was ${reliever}.`);
+    if (d.lamaAddon === true && d.controller !== "triple") parts.push("A separate LAMA was included in the current maintenance regimen.");
     if (!["none", "unknown"].includes(d.currentBiologic)) parts.push(`The current biologic was ${logic.MEDICATIONS[d.currentBiologic].name}${d.biologicMonths === null ? "" : `, used for ${d.biologicMonths} months`}.`);
     if (d.maintenanceOcs === true) parts.push(`Maintenance systemic corticosteroid use was documented${d.maintenanceOcsDose === null ? "" : ` at a prednisone equivalent dose of ${d.maintenanceOcsDose} mg/day`}.`);
     parts.push(f.control.classification === "not fully assessed" ? "Symptom control could not be fully classified from the available history." : `GINA symptom control was ${f.control.classification}${f.control.complete ? "" : ", with remaining history incomplete"}.`);
@@ -149,9 +150,9 @@
     if (phenotype.length) parts.push(`The relevant phenotype and comorbidities included ${proseList(phenotype)}.`);
     if (d.egpa === "suspected") parts.push("EGPA was suspected but had not been established.");
     if (d.egpa === "confirmed") parts.push("Confirmed EGPA required coordinated treatment for that indication.");
-    if (f.severe.established) parts.push("Persistent disease burden despite optimized inhaled corticosteroid and LABA treatment at a high corticosteroid dose supported a severe asthma assessment.");
+    if (f.severe.established) parts.push(f.severe.previouslyEstablished ? "Severe asthma had been established by a prior longitudinal assessment, and disease burden persisted despite optimized current treatment." : "Persistent disease burden despite optimized inhaled corticosteroid and LABA treatment at a high corticosteroid dose supported a severe asthma assessment.");
     const proposed = { air: "as needed budesonide and formoterol", smartLow: "budesonide and formoterol SMART at a low maintenance corticosteroid dose", smartMedium: "budesonide and formoterol SMART at a medium maintenance corticosteroid dose" }[f.proposedMedicationId];
-    if (proposed) parts.push(`The recommended treatment change was ${proposed}.`);
+    if (proposed) parts.push(`The planned regimen is ${proposed}.`);
     return parts.join(" ");
   }
 
@@ -171,12 +172,12 @@
     "acute-followup": () => "After stabilization, an ICS-containing regimen, written action plan, urgent return precautions, and follow-up within 2-7 days were recommended, with review of triggers, adherence, and response.",
     "postacute-controller": () => "After acute stabilization, reassessment of controller intensity and an appropriate ICS-formoterol maintenance-and-reliever strategy were recommended when suitable; a complete regimen change, not duplicate LABA treatment, would be used. A maintenance triple inhaler would not be used for rescue.",
     "postacute-smoking": () => "After stabilization, smoking-cessation counseling, medication suitability review, and quitline support were recommended. A definitive cessation medication plan was deferred until the acute episode had been addressed.",
-    "diagnostic-confirmation": (d, f) => f.diagnosis.established ? "Review of historical objective evidence and, when appropriate, repeat spirometry, serial PEF, or bronchoprovocation was recommended without automatically withdrawing effective ICS treatment." : "Objective confirmation with pre/post-bronchodilator spirometry, serial PEF, or suitable bronchoprovocation was recommended. Clinically necessary ICS-containing treatment could be started provisionally with a plan for confirmation.",
+    "diagnostic-confirmation": (d, f) => f.diagnosis.established ? "Retrieve historical objective diagnostic evidence. Arrange appropriately timed repeat spirometry, serial PEF, or bronchoprovocation if confirmation remains needed; retain effective ICS treatment while evaluating." : "Confirm variable airflow limitation with pre/post-bronchodilator spirometry, serial PEF, or appropriate bronchoprovocation. Document confirmation after any clinically necessary provisional ICS treatment.",
     "steroid-effects": () => "Review of steroid adverse effects, dose/device, spacer and mouth-rinsing technique, cumulative OCS exposure, and relevant interactions was recommended, with the lowest effective ICS dose retained.",
     "resolve-reliever": () => "Resolution of the controller/reliever LABA mismatch was recommended before escalation, using a compatible SABA or albuterol-budesonide reliever or changing the entire controller to a suitable ICS-formoterol regimen.",
     "start-controller": (d, f) => `Recommended ${f.proposedMedicationId === "air" ? "as-needed low-dose budesonide-formoterol (GINA Track 1 Steps 1-2)" : f.proposedMedicationId === "smartLow" ? "low-dose budesonide-formoterol SMART (GINA Track 1 Step 3)" : "medium-dose budesonide-formoterol SMART (GINA Track 1 Step 4)"}, with confirmation of the product and shared treatment choice.`,
     "complete-initial": () => "Documentation of symptom frequency and night waking was recommended before assigning an initial treatment step; missing history did not establish suitability for low-intensity treatment.",
-    optimize: () => "Review and correction of technique, adherence, access, smoke/irritant exposure, obesity, rhinosinusitis, symptomatic GERD, OSA, inducible laryngeal obstruction, and medication adverse effects were recommended before routine escalation, followed by reassessment.",
+    optimize: () => "Correct documented technique, adherence, or access concerns. Address relevant smoke/irritant exposure, obesity, rhinosinusitis, symptomatic GERD, OSA, inducible laryngeal obstruction, and medication adverse effects before routine escalation. Reassess response after optimization.",
     stepup: (d, f) => `A step-up to ${f.proposedMedicationId === "smartLow" ? "low-dose" : "medium-dose"} budesonide-formoterol SMART was considered after verification of technique, adherence, and access. A suitable effective Track 2 regimen could instead be retained/adjusted; a controller change would replace, not duplicate, LABA treatment.`,
     "step5-review": d => d.icsDose === "medium" ? "A limited monitored trial of higher-dose ICS-LABA or an appropriate add-on was considered after optimization, with subsequent phenotype-directed decisions rather than indefinite inhaled-dose escalation. Product/MART ceilings were to be respected." : "Review of persistent inadequate control despite high-dose ICS-LABA was recommended, including objective diagnosis, optimization, phenotype-directed add-on options, and steroid burden.",
     lama: () => "A tiotropium add-on was considered, conditional on verification of existing LAMA exposure, with modest lung-function/exacerbation benefit and no rescue activity.",
@@ -184,46 +185,41 @@
     continue: () => "Recommended continuation of the effective ICS-containing regimen, with review of future risk, adverse effects, technique, adherence, and preferences. An effective Track 2 regimen would not be changed solely to change tracks.",
     stepdown: (d, f) => `A supervised step-down was considered after at least 3 months of control and stable lung function. ${d.controller === "ics-formoterol" && f.treatment.track === 1 && f.treatment.step === "4" ? "For budesonide-formoterol, the proposed reduction was 160/4.5 mcg, 1 inhalation twice daily plus 1 as needed, maximum 12 total inhalations/day." : d.controller === "ics-formoterol" && f.treatment.track === 1 && f.treatment.step === "3" ? "For budesonide-formoterol, the proposed reduction was 160/4.5 mcg, 1 maintenance inhalation once daily plus 1 as needed, maximum 12 total inhalations/day; further reduction to AIR alone would follow reassessment." : "A product-specific maintenance ICS reduction of about 25-50% was considered while retaining ICS protection and a compatible reliever."} Baseline assessment, a written return-to-prior-treatment plan, and reassessment in 4-8 weeks were recommended. Complete ICS withdrawal was not recommended.`,
     "stepdown-conditional": () => "Step-down was deferred until sustained control for at least 3 months, stable lung function, and review of exacerbations, pregnancy, infection, travel, steroid exposure, and prior life-threatening asthma; current ICS protection was to be retained.",
-    "stable-biologic": () => "For a good biologic response, review of OCS/add-on burden before inhaled-treatment reduction was recommended, with cautious OCS tapering and adrenal-risk assessment. Automatic biologic cessation or ICS withdrawal was not recommended.",
-    "complete-control": () => "Completion of symptom-control and exacerbation-risk assessment was recommended before declaring treatment sufficient or stepping down, with appropriate ICS protection retained meanwhile.",
+    "stable-biologic": () => "Review OCS and add-on burden before reducing inhaled therapy following a good biologic response. Taper chronic OCS cautiously with adrenal-risk assessment. Do not automatically stop the biologic or withdraw ICS.",
+    "complete-control": () => "Complete symptom-control and exacerbation-risk assessment before assigning good control or reducing treatment. Retain appropriate ICS protection.",
     "ics-protection": () => "An ICS-containing strategy was recommended rather than SABA-only treatment for confirmed asthma, with intensity guided by symptoms, lung function, and exacerbation history.",
-    "phenotype-testing": () => "Blood eosinophils, FeNO, and clinically relevant allergic phenotype testing were recommended for future Step 5 decisions; pretreatment total IgE would be obtained when considering omalizumab dosing.",
-    "future-biologic": () => "Phenotype-matched biologic therapy would be considered at follow-up if control remained inadequate despite optimized high-dose ICS-LABA, after verification of eligibility and necessary testing.",
-    "biologic-review": (d, f, rec) => !["none", "unknown"].includes(d.currentBiologic) ? "Review of the current biologic response and a coordinated single-agent strategy was recommended before any change." : rec.biologicCandidates.some(item => item.ready) ? "Addition of a suitable phenotype-matched biologic has been recommended based on the current severe-asthma presentation, subject to product safety review and coverage confirmation. Agent choice remained to be determined through shared decision making." : "Biologic treatment remained conditional on completing the outstanding eligibility and testing prerequisites before prescribing.",
-    "azithromycin-review": () => "A monitored long-term azithromycin trial was considered when appropriate after mycobacterial screening, ECG/QTc, hearing and interaction review, and discussion of resistance; it was not recommended as routine exacerbation antibiotic treatment.",
-    "egpa-workup": () => "Evaluation for suspected EGPA was recommended before attributing eosinophilia/systemic features to asthma or using a confirmed-disease indication.",
-    "egpa-care": () => "Coordinated indication-specific treatment of confirmed EGPA was recommended rather than substitution of asthma-only dosing.",
-    "selected-biologic": (d, f, rec) => {
-      const candidate = rec.biologicCandidates.find(item => item.id === f.selectedBiologicId);
-      if (!["none", "unknown"].includes(d.currentBiologic)) return `Review of response to ${logic.MEDICATIONS[d.currentBiologic].name}${d.biologicMonths === null ? "" : ` after ${d.biologicMonths} months`} was recommended before any change. ${candidate.name} was considered within a coordinated single-biologic strategy; routine combination of biologics was not recommended.`;
-      return candidate.ready ? `${candidate.name} has been recommended based on the current presentation. Initiation remained subject to shared decision-making, authorization, and product safety review.` : candidate.future ? `${candidate.name} would be considered at subsequent follow-up only if control remained inadequate despite an appropriate optimized high-dose ICS-LABA trial. Initiation would await verification of the listed prerequisites.` : `Considered ${candidate.name}, conditional on: ${candidate.prerequisites.join("; ")}. Initiation would await completion of these prerequisites.`;
-    },
+    "phenotype-testing": () => "Obtain blood eosinophils, FeNO, and clinically relevant allergic phenotype testing for Step 5 treatment planning. Obtain pretreatment total IgE if omalizumab is being pursued.",
+    "future-biologic": () => "Reassess phenotype-directed biologic treatment at follow-up if control remains inadequate after optimization and severe asthma is established. Future agent decision: ***.",
+    "biologic-review": (d, f, rec) => !["none", "unknown"].includes(d.currentBiologic) ? "Assess the current biologic response before changing to another agent. Continue a single-biologic strategy. Biologic continuation or switch plan: ***." : rec.biologicCandidates.some(item => item.ready) ? "Add phenotype-matched biologic therapy for established severe asthma. Biologic agent and initiation plan: ***." : "Complete the outstanding severe-asthma eligibility, phenotype, and medication safety assessment before prescribing a biologic. Agent and initiation plan: ***.",
+    "azithromycin-review": () => "Complete mycobacterial screening, ECG/QTc, hearing and interaction review, and resistance-risk discussion before any long-term azithromycin prescription. Additional nonbiologic treatment decision: ***. Do not use antibiotics routinely for asthma exacerbations.",
+    "egpa-workup": () => "Evaluate suspected EGPA and relevant organ involvement before attributing systemic features to asthma or using a confirmed EGPA treatment indication.",
+    "egpa-care": () => "Coordinate treatment of confirmed EGPA using its indication-specific regimen rather than asthma-only dosing.",
     "biologic-monitor": (d, f, rec) => {
       const ready = rec.biologicCandidates.find(item => item.id === f.selectedBiologicId)?.ready;
       const interval = f.selectedBiologicId === "depemokimab" ? "at least 6 months" : "about 4 months";
-      return `${ready ? "After initiation, response assessment was recommended" : "If biologic treatment is initiated after prerequisites are met, response assessment would be planned"} after ${interval} using symptoms, exacerbations, lung function, and steroid burden.${f.selectedBiologicId === "depemokimab" ? "" : " An uncertain response could warrant a longer 6-12-month trial."}`;
+      return `${ready ? "Assess response" : "If treatment is subsequently initiated, assess response"} after ${interval} using symptoms, exacerbations, lung function, and steroid burden.${f.selectedBiologicId === "depemokimab" ? "" : " Extend an uncertain response assessment to 6-12 months when clinically appropriate."}`;
     },
-    "routine-followup": (d, f) => f.acute.recentResolved ? "Follow-up was to be individualized to recovery and control after the resolved episode; an initial post-exacerbation review within 2-7 days was recommended if not already completed, with earlier review for incomplete recovery or deterioration." : f.control.poor || f.risk.frequent || d.persistentExacerbations === true || f.treatment.effectivePhase === "initial" ? "Planned follow-up in about 4-6 weeks after initiation/adjustment, sooner for deterioration, with reassessment of control, exacerbations, technique, adherence, adverse effects, and appropriate lung function." : "Planned routine follow-up in about 3 months, or earlier at 4-8 weeks after step-down or another treatment change.",
-    "technique-counsel": () => "Recommended inhaler-technique review with demonstration/teach-back, adherence/access review, and spacer use as appropriate.",
-    "action-plan": () => "Recommended provision or update of a written asthma action plan covering usual therapy, worsening symptoms, reliever limits, return to the prior regimen, and urgent care. Emergency precautions included severe breathlessness, inability to speak, cyanosis, altered mental status, or poor rescue response.",
-    nonpharmacologic: () => "Recommended exposure reduction, regular activity as tolerated, and care of relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors.",
+    "routine-followup": (d, f, rec) => f.acute.recentResolved ? "Arrange recovery review within 2-7 days of the exacerbation if not already completed, and sooner for incomplete recovery or deterioration." : rec.plan?.selections.controller === "stepdown" ? "Follow up in 4-8 weeks to reassess control, lung function, and response to step-down. Resume the previous regimen and contact the clinic if control worsens." : f.control.poor || f.risk.frequent || d.persistentExacerbations === true || f.treatment.effectivePhase === "initial" ? "Follow up in 4-6 weeks after treatment initiation or adjustment, sooner for deterioration. Reassess symptoms, exacerbations, technique, adherence, adverse effects, and lung function." : "Follow up in about 3 months, sooner for worsening control.",
+    "technique-counsel": () => "Review inhaler technique using demonstration and teach-back, medication adherence and access, and spacer use where appropriate.",
+    "action-plan": () => "Provide or update the written asthma action plan with usual treatment, worsening-symptom instructions, reliever limits, and urgent-care precautions. Seek urgent care for severe breathlessness, inability to speak, cyanosis, altered mental status, or poor rescue response.",
+    nonpharmacologic: () => "Reduce relevant exposures, encourage regular activity as tolerated, and address documented obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors.",
     "smoking-cessation": (d, f, rec) => logic.smokingPlanText(rec.smokingSupport),
     "vaccine-diagnostic": () => "Preventive vaccination review was recommended using local protocol and CDC age/condition guidance, without assuming an asthma-specific indication while diagnosis remained unconfirmed."
   };
 
   function vaccinePlan(action) {
     const guidance = action.vaccineGuidance;
-    return guidance ? `Recommended ${guidance.target}: ${guidance.details}` : null;
+    return guidance ? `Arrange ${guidance.target}. ${guidance.details}` : null;
   }
 
   function medicationSchedule(med, d, f) {
     if (med.id === "omalizumab") {
       const check = logic.getOmalizumabFeasibility(d);
-      return check.feasible ? `The adult asthma-table dose was ${check.dose.doseMg} mg SC every ${check.dose.intervalWeeks} weeks based on confirmed pretreatment IgE and verified weight; product safety review and anaphylaxis precautions were recommended.` : "A definitive omalizumab dose was deferred pending a supported pretreatment IgE/weight table assessment and confirmed sensitization.";
+      return check.feasible ? `Omalizumab ${check.dose.doseMg} mg SC every ${check.dose.intervalWeeks} weeks, based on confirmed pretreatment IgE and verified weight. Follow product-specific anaphylaxis precautions.` : "Complete the pretreatment IgE/weight table assessment and sensitization confirmation before finalizing the omalizumab dose.";
     }
-    if (med.id === "reslizumab") return d.weightKg === null ? "Reslizumab's labelled schedule was 3 mg/kg IV every 4 weeks over 20-50 minutes; a patient-specific dose was deferred until weight verification, with anaphylaxis precautions and post-infusion observation recommended." : `The calculated reslizumab dose was ${Number((d.weightKg * 3).toFixed(3))} mg IV every 4 weeks (3 mg/kg at verified weight ${d.weightKg} kg), over 20-50 minutes, pending final prescription review; anaphylaxis precautions and post-infusion observation were recommended.`;
-    if (med.id === "mepolizumab" && d.egpa === "confirmed") return "For confirmed EGPA, coordinated mepolizumab 300 mg SC every 4 weeks was considered under the EGPA indication, not the asthma-only 100 mg schedule.";
-    if (med.id === "benralizumab" && d.egpa === "confirmed") return "For confirmed EGPA, coordinated benralizumab 30 mg SC every 4 weeks was considered under the EGPA indication, not the asthma maintenance interval of every 8 weeks.";
+    if (med.id === "reslizumab") return `Reslizumab ${Number((d.weightKg * 3).toFixed(3))} mg IV every 4 weeks (3 mg/kg at verified weight ${d.weightKg} kg), infused over 20-50 minutes. Follow anaphylaxis precautions and post-infusion observation requirements.`;
+    if (med.id === "mepolizumab" && d.egpa === "confirmed") return "Coordinate mepolizumab 300 mg SC every 4 weeks under the confirmed EGPA indication, not the asthma-only 100 mg schedule.";
+    if (med.id === "benralizumab" && d.egpa === "confirmed") return "Coordinate benralizumab 30 mg SC every 4 weeks under the confirmed EGPA indication, not the asthma maintenance interval of every 8 weeks.";
     if (med.id === "dupilumab") return d.maintenanceOcs === true || d.atopicDermatitis === true || d.nasalPolyps === true ? "The proposed dupilumab schedule was 600 mg SC loading followed by 300 mg SC every 2 weeks for documented OCS dependence or qualifying comorbidity, pending eligibility and safety review." : "The proposed dupilumab asthma schedule was 400 mg SC loading followed by 200 mg SC every 2 weeks, pending eligibility/safety review and verification of concurrent indications.";
     return med.noteSchedule;
   }
@@ -231,20 +227,25 @@
   function plan(d, rec) {
     const f = rec.findings, groups = new Map(), medicationIds = new Set();
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
+    for (const group of rec.plan?.groups || []) {
+      if (!group.selected) append("Medication / management", group.placeholder + ".");
+    }
     rec.actions.filter(action => action.kind !== "alternative").forEach(action => {
+      if (rec.plan?.groups.some(group => group.id === "controller") && rec.plan.controllerActionIds.includes(action.id)) return;
+      if (rec.plan?.groups.some(group => group.id === "lama") && action.id === "lama") return;
       if (["biologic-review", "future-biologic"].includes(action.id) && f.selectedBiologicId) return;
       const template = ACTION_NOTES[action.id];
-      const text = template ? template(d, f, rec) : action.id.startsWith("vaccine-") ? vaccinePlan(action) : null;
+      const text = action.noteText || (template ? template(d, f, rec) : action.id.startsWith("vaccine-") ? vaccinePlan(action) : null);
       if (!text) throw new Error(`Missing clinical documentation template: ${action.id}`);
       const heading = action.kind === "smoking" ? "Smoking cessation" : action.kind === "prevention" ? "Preventive care" : action.kind === "counseling" ? "Counseling and asthma action plan" : action.kind === "testing" ? "Testing" : ["followup", "monitoring"].includes(action.kind) ? "Monitoring and follow-up" : rec.emergency ? "Urgent management" : "Medication / management";
       append(heading, text);
       action.medicationIds.forEach(id => {
-        if (id === f.proposedMedicationId || id === f.selectedBiologicId || ["tiotropium", "highDose", "azithromycin"].includes(id)) medicationIds.add(id);
+        if (id === f.selectedBiologicId && rec.biologicCandidates.find(candidate => candidate.id === id)?.ready && ["none", "unknown"].includes(d.currentBiologic)) medicationIds.add(id);
       });
     });
     for (const id of medicationIds) {
       const med = logic.MEDICATIONS[id], schedule = medicationSchedule(med, d, f);
-      if (schedule) append(rec.emergency ? "Urgent management" : "Medication / management", `${id === f.selectedBiologicId ? "Considered biologic schedule" : id === "highDose" ? "If pursuing a monitored higher-ICS trial" : "Regimen details"}: ${schedule}`);
+      if (schedule) append(rec.emergency ? "Urgent management" : "Medication / management", `Biologic regimen: ${schedule}`);
     }
     const cautions = [];
     if (f.treatment.incompatible) cautions.push("Resolution of the controller/reliever LABA mismatch was recommended; duplicate incompatible LABA treatment was to be avoided.");

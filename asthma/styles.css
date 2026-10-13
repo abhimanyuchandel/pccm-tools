@@ -1574,6 +1574,39 @@ input.numeric-alert:focus {
   }
 }
 
+.asthma-page .encounter-plan {
+  border-top: 3px solid var(--accent, #315a78);
+}
+
+.asthma-page .plan-choice-group {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.asthma-page .plan-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+
+.asthma-page .plan-option {
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.asthma-page .plan-option:has(input:disabled) {
+  background: #f5f6f7;
+  color: #596577;
+}
+
+.asthma-page .confirmed-finding {
+  color: #315a78;
+  font-weight: 600;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .asthma-page :is(input, select, textarea, button) {
     transition: none;

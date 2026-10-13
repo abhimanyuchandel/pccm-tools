@@ -1,8 +1,23 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 13, 2026. Asset version: `20261013-3`.
+Clinical reference review: October 13, 2026. Asset version: `20261013-4`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Selected Encounter Plans and Step 4-5 Refinement
+
+- Retained exactly five current-inhaler shortcuts: None, as-needed SABA, AIR-only, low-dose SMART, and medium-dose SMART. Removed the high-dose ICS-LABA shortcut and its specific helper text, not the detailed high-dose input or drug reference. Shortcuts remain nonprescriptive and preserve add-ons, phenotype, symptoms, and other findings. This is a usability choice.
+- Removed the symptoms/risk review flag and its blanket negative defaults. Positive-only risk checkboxes remain undocumented when unmarked; blank counts remain unknown. The symptom-negative and zero-exacerbation shortcuts still document deliberate assessments. Targeted individual confirmations appear only where control, step-down, biologic planning, or cessation prescribing needs them. A confirmation changes clinical state, marks results stale, and requires regeneration. Removing or checking a previously confirmed exception restores the appropriate unknown/positive state.
+- Added a shared pure treatment-plan layer (`plans.js`). Clinicians can select an appropriate controller strategy, a compatible separate reliever where needed, LAMA add-on or deferral, and eligible supervised step-down. Existing biologic and cessation selections coexist. Selected actions and medication references update displayed recommendations and the SOAP note together. Unresolved decisions use focused `***` placeholders without disabling copying. Invalidated choices are cleared with an explanatory safety message, not silently reused.
+- Corrected the distinction between ICS intensity and Step 5 add-on treatment. Budesonide-formoterol 160/4.5 mcg, 2 inhalations twice daily plus 1 as needed remains the adult Step 4-5 MART schedule; LAMA/biologic/maintenance-OCS add-ons do not relabel it high-dose ICS. A supported high-dose ICS-LABA trial remains an option rather than a required controller switch before every Step 5 intervention. No higher scheduled SMART regimen was introduced. [GINA 2026 Summary Guide, Step 5 and Table 7](https://ginasthma.org/wp-content/uploads/2026/07/GINA-Summary-Guide-2026-WEB-WMS.pdf).
+- Recognize clinician-confirmed longitudinal severe asthma while retaining supported diagnosis, an appropriate current ICS-LABA foundation, current optimization, disease burden, and agent-specific prerequisites. The prior confirmation represents an established assessment of inadequate response to optimized high-dose treatment or worsening after its reduction; it is not inferred from medium MART failure. It prevents an unnecessary repeat high-dose trial from being imposed solely because today's regimen is medium MART. New biologic treatment remains provisional with missing diagnostic, phenotype, safety, dosing, pregnancy, exacerbation, or product/payer information. This is a documentation/workflow interpretation of the longitudinal severe-asthma definition, not a relaxation of product or payer eligibility. [GINA 2026 Severe Asthma Guide, definition, optimization, and biologic selection](https://ginasthma.org/wp-content/uploads/2026/06/GINA-Severe-Asthma-Guide-2026-WEB-WMS.pdf).
+- Step-down now requires an individual assessment of prior life-threatening asthma as well as the existing stability and safety checks. Prior life-threatening history is not an automatic prohibition, but requires close supervision. Patients with Step 5 add-ons or established severe asthma retain individualized add-on/OCS review rather than receiving the routine uncomplicated MART reduction shortcut. Follow-up wording matches the selected reduction plan.
+- Added an EGPA reminder for eosinophilic asthma/sinus disease with neuropathy, purpura, unexplained infiltrates, or systemic organ involvement. Eosinophilia alone is not confirmation and negative ANCA does not exclude disease. This is reference text, not a new diagnostic score. [2023 EGPA guideline](https://www.nature.com/articles/s41584-023-00958-w), [2020 ANCA consensus](https://pubmed.ncbi.nlm.nih.gov/32584187/).
+- Consolidated cessation safety review: seizure history is collected once and drives bupropion contraindication and varenicline precaution separately. The other-bupropion-contraindication flag excludes that duplicate question. Psychiatric concerns refer to bipolar/mania or active instability, not stable depression or psychiatric history alone. Ready chosen plans document a direct course; missing prerequisites produce concrete assessment tasks and a final-dose placeholder. [Bupropion SR label](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a591e33a-52f0-41c8-a00b-4a1afcc3dc4c), [ATS cessation guidance](https://doi.org/10.1164/rccm.202005-1982ST).
+- SOAP plans use direct clinical actions and only chosen treatment pathways. Present biologic recommendations remain distinct from conditional follow-up planning. Dosing is copied only for a ready chosen biologic; original omalizumab table and reslizumab weight safeguards remain unchanged. No completed counseling, testing, vaccination, administration, transfer, or normal findings are invented. Existing Subjective/Objective/Assessment/Plan headings and documentation placeholders remain.
+- Verification: 140 pure logic/note/site tests plus browser scenarios at 320, 390, 768, and 1280 pixels, including actual individual-negative confirmations, simultaneous controller/LAMA/biologic selections, compatible relievers, selection invalidation, keyboard access, clipboard, and stale output. No persistence, prediction API, backend, or production changes.
+
+The sections below document earlier preview revisions; this section supersedes the former risk-group defaults and high-dose shortcut.
 
 ## Treatment Choices and Encounter Documentation
 
@@ -96,8 +111,8 @@ This revision is for preview review, not an automatic production promotion. The 
 
 ## Verification and Review Scenarios
 
-Pure logic and note regression checks: `node --test asthma/logic.test.js`.
-Site regression checks: `node --test asthma/logic.test.js copd/logic.test.js PERT-Team-Support/logic.test.js`.
+Pure logic and note regression checks: `node --test asthma/logic.test.js asthma/workflow.test.js`.
+Site regression checks: `node --test asthma/logic.test.js asthma/workflow.test.js copd/logic.test.js PERT-Team-Support/logic.test.js`.
 
 Browser regression checks: start a local static server, then run `node asthma/browser.test.cjs` with Playwright available in the development environment. Set `ASTHMA_TEST_URL` to test a preview URL; `PLAYWRIGHT_CHANNEL=chrome` uses an existing Chrome installation. These development tools are not loaded by the calculator.
 

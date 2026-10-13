@@ -14,13 +14,14 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-3">
-  <script src="/asthma/input-schema.js?v=20261013-3" defer></script>
-  <script src="/asthma/medications.js?v=20261013-3" defer></script>
-  <script src="/asthma/smoking.js?v=20261013-3" defer></script>
-  <script src="/asthma/logic.js?v=20261013-3" defer></script>
-  <script src="/asthma/notes.js?v=20261013-3" defer></script>
-  <script src="/asthma/app.js?v=20261013-3" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-4">
+  <script src="/asthma/input-schema.js?v=20261013-4" defer></script>
+  <script src="/asthma/medications.js?v=20261013-4" defer></script>
+  <script src="/asthma/smoking.js?v=20261013-4" defer></script>
+  <script src="/asthma/plans.js?v=20261013-4" defer></script>
+  <script src="/asthma/logic.js?v=20261013-4" defer></script>
+  <script src="/asthma/notes.js?v=20261013-4" defer></script>
+  <script src="/asthma/app.js?v=20261013-4" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -57,7 +58,7 @@
         </div>
       </nav>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
-        <p id="form-instructions" class="form-instructions">Enter the patient's current findings and treatment. Check findings that are present, then confirm each group you have reviewed to document the remaining listed findings as absent. Unassessed answers and blank numbers remain unknown. Complete the note's *** placeholders in your EMR.</p>
+        <p id="form-instructions" class="form-instructions">Enter current treatment and findings. Check symptoms and risks that are present; unchecked items and blank numbers remain undocumented. Treatment and cessation safety reviews have their own confirmations. Select the encounter plan after generating recommendations, or complete its *** placeholders in your EMR.</p>
 
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
@@ -66,16 +67,14 @@
             <h3 id="shortcut-heading" class="subsection-title">Optional current-treatment shortcuts</h3>
             <p id="shortcut-help" class="hint">Records the current controller, reliever, and ICS intensity. Other findings and add-ons are preserved. These are not treatment recommendations.</p>
             <div class="shortcut-buttons" role="group" aria-labelledby="shortcut-heading" aria-describedby="shortcut-help">
-              <button type="button" class="ghost-btn" data-treatment-preset="none" aria-pressed="false"><span class="preset-label">None</span><span class="preset-detail">No ICS controller or reliever</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="none" aria-pressed="false"><span class="preset-label">None</span><span class="preset-detail">No controller or reliever</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="saba" aria-pressed="false"><span class="preset-label">As-needed SABA</span><span class="preset-detail">Reliever only, e.g., albuterol</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="air" aria-pressed="false"><span class="preset-label">AIR Only</span><span class="preset-detail">As-needed ICS-formoterol</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="smartLow" aria-pressed="false"><span class="preset-label">Low-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 3)</span></button>
-              <button type="button" class="ghost-btn" data-treatment-preset="smartMedium" aria-pressed="false"><span class="preset-label">Medium-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 4)</span></button>
-              <button type="button" class="ghost-btn" data-treatment-preset="highDose" aria-pressed="false"><span class="preset-label">High-Dose ICS-LABA</span><span class="preset-detail">Non-formoterol LABA + SABA relief</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="smartMedium" aria-pressed="false"><span class="preset-label">Medium-Dose SMART</span><span class="preset-detail">Step 4; retained with Step 5 add-ons</span></button>
             </div>
             <p class="hint">SABA (e.g., albuterol) provides relief without ICS protection. <a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA recommends an ICS-containing strategy for asthma</a>.</p>
             <p class="hint"><strong>AIR-only:</strong> ICS-formoterol as needed. <strong>SMART:</strong> the same inhaler for daily maintenance and as-needed relief.</p>
-            <p class="hint">The high-dose ICS-LABA shortcut is not SMART. Confirm the actual controller and compatible reliever; use the dose examples below.</p>
             <details id="air-smart-reference" class="clinical-drawer treatment-reference">
               <summary>AIR and SMART: definitions and adult dosing</summary>
               <div class="drawer-body">
@@ -230,8 +229,7 @@
               <div class="grid" data-fields="stableMonths lungFunctionStable pregnant respiratoryInfection travelling"></div>
             </div>
           </details>
-          <div class="review-confirmation" data-fields="riskReviewed"></div>
-          <p class="hint">Confirm only after reviewing activity limitation and the listed risk/stability findings. Enter annual exacerbation counts separately; blank does not mean zero. Stable lung function requires its own assessment.</p>
+          <p class="hint">Unchecked symptoms and risks remain undocumented. Use the symptom shortcut only for confirmed negative symptoms; blank exacerbation counts do not mean zero. Individual confirmations are offered below when a treatment decision needs them.</p>
         </section>
 
         <section class="panel" aria-labelledby="acute-heading">
@@ -262,6 +260,7 @@
             <section class="form-subgroup" aria-labelledby="phenotype-modifiers-heading">
               <h3 id="phenotype-modifiers-heading" class="subsection-title">Other modifiers</h3>
               <div class="grid" data-fields="egpa smoking"></div>
+              <p class="reference-links"><a href="https://www.nature.com/articles/s41584-023-00958-w" target="_blank" rel="noopener noreferrer">EGPA clinical clues</a> <a href="https://pubmed.ncbi.nlm.nih.gov/32584187/" target="_blank" rel="noopener noreferrer">EGPA and ANCA testing</a></p>
               <div class="grid full-width" data-fields="endemicExposure"></div>
             </section>
             <div id="smoking-fields" class="hidden">
@@ -325,13 +324,26 @@
           <h2>Recommended Management Steps</h2>
           <div id="management-steps"></div>
         </article>
+        <article id="plan-card" class="result-card encounter-plan hidden">
+          <h2>Encounter Treatment Plan</h2>
+          <p class="hint">Select the plan agreed for this encounter. Choices update the recommendations and SOAP note together. Unresolved decisions remain ***; copying is still available.</p>
+          <div id="plan-options"></div>
+          <details id="plan-confirmations" class="clinical-drawer hidden">
+            <summary>Complete findings needed for treatment decisions</summary>
+            <div class="drawer-body">
+              <p class="hint">Confirm individual findings only if assessed. Changes require regeneration; unchecked risks are never assumed absent.</p>
+              <div id="plan-confirmation-fields" class="grid"></div>
+              <button type="submit" form="asthma-form" class="secondary-btn">Regenerate With Confirmed Findings</button>
+            </div>
+          </details>
+        </article>
         <article id="medication-card" class="result-card hidden">
           <h2>Medication Details</h2>
           <ul id="medication-list" class="medication-list"></ul>
         </article>
         <article id="biologic-guidance-card" class="result-card biologic-card hidden">
           <h2>Biologic Considerations</h2>
-          <p id="biologic-instructions">Choose an agent to document in the plan, if appropriate. A phenotype match is not automatic eligibility: verify treatment optimization, required testing, product criteria, and coverage before prescribing. Without a selection, the note documents consideration of suitable therapy.</p>
+          <p id="biologic-instructions">Choose an agent for the encounter plan or future follow-up. A phenotype match is not automatic eligibility. Complete outstanding prerequisites before initiation; an unresolved agent choice remains *** in the note.</p>
           <fieldset id="biologic-options" class="biologic-options" aria-describedby="biologic-instructions">
             <legend class="sr-only">Agent for clinical note</legend>
             <div id="biologic-primary-options"></div>

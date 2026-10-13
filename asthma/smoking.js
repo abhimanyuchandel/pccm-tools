@@ -51,6 +51,7 @@
         if (d.smokingVareniclineReaction === true) blockers.push("A prior serious varenicline reaction is documented");
         if (d.smokingRenal === "unknown") prerequisites.push("Confirm renal function before finalizing the varenicline dose");
         if (d.smokingSeizure === true) prerequisites.push("Review seizure risk before varenicline treatment");
+        if (d.smokingPsychiatric === true) prerequisites.push("Coordinate treatment and monitoring for active psychiatric instability");
         schedule = d.smokingRenal === "severe" ? "With verified creatinine clearance below 30 mL/min, start 0.5 mg orally daily and titrate only as tolerated to a maximum of 0.5 mg twice daily." : d.smokingRenal === "dialysis" ? "With verified hemodialysis, use no more than 0.5 mg orally daily if tolerated." : "The standard schedule is 0.5 mg orally daily on days 1 to 3, 0.5 mg twice daily on days 4 to 7, then 1 mg twice daily from day 8. Confirm renal function before using this schedule.";
         schedule += " Start 1 week before the quit date, or choose a quit date on days 8 to 35. Treat for 12 weeks and consider another 12 weeks for successful quitters or a supported gradual quit attempt. Take after food with water.";
       } else if (id === "combinationNrt") {
@@ -73,11 +74,11 @@
 
   function planText(support) {
     const option = support.selected;
-    const core = "Smoking cessation has been recommended. Planned discussion of a quit date or gradual quit approach, triggers, medication access, and behavioral support, with referral to 1-800-QUIT-NOW when acceptable. Follow-up within 1 to 2 weeks of the quit attempt was recommended to review smoking, cravings, adverse effects, and adherence.";
-    if (!option) return core + " The preferred medication plan remained to be chosen after shared decision making and safety review.";
-    if (option.id === "behavioral") return core + " Behavioral support without medication was recommended for now, with readiness and pharmacotherapy options to be revisited.";
-    if (!option.ready) return core + ` ${option.name} was considered. A definitive prescription and dose were deferred pending medication-specific safety and dosing review.`;
-    return core + ` ${option.name} has been recommended, subject to final prescribing review. Proposed course: ${option.schedule}`;
+    const core = "Recommend smoking cessation. Establish a quit date or gradual quit approach, address triggers and access barriers, and offer behavioral support and 1-800-QUIT-NOW. Follow up within 1-2 weeks of the quit attempt to review smoking, cravings, adverse effects, and adherence.";
+    if (!option) return core + " Smoking-cessation treatment plan: ***.";
+    if (option.id === "behavioral") return core + " Use behavioral support without medication for now. Revisit readiness and pharmacotherapy at follow-up.";
+    if (!option.ready) return core + ` Complete the following before prescribing ${option.name}: ${option.prerequisites.join("; ")}. Final medication and dose: ***.`;
+    return core + ` Start ${option.name}. ${option.schedule}`;
   }
 
   return { buildSupport, planText };
