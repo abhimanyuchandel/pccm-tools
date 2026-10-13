@@ -12,19 +12,20 @@ const base = (patch = {}) => ({ ...L.createEmptyState(), age: 45, managementPhas
   ocsExacerbations: 0, hospitalExacerbations: 0, recentExacerbation: false, priorIcu: false, urgentRedFlags: false, acutePresentation: "none",
   adherence: "adequate", technique: "correct", accessBarrier: false, ...patch });
 const poor = (patch = {}) => base({ symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ...patch });
-const severe = (patch = {}) => poor({ icsDose: "high", optimizedTherapy: true, ocsExacerbations: 2, eosinophils: 450, feno: 45, weightKg: 75, ...patch });
+const severe = (patch = {}) => poor({ controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true, ocsExacerbations: 2, eosinophils: 450, feno: 45, weightKg: 75, ...patch });
 const acute = (patch = {}) => base({ acutePresentation: "active", acuteSpeech: "sentences", acuteCanLieDown: true, acuteUnableToLieDown: false, acuteCannotDrink: false, acuteCyanosis: false,
   acuteMentalStatus: "normal", acuteRespiratoryEffort: "normal-mild", acuteAccessoryMuscles: "none-mild", acuteAirEntry: "normal", acuteWheeze: "none-mild", roomAir: true,
   spo2: 96, respiratoryRate: 20, acuteLungFunctionPercent: 80, acuteLungFunctionType: "pef", acuteLungFunctionReference: "personal-best", ...patch });
 const ids = rec => rec.actions.map(item => item.id);
 const note = (data, selectedBiologicId) => N.buildNoteText(data, L.buildRecommendation(data, { selectedBiologicId }));
 
-test("defaults contain unknown findings and no fabricated negatives", () => {
+test("routine context defaults do not fabricate other clinical findings", () => {
   const data = L.createEmptyState();
-  assert.equal(data.urgentRedFlags, null); assert.equal(data.activityLimitation, null); assert.equal(data.ocsExacerbations, null);
+  assert.equal(data.acutePresentation, "none"); assert.equal(data.urgentRedFlags, false); assert.equal(data.activityLimitation, null); assert.equal(data.ocsExacerbations, null);
   assert.equal(data.currentBiologic, "none");
   assert.equal(L.classifyControl(data).classification, "not fully assessed");
-  assert.doesNotMatch(note(data), /No urgent|Never smoked|No exacerbations requiring|Examination: normal/i);
+  assert.match(note(data), /No urgent red-flag features were documented/);
+  assert.doesNotMatch(note(data), /Never smoked|No exacerbations requiring|Examination: normal|denied red.flag/i);
 });
 test("normalization preserves explicit zero / false but not blank numeric values", () => {
   const data = L.normalizeState({ ocsExacerbations: "0", activityLimitation: "no", eosinophils: "", feno: "  " });
@@ -105,7 +106,7 @@ test("maintenance in initial mode activates follow-up with assumption only in Sa
 test("assessment reports actual current regimen separately from proposed treatment", () => {
   const data = base({ managementPhase: "initial", controller: "none", reliever: "saba", symptomDays: "one-two", sabaFrequency: "one-two" });
   const text = note(data).split("Assessment\n")[1].split("\n\nPlan")[0];
-  assert.match(text, /No maintenance ICS-containing controller was documented/); assert.match(text, /recommended treatment change/);
+  assert.match(text, /No maintenance controller containing an inhaled corticosteroid was documented/); assert.match(text, /recommended treatment change/);
   assert.doesNotMatch(text, /Current therapy: GINA Track 1 Step 1-2/);
 });
 test("stable effective Track 2 is preserved", () => {
@@ -157,7 +158,7 @@ test("biologics are matched to phenotype, not ranked as a single universally sup
 });
 test("biologic selection drives only the selected medication in the SOAP plan", () => {
   const text = note(severe(), "benralizumab");
-  assert.match(text, /Planned initiation of.*Benralizumab/); assert.match(text, /30 mg SC every 4 weeks for the first 3 doses, then every 8 weeks/);
+  assert.match(text, /Benralizumab.*has been recommended based on the current presentation/); assert.match(text, /30 mg SC every 4 weeks for the first 3 doses, then every 8 weeks/);
   for (const name of ["Reslizumab", "Mepolizumab", "Tezepelumab", "Dupilumab", "Depemokimab"]) assert.doesNotMatch(text, new RegExp(name));
 });
 test("chosen dupilumab schedule reflects documented OCS dependence / comorbidity", () => {
@@ -289,7 +290,7 @@ test("mild therapy and moderate corticosteroid dosing differ", () => {
 });
 test("acute incomplete assessment does not infer treatment response or safe discharge", () => {
   const text = note({ ...L.createEmptyState(), age: 45, acutePresentation: "active" });
-  assert.match(text, /assessment was incomplete/); assert.match(text, /discharge readiness was not established/);
+  assert.match(text, /assessment remained incomplete/); assert.match(text, /discharge readiness was not established/);
   assert.doesNotMatch(text, /Patient improved|safe for discharge|Treatment already given:|Documented reassessment:/);
 });
 test("actual reassessment is distinct from recommendations and needs sustained improvement", () => {
@@ -425,7 +426,7 @@ test("review confirmations centrally resolve only routine exceptions", () => {
     const reversed = L.normalizeState({ ...empty, [flag]: false });
     for (const key of Object.keys(defaults)) assert.equal(reversed[key], empty[key], key);
   }
-  const reviewed = L.normalizeState({ treatmentReviewed: true, riskReviewed: true });
+  const reviewed = L.normalizeState({ treatmentReviewed: true, riskReviewed: true, urgentRedFlags: null });
   for (const key of ["optimizedTherapy", "severeAsthmaEstablished", "lungFunctionStable", "perennialSensitization", "igePretreatment", "urgentRedFlags", "roomAir", "ocsExacerbations", "hospitalExacerbations", "weightKg", "totalIge"]) assert.equal(reviewed[key], null, key);
   assert.equal(reviewed.dxBd, false); assert.equal(reviewed.typicalSymptoms, null);
   assert.equal(L.classifyControl(reviewed).classification, "not fully assessed");
@@ -464,7 +465,7 @@ test("phenotype findings require individual answers rather than a blanket negati
   assert.equal(Object.hasOwn(L.createEmptyState(), "phenotypeReviewed"), false);
 });
 test("routine-visit default applies only to an unanswered red-flag field without urgent findings", () => {
-  assert.deepEqual(L.getRoutineVisitDefaults({ acutePresentation: "none" }), { urgentRedFlags: false });
+  assert.deepEqual(L.getRoutineVisitDefaults({ acutePresentation: "none", urgentRedFlags: null }), { urgentRedFlags: false });
   for (const patch of [{ acutePresentation: "active" }, { acutePresentation: "recent" }, { urgentRedFlags: true }, { urgentRedFlags: false }, { spo2: 85 }, { respiratoryRate: 32 }, { acuteAirEntry: "silent" }, { acuteResponse: "worsening" }]) {
     assert.deepEqual(L.getRoutineVisitDefaults({ acutePresentation: "none", ...patch }), {}, JSON.stringify(patch));
   }
@@ -488,9 +489,152 @@ test("treatment shortcuts set only controller, intensity, reliever and LABA cont
     const data = { ...raw, ...preset };
     for (const key of Object.keys(raw).filter(key => !Object.hasOwn(preset, key))) assert.equal(data[key], raw[key], `${id}: ${key}`);
     const tx = L.getTreatmentContext(data);
-    assert.equal(tx.track, ["none", "saba"].includes(id) ? null : 1); assert.equal(tx.incompatible, false);
+    assert.equal(tx.track, ["none", "saba"].includes(id) ? null : id === "highDose" ? 2 : 1); assert.equal(tx.incompatible, false);
     assert.equal(tx.effectivePhase, "followup");
   }
+});
+
+const smoker = (patch = {}) => base({ smoking: "current", smokingSafetyReviewed: true, pregnant: false,
+  smokingRenal: "normal", smokingCigarettesPerDay: 20, smokingFirstCigarette: "within30", ...patch });
+const smokingNote = (data, selectedSmokingPlanId, selectedBiologicId) => N.buildNoteText(data, L.buildRecommendation(data, { selectedSmokingPlanId, selectedBiologicId }));
+
+test("routine defaults retain explicit unknowns and do not carry an implicit negative into acute assessment", () => {
+  assert.equal(L.normalizeState({}).acutePresentation, "none");
+  assert.equal(L.normalizeState({}).urgentRedFlags, false);
+  assert.equal(L.normalizeState({ urgentRedFlags: null }).urgentRedFlags, null);
+  assert.equal(L.normalizeState({ acutePresentation: "active" }).urgentRedFlags, null);
+  assert.equal(L.normalizeState({ acutePresentation: "recent" }).urgentRedFlags, null);
+  assert.equal(L.buildRecommendation({ spo2: 85 }).emergency, true);
+});
+test("current smoking creates a dedicated plan with evidence and courses but no automatic agent choice", () => {
+  const rec = L.buildRecommendation(smoker());
+  assert.ok(ids(rec).includes("smoking-cessation"));
+  assert.equal(rec.smokingSupport.selected, null);
+  assert.equal(rec.smokingSupport.options.length, 4);
+  for (const option of rec.smokingSupport.options) {
+    assert.ok(option.evidence && option.benefits && option.cautions);
+    option.sourceIds.forEach(id => assert.ok(M.SOURCES[id], id));
+  }
+  assert.match(smokingNote(smoker()), /Smoking cessation\n- Smoking cessation has been recommended/);
+  assert.doesNotMatch(smokingNote(smoker()).split("\nPlan\n")[1], /Varenicline|Bupropion SR|21 mg patch|0.5 mg orally/);
+});
+test("only the chosen cessation medication and course enter the SOAP plan", () => {
+  for (const [id, expected, absent] of [["varenicline", /Varenicline has been recommended/, /21 mg patch|bupropion SR 150/i], ["combinationNrt", /Combination nicotine replacement has been recommended/, /varenicline|bupropion SR 150/i], ["bupropion", /Bupropion SR has been recommended/, /varenicline|21 mg patch/i], ["behavioral", /Behavioral support without medication was recommended/, /0.5 mg orally|21 mg patch|150 mg orally/]]) {
+    const text = smokingNote(smoker(), id).split("\nPlan\n")[1];
+    assert.match(text, expected); assert.doesNotMatch(text, absent);
+    assert.doesNotMatch(text, /counseling was completed|medication was prescribed|was administered|patient declined/);
+  }
+});
+test("missing cessation safety review permits discussion but not a definite medication plan", () => {
+  const rec = L.buildRecommendation(smoker({ smokingSafetyReviewed: false, smokingRenal: "unknown" }), { selectedSmokingPlanId: "varenicline" });
+  assert.ok(rec.smokingSupport.selected); assert.equal(rec.smokingSupport.selected.ready, false);
+  const text = N.buildNoteText(smoker({ smokingSafetyReviewed: false, smokingRenal: "unknown" }), rec);
+  assert.match(text, /Varenicline was considered, conditional on/);
+  assert.doesNotMatch(text, /Varenicline has been recommended/);
+});
+test("pregnancy and breastfeeding require individualized medication review", () => {
+  for (const patch of [{ pregnant: true }, { pregnant: null }, { smokingBreastfeeding: true }]) {
+    const rec = L.buildRecommendation(smoker(patch));
+    for (const item of rec.smokingSupport.options.filter(item => item.id !== "behavioral")) assert.equal(item.ready, false);
+    assert.equal(rec.smokingSupport.options.find(item => item.id === "behavioral").ready, true);
+    assert.doesNotMatch(smokingNote(smoker(patch), "varenicline"), /Varenicline has been recommended/);
+  }
+});
+test("documented bupropion contraindications remain effective independently of group review", () => {
+  for (const smokingSafetyReviewed of [true, false]) for (const patch of [{ smokingBupropionContra: true }, { smokingSeizure: true }]) {
+    const data = smoker({ smokingSafetyReviewed, ...patch });
+    const rec = L.buildRecommendation(data, { selectedSmokingPlanId: "bupropion" });
+    assert.equal(rec.smokingSupport.selected, null);
+    assert.ok(rec.smokingSupport.options.find(item => item.id === "bupropion").blockers.length);
+    assert.doesNotMatch(N.buildNoteText(data, rec), /Bupropion SR has been recommended|bupropion SR 150 mg/);
+  }
+});
+test("a serious varenicline reaction blocks that choice without excluding other options", () => {
+  const rec = L.buildRecommendation(smoker({ smokingVareniclineReaction: true }), { selectedSmokingPlanId: "varenicline" });
+  assert.equal(rec.smokingSupport.selected, null);
+  assert.ok(rec.smokingSupport.options.find(item => item.id === "varenicline").blockers.length);
+  assert.equal(rec.smokingSupport.options.find(item => item.id === "combinationNrt").ready, true);
+});
+test("varenicline uses renal-specific references and bupropion needs organ-function review", () => {
+  for (const [smokingRenal, pattern] of [["normal", /1 mg twice daily from day 8/], ["impaired", /1 mg twice daily from day 8/], ["severe", /maximum of 0.5 mg twice daily/], ["dialysis", /no more than 0.5 mg orally daily/]]) {
+    const rec = L.buildRecommendation(smoker({ smokingRenal }), { selectedSmokingPlanId: "varenicline" });
+    assert.equal(rec.smokingSupport.selected.ready, true);
+    assert.match(rec.smokingSupport.selected.schedule, pattern);
+    if (["severe", "dialysis"].includes(smokingRenal)) assert.doesNotMatch(rec.smokingSupport.selected.schedule, /1 mg twice daily/);
+  }
+  assert.equal(L.buildRecommendation(smoker({ smokingRenal: "impaired" }), { selectedSmokingPlanId: "bupropion" }).smokingSupport.selected.ready, false);
+});
+test("combination NRT dosing follows smoking quantity and time to the first cigarette", () => {
+  for (const [smokingCigarettesPerDay, patch] of [[10, /14 mg patch daily for 6 weeks/], [11, /21 mg patch daily for 6 weeks/]]) {
+    const rec = L.buildRecommendation(smoker({ smokingCigarettesPerDay }), { selectedSmokingPlanId: "combinationNrt" });
+    assert.match(rec.smokingSupport.selected.schedule, patch);
+    assert.match(rec.smokingSupport.selected.schedule, /gum 4 mg/);
+  }
+  assert.match(L.buildRecommendation(smoker({ smokingFirstCigarette: "after30" }), { selectedSmokingPlanId: "combinationNrt" }).smokingSupport.selected.schedule, /gum 2 mg/);
+  for (const patch of [{ smokingCigarettesPerDay: null }, { smokingFirstCigarette: "unknown" }, { smokingCvdConcern: true }]) assert.equal(L.buildRecommendation(smoker(patch), { selectedSmokingPlanId: "combinationNrt" }).smokingSupport.selected.ready, false);
+});
+test("stable psychiatric history does not automatically exclude varenicline", () => {
+  const data = smoker({ smokingPsychiatric: true });
+  assert.equal(L.buildRecommendation(data, { selectedSmokingPlanId: "varenicline" }).smokingSupport.selected.ready, true);
+  assert.equal(L.buildRecommendation(data, { selectedSmokingPlanId: "bupropion" }).smokingSupport.selected.ready, false);
+});
+test("former smoking and urgent findings suppress the routine cessation pathway", () => {
+  for (const patch of [{ smoking: "former" }, { smoking: "never" }, { smoking: "unknown" }, { spo2: 85 }]) {
+    const data = smoker(patch), rec = L.buildRecommendation(data, { selectedSmokingPlanId: "varenicline" });
+    assert.equal(rec.smokingSupport.selected, null); assert.equal(rec.smokingSupport.options.length, 0);
+    assert.ok(!ids(rec).includes("smoking-cessation"));
+    assert.doesNotMatch(N.buildNoteText(data, rec).split("\nPlan\n")[1], /Smoking cessation\n|Varenicline/);
+  }
+});
+test("an active nonemergency episode defers cessation prescribing until stabilization", () => {
+  const data = acute({ smoking: "current" }), rec = L.buildRecommendation(data, { selectedSmokingPlanId: "varenicline" });
+  assert.ok(ids(rec).includes("postacute-smoking")); assert.equal(rec.smokingSupport.selected, null);
+  assert.match(N.buildNoteText(data, rec), /definitive cessation medication plan was deferred/);
+});
+test("SOAP Assessment contains complete prose without colons, semicolons, or hyphens", () => {
+  for (const data of [base(), poor({ priorIcu: true }), severe({ maintenanceOcs: true, maintenanceOcsDose: 10, egpa: "confirmed", nasalPolyps: true }), acute({ spo2: 85 }), { ...L.createEmptyState(), age: 45, acutePresentation: "active" }, base({ diagnosisContext: "suspected", dxChallenge: false, typicalSymptoms: null, controller: "unknown", reliever: "unknown" }), base({ controller: "none", reliever: "ics-formoterol" }), base({ currentBiologic: "omalizumab" })]) {
+    const text = note(data).split("\nAssessment\n")[1].split("\n\nPlan")[0];
+    assert.doesNotMatch(text, /[;:\-]/); assert.match(text, /\.$/);
+    assert.doesNotMatch(text, /Current therapy:|Future-risk considerations:/);
+  }
+});
+test("all seven biologic options provide tradeoffs, typical criteria, and patient-specific fit", () => {
+  const rec = L.buildRecommendation(severe({ allergenDriven: true, perennialSensitization: true, totalIge: 100, igePretreatment: true }));
+  assert.equal(rec.biologicCandidates.length, 7);
+  for (const candidate of rec.biologicCandidates) {
+    assert.ok(candidate.benefits && candidate.limitations && candidate.typicalCriteria && candidate.criteriaFit, candidate.id);
+    assert.match(candidate.criteriaFit, /support the usual clinical criteria/);
+  }
+  assert.match(L.buildRecommendation(poor({ eosinophils: 450 })).biologicCandidates[0].criteriaFit, /do not establish immediate prescribing eligibility/);
+});
+test("biologic wording distinguishes a present recommendation from future or provisional eligibility", () => {
+  const current = severe(), now = note(current, "benralizumab");
+  assert.match(now, /Benralizumab.*has been recommended based on the current presentation/);
+  assert.doesNotMatch(now, /Agent choice remained/);
+  const future = poor({ eosinophils: 450 }), later = note(future, "benralizumab");
+  assert.match(later, /would be considered at subsequent follow-up only if control remained inadequate/);
+  assert.match(later, /If biologic treatment is initiated after prerequisites are met/);
+  assert.doesNotMatch(later, /Benralizumab.*has been recommended/);
+  const pending = severe({ diagnosisContext: "established", dxChallenge: false });
+  assert.doesNotMatch(note(pending, "benralizumab"), /Benralizumab.*has been recommended/);
+});
+test("unverified high-dose SMART or an incompatible LABA combination does not establish prescribing readiness", () => {
+  for (const patch of [{ controller: "ics-formoterol", reliever: "ics-formoterol", labaType: "formoterol" }, { reliever: "ics-formoterol" }]) {
+    const data = severe(patch), rec = L.buildRecommendation(data);
+    assert.ok(rec.biologicCandidates.every(item => !item.ready));
+    assert.doesNotMatch(note(data, "benralizumab"), /Benralizumab.*has been recommended/);
+    if (patch.controller === "ics-formoterol") assert.equal(rec.findings.severe.established, false);
+  }
+});
+test("unknown age keeps cessation pharmacotherapy conditional", () => {
+  const data = smoker({ age: null });
+  assert.equal(L.buildRecommendation(data, { selectedSmokingPlanId: "varenicline" }).smokingSupport.selected.ready, false);
+});
+test("high-dose shortcut uses a compatible controller and reliever, never excessive SMART dosing", () => {
+  const data = { ...base(), ...L.TREATMENT_PRESETS.highDose }, context = L.getTreatmentContext(data);
+  assert.equal(data.icsDose, "high"); assert.equal(data.controller, "ics-laba"); assert.equal(data.reliever, "saba");
+  assert.equal(context.track, 2); assert.equal(context.incompatible, false);
+  assert.doesNotMatch(context.description, /SMART|MART/);
 });
 test("missing drug-specific dosing leaves supported advanced options provisional", () => {
   const data = severe({ weightKg: null, allergenDriven: true, perennialSensitization: true, totalIge: null });
@@ -583,8 +727,8 @@ test("none and SABA shortcuts record current treatment without treating it as gu
     assert.equal(data.sabaFrequency, "unknown");
     const text = note(data);
     assert.doesNotMatch(text, /reliever was no reliever|Recommended continuation of.*SABA-only/);
-    if (id === "none") assert.match(text, /No maintenance ICS-containing controller or reliever was documented/);
-    else assert.match(text, /reliever was SABA/);
+    if (id === "none") assert.match(text, /No maintenance controller containing an inhaled corticosteroid was documented\. No reliever was documented/);
+    else assert.match(text, /reliever was a short acting beta agonist/);
   }
 });
 
@@ -605,6 +749,6 @@ test("direct-choice questions retain every original value and explicit unknown o
     const field = context.window.asthmaInputSchema[key];
     assert.equal(field.compact, true); assert.equal(field.quickChoices, true);
     assert.deepEqual(Array.from(field.options, option => option[0]), values);
-    assert.equal(L.createEmptyState()[key], "unknown");
+    assert.equal(L.createEmptyState()[key], key === "acutePresentation" ? "none" : "unknown");
   }
 });

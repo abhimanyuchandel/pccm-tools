@@ -53,6 +53,8 @@ async function main() {
     assert.equal(await page.locator("#acute-fields").isVisible(), false);
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
     assert.equal(await page.locator("#current-biologic").inputValue(), "none");
+    assert.equal(await page.locator('[name="acutePresentation"][value="none"]').isChecked(), true);
+    assert.equal(await page.locator('[name="urgentRedFlags"][value="no"]').isChecked(), true);
     assert.equal(await page.locator('[name="phenotypeReviewed"]').count(), 0);
     for (const key of ["allergenDriven", "nasalPolyps", "atopicDermatitis", "endemicExposure"]) {
       assert.equal(await page.locator(`[name="${key}"][value="unknown"]`).isChecked(), true);
@@ -71,7 +73,7 @@ async function main() {
     await load();
     assert.equal(await page.locator("#air-smart-reference").evaluate(node => node.open), false);
     assert.equal(await page.locator("#ics-dose-fields").isVisible(), false);
-    assert.equal(await page.locator("[data-treatment-preset]").count(), 5);
+    assert.equal(await page.locator("[data-treatment-preset]").count(), 6);
     assert.equal(await page.locator('[data-treatment-preset][aria-pressed="true"]').count(), 0);
     const noneShortcut = page.locator('[data-treatment-preset="none"]');
     await noneShortcut.focus(); await page.keyboard.press("Enter");
@@ -83,6 +85,12 @@ async function main() {
     assert.equal(await page.locator("#reliever").inputValue(), "saba");
     assert.equal(await page.locator('[name="sabaFrequency"][value="unknown"]').isChecked(), true);
     assert.equal(await page.locator("#ocs-exacerbations").inputValue(), "");
+    await page.locator('[data-treatment-preset="highDose"]').click();
+    assert.equal(await page.locator("#controller").inputValue(), "ics-laba");
+    assert.equal(await page.locator("#reliever").inputValue(), "saba");
+    assert.equal(await page.locator('[name="icsDose"][value="high"]').isChecked(), true);
+    assert.equal(await page.locator("#laba-type").inputValue(), "non-formoterol");
+    await page.locator('[data-treatment-preset="saba"]').click();
     assert.equal(await page.locator('[name="symptomDays"]').count(), 6);
     assert.equal(await page.locator('[name="nightWaking"]').count(), 4);
     assert.equal(await page.locator('[name="acutePresentation"]').count(), 4);
@@ -90,7 +98,8 @@ async function main() {
     await page.locator('[name="symptomDays"][value="unknown"]').check();
     await generate();
     assert.match(await text(), /could not be fully classified/);
-    assert.doesNotMatch(await text(), /No urgent red-flag|Examination: normal|No exacerbations requiring/);
+    assert.match(await text(), /No urgent red-flag features were documented/);
+    assert.doesNotMatch(await text(), /Examination: normal|No exacerbations requiring/);
 
     await setInputs(page, state); await generate();
     assert.match(await text(), /GINA Track 1 Step 4/); assert.match(await text(), /was well controlled/);
@@ -164,8 +173,9 @@ async function main() {
     await page.locator('[name="biologic-selection"][value="benralizumab"]').check();
     assert.doesNotMatch(await text(), /Planned initiation/);
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
-    await setInputs(page, { icsDose: "high", optimizedTherapy: true }); await generate();
-    assert.match(await text(), /Planned initiation of Benralizumab/);
+    await setInputs(page, { controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true }); await generate();
+    assert.match(await text(), /Benralizumab.*has been recommended/);
+    assert.equal(await page.getByText("Benefits, limitations, and typical prescribing criteria", { exact: true }).count(), 6);
     assert.doesNotMatch(await text(), /Preferred biologic|Additional biologic option|Depemokimab|Reslizumab/);
     const selection = page.locator('[name="biologic-selection"][value="benralizumab"]');
     await selection.focus(); await page.keyboard.press("ArrowLeft"); assert.equal(await selection.isChecked(), false);
@@ -246,7 +256,7 @@ async function main() {
     await setInputs(page, { acutePresentation: "active" });
     assert.equal(await page.locator("#acute-fields").isVisible(), true);
     assert.equal(await page.locator("#acute-reassessment-fields").isVisible(), false);
-    await generate(); assert.match(await text(), /assessment was incomplete/); assert.match(await text(), /discharge readiness was not established/);
+    await generate(); assert.match(await text(), /assessment remained incomplete/); assert.match(await text(), /discharge readiness was not established/);
     await setInputs(page, { acuteReassessmentAvailable: true });
     assert.equal(await page.locator("#acute-reassessment-fields").isVisible(), true);
     await setInputs(page, { spo2: 85, respiratoryRate: 32 }); await generate();
@@ -264,8 +274,52 @@ async function main() {
 
     await load(); await setInputs(page, { ...state, eosinophils: 8000 }); await generate();
     assert.match(await text(), /8000 cells\/uL/); assert.match(await page.locator("#caution-list").textContent(), /Unusual value/);
+
+    await load();
+    await setInputs(page, { ...state, smoking: "current", smokingSafetyReviewed: true, smokingCigarettesPerDay: 20,
+      smokingFirstCigarette: "within30", smokingRenal: "normal", pregnant: false,
+      controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true, symptomDays: "daily", nightWaking: "weekly-plus", ocsExacerbations: 2, eosinophils: 450 });
+    await generate();
+    assert.equal(await page.locator("#smoking-card").isVisible(), true);
+    assert.equal(await page.locator("#smoking-fields").evaluate(node => node.classList.contains("hidden")), false);
+    assert.match(await page.locator("#management-steps").textContent(), /Smoking cessation has been recommended/);
+    const smokingChoice = page.locator('[name="smoking-selection"][value="varenicline"]');
+    await smokingChoice.focus(); await page.keyboard.press("Space");
+    assert.match(await text(), /Varenicline has been recommended/);
+    assert.match(await text(), /1 mg twice daily from day 8/);
+    await page.locator('[name="biologic-selection"][value="benralizumab"]').check();
+    assert.match(await text(), /Varenicline has been recommended/);
+    assert.match(await text(), /Benralizumab.*has been recommended/);
+    await page.locator('[name="smoking-selection"][value="combinationNrt"]').check();
+    assert.match(await text(), /21 mg patch daily/); assert.match(await text(), /gum 4 mg/);
+    assert.doesNotMatch((await text()).split("\nPlan\n")[1], /Varenicline/);
+    assert.match(await text(), /Benralizumab.*has been recommended/);
+    await page.locator("#copy-note-btn").click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
+    await setInputs(page, { smokingBupropionContra: true });
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    assert.equal(await page.locator("#smoking-options").evaluate(node => node.disabled), true);
+    await generate();
+    assert.equal(await page.locator('[name="smoking-selection"][value="bupropion"]').isDisabled(), true);
+    const assessment = (await text()).split("\nAssessment\n")[1].split("\n\nPlan")[0];
+    assert.doesNotMatch(assessment, /[;:\-]/);
+    await openDetails();
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `cessation overflow at ${width}`);
+      if ([390, 1280].includes(width)) {
+        await capture(page.locator("#smoking-card"), `smoking-${width}`);
+        await capture(page.locator("#smoking-assessment"), `smoking-inputs-${width}`);
+        await capture(page.locator("#biologic-guidance-card"), `biologic-comparison-${width}`);
+      }
+    }
+    await setInputs(page, { smoking: "former" }); await generate();
+    assert.equal(await page.locator("#smoking-card").isVisible(), false);
+    assert.doesNotMatch((await text()).split("\nPlan\n")[1], /Smoking cessation\n|21 mg patch daily/);
+    await setInputs(page, { smoking: "current" }); await generate();
+    assert.equal(await page.locator('[name="smoking-selection"][value=""]').isChecked(), true);
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: biologic/routine defaults, individual phenotype answers, explicit vaccine actions, clean add-on layout, regimen shortcuts, keyboard/navigation, clipboard/stale safeguards, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: routine defaults, safe high-dose shortcut, biologic comparisons and timing, selectable cessation plans and cautions, prose Assessment, clipboard/stale safeguards, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

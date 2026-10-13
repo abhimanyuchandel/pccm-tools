@@ -11,11 +11,12 @@
   let snapshot = null;
   let recommendation = null;
   let selectedBiologicId = null;
+  let selectedSmokingPlanId = null;
   let inputWarnings = [];
   let stale = false;
   let copying = false;
   let revision = 0;
-  let routineRedFlagsDefaulted = false;
+  let routineRedFlagsDefaulted = true;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -168,6 +169,7 @@
     show("acute-reassessment-fields", value("acuteReassessmentAvailable") === true);
     show("biologic-dosing", ["omalizumab", "reslizumab"].includes(selectedBiologicId));
     show("omalizumab-dosing-fields", selectedBiologicId === "omalizumab");
+    show("smoking-fields", value("smoking") === "current");
     Object.keys(schema).filter((key) => schema[key].type === "number").forEach(validateNumber);
   }
 
@@ -271,13 +273,14 @@
     if (!stale) {
       stale = true;
       results.classList.add("is-stale");
-      document.getElementById("results-status").textContent = "Inputs changed. These results reflect the previous assessment; regenerate before copying or selecting a biologic.";
+      document.getElementById("results-status").textContent = "Inputs changed. These results reflect the previous assessment; regenerate before copying or selecting a treatment plan.";
       status.textContent = "Inputs changed. Generate again to update recommendations and the SOAP note.";
       copyStatus.textContent = "Copy is unavailable until recommendations are regenerated.";
     }
     copyButton.disabled = true;
     show("note-jump-link", false);
     document.getElementById("biologic-options").disabled = true;
+    document.getElementById("smoking-options").disabled = true;
     noteOutput.value = "";
     noteOutput.placeholder = "Clinical inputs have changed. Regenerate recommendations to create an updated SOAP note before copying.";
   }
@@ -347,6 +350,7 @@
       ["acute", ["acute"], "Acute exacerbation management"],
       ["management", ["management", "alternative"], "Medication management"],
       ["testing", ["testing"], "Testing and reassessment"],
+      ["smoking", ["smoking"], "Smoking cessation"],
       ["monitoring", ["monitoring", "followup"], "Monitoring and follow-up"]
     ];
     const supportedKinds = [...groups.flatMap(([, kinds]) => kinds), "counseling", "prevention"];
@@ -404,6 +408,15 @@
     choice.append(label);
     const medication = candidate && window.asthmaLogic.MEDICATIONS[candidate.id];
     if (medication?.detail) {
+      const comparison = element("details", "clinical-drawer biologic-reference");
+      comparison.append(element("summary", "", "Benefits, limitations, and typical prescribing criteria"));
+      const content = element("div", "drawer-body biologic-comparison");
+      for (const [title, text] of [["Potential advantages", candidate.benefits], ["Limitations and cautions", candidate.limitations], ["Typical criteria", candidate.typicalCriteria], ["This patient's fit", candidate.criteriaFit]]) {
+        const paragraph = element("p");
+        paragraph.append(element("strong", "", `${title}: `), document.createTextNode(text));
+        content.append(paragraph);
+      }
+      comparison.append(content); choice.append(comparison);
       // Keep the disclosure outside the label so reviewing dosing cannot select an agent.
       const reference = element("details", "clinical-drawer biologic-reference");
       reference.append(element("summary", "", "U.S. dosing and prescribing reference"));
@@ -487,6 +500,7 @@
         : "Urgent assessment or higher-level care is recommended. Review the clinical safety and acute management steps before routine outpatient planning."
       : "";
     renderBiologics(rec);
+    renderSmoking(rec);
     updateConditionalFields();
     noteOutput.value = note;
     noteOutput.placeholder = rec.invalid ? "Correct the data-quality errors and regenerate recommendations to create a SOAP note." : "";
@@ -498,6 +512,44 @@
     show("note-jump-link", !stale && !rec.invalid && Boolean(note));
   }
 
+  function renderSmoking(rec) {
+    const support = rec.smokingSupport, container = document.getElementById("smoking-options");
+    show("smoking-card", support.options.length > 0);
+    container.replaceChildren();
+    container.disabled = stale || rec.invalid === true;
+    const choice = (option) => {
+      const label = element("label", "biologic-option");
+      const radio = element("input");
+      radio.type = "radio"; radio.name = "smoking-selection"; radio.value = option?.id || "";
+      radio.checked = radio.value === (selectedSmokingPlanId || "");
+      radio.disabled = Boolean(option?.blockers.length);
+      const body = element("span", "biologic-option-body");
+      body.append(element("strong", "", option ? option.name : "No medication plan selected yet"));
+      if (option) {
+        body.append(element("span", "hint", option.benefits));
+        body.append(element("span", "option-status", option.blockers.length ? "Not selectable with a documented contraindication" : option.ready ? "Available findings support this plan, subject to final prescribing review" : "Conditional option with safety or dosing review still needed"));
+        const pending = [...option.blockers, ...option.prerequisites];
+        if (pending.length) { const list = element("ul", "prerequisite-list"); pending.forEach(text => list.append(element("li", "", text))); body.append(list); }
+      } else body.append(element("span", "hint", "The note recommends cessation support without assuming a medication choice."));
+      label.append(radio, body);
+      const wrapper = element("div", "biologic-choice"); wrapper.append(label);
+      if (option) {
+        const details = element("details", "clinical-drawer biologic-reference");
+        details.append(element("summary", "", "Evidence, cautions, and treatment course"));
+        const content = element("div", "drawer-body");
+        for (const [title, text] of [["Evidence", option.evidence], ["Clinical selection", option.cautions], ["Course", option.schedule]]) {
+          if (!text) continue;
+          const paragraph = element("p"); paragraph.append(element("strong", "", `${title}: `), document.createTextNode(text)); content.append(paragraph);
+        }
+        const links = element("div", "reference-links");
+        option.sourceIds.forEach(id => { const link = safeSourceLink(window.asthmaLogic.SOURCES[id]); if (link) links.append(link); });
+        content.append(links); details.append(content); wrapper.append(details);
+      }
+      return wrapper;
+    };
+    container.append(choice(null)); support.options.forEach(option => container.append(choice(option)));
+  }
+
   function assertClinicalModules() {
     if (typeof window.asthmaLogic?.createEmptyState !== "function" || typeof window.asthmaLogic?.buildRecommendation !== "function" ||
       typeof window.asthmaNotes?.buildNoteText !== "function") {
@@ -505,23 +557,28 @@
     }
   }
 
-  function buildForSnapshot(data, selected) {
-    let rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected });
-    if (rec.invalid === true) return { rec, selected: null, note: "" };
+  function buildForSnapshot(data, selected, smokingPlan = selectedSmokingPlanId) {
+    let rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: smokingPlan });
+    if (rec.invalid === true) return { rec, selected: null, smokingPlan: null, note: "" };
     if (selected && !candidates(rec).some((candidate) => candidate.id === selected)) {
       selected = null;
-      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: null });
+      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: null, selectedSmokingPlanId: smokingPlan });
     }
-    if (rec.invalid === true) return { rec, selected: null, note: "" };
+    if (smokingPlan && !rec.smokingSupport.selected) {
+      smokingPlan = null;
+      rec = window.asthmaLogic.buildRecommendation(data, { selectedBiologicId: selected, selectedSmokingPlanId: null });
+    }
+    if (rec.invalid === true) return { rec, selected: null, smokingPlan: null, note: "" };
     const note = window.asthmaNotes.buildNoteText(data, rec);
     if (typeof note !== "string" || !note.trim()) throw new Error("The clinical note could not be generated. Review the inputs and try again.");
-    return { rec, selected, note };
+    return { rec, selected, smokingPlan, note };
   }
 
   function publishRecommendation(data, output, warnings) {
     snapshot = data;
     recommendation = output.rec;
     selectedBiologicId = output.selected;
+    selectedSmokingPlanId = output.smokingPlan || null;
     inputWarnings = warnings;
     stale = false;
     revision += 1;
@@ -581,6 +638,7 @@
       const restoreFocus = document.activeElement === event.target;
       const output = buildForSnapshot(snapshot, selected);
       selectedBiologicId = output.selected;
+      selectedSmokingPlanId = output.smokingPlan;
       recommendation = output.rec;
       revision += 1;
       renderRecommendation(recommendation, output.note);
@@ -597,6 +655,20 @@
       markStale();
       status.textContent = error.message || "The biologic selection could not be applied.";
     }
+  }
+
+  function chooseSmokingPlan(event) {
+    if (event.target.name !== "smoking-selection" || !snapshot || stale || recommendation.invalid) return;
+    const selected = event.target.value || null;
+    if (selected && !recommendation.smokingSupport.options.some(option => option.id === selected && !option.blockers.length)) return;
+    try {
+      const output = buildForSnapshot(snapshot, selectedBiologicId, selected);
+      selectedBiologicId = output.selected; selectedSmokingPlanId = output.smokingPlan;
+      recommendation = output.rec; revision += 1;
+      renderRecommendation(recommendation, output.note);
+      Array.from(document.getElementById("smoking-options").querySelectorAll("input")).find(input => input.value === (selectedSmokingPlanId || ""))?.focus({ preventScroll: true });
+      copyStatus.textContent = "SOAP note updated with the selected smoking-cessation plan.";
+    } catch (error) { markStale(); status.textContent = error.message || "Regenerate recommendations before selecting a cessation plan."; }
   }
 
   function copyFallback() {
@@ -681,6 +753,7 @@
       if (!stale) status.textContent = "Both 12-month exacerbation counts documented as zero. Other risk findings remain as entered.";
     });
     document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
+    document.getElementById("smoking-options").addEventListener("change", chooseSmokingPlan);
     document.querySelectorAll("[data-treatment-preset]").forEach(button => button.addEventListener("click", () => {
       const preset = window.asthmaLogic.TREATMENT_PRESETS[button.dataset.treatmentPreset];
       const changed = Object.entries(preset).some(([key, next]) => value(key) !== next);

@@ -14,12 +14,13 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-1">
-  <script src="/asthma/input-schema.js?v=20261013-1" defer></script>
-  <script src="/asthma/medications.js?v=20261013-1" defer></script>
-  <script src="/asthma/logic.js?v=20261013-1" defer></script>
-  <script src="/asthma/notes.js?v=20261013-1" defer></script>
-  <script src="/asthma/app.js?v=20261013-1" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-2">
+  <script src="/asthma/input-schema.js?v=20261013-2" defer></script>
+  <script src="/asthma/medications.js?v=20261013-2" defer></script>
+  <script src="/asthma/smoking.js?v=20261013-2" defer></script>
+  <script src="/asthma/logic.js?v=20261013-2" defer></script>
+  <script src="/asthma/notes.js?v=20261013-2" defer></script>
+  <script src="/asthma/app.js?v=20261013-2" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -70,9 +71,11 @@
               <button type="button" class="ghost-btn" data-treatment-preset="air" aria-pressed="false"><span class="preset-label">AIR Only</span><span class="preset-detail">As-needed ICS-formoterol</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="smartLow" aria-pressed="false"><span class="preset-label">Low-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 3)</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="smartMedium" aria-pressed="false"><span class="preset-label">Medium-Dose SMART</span><span class="preset-detail">Maintenance + relief (Step 4)</span></button>
+              <button type="button" class="ghost-btn" data-treatment-preset="highDose" aria-pressed="false"><span class="preset-label">High-Dose ICS-LABA</span><span class="preset-detail">Non-formoterol LABA + SABA relief</span></button>
             </div>
             <p class="hint">SABA (e.g., albuterol) provides relief without ICS protection. <a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA recommends an ICS-containing strategy for asthma</a>.</p>
             <p class="hint"><strong>AIR-only:</strong> ICS-formoterol as needed. <strong>SMART:</strong> the same inhaler for daily maintenance and as-needed relief.</p>
+            <p class="hint">The high-dose ICS-LABA shortcut is not SMART. Confirm the actual controller and compatible reliever; use the dose examples below.</p>
             <details id="air-smart-reference" class="clinical-drawer treatment-reference">
               <summary>AIR and SMART: definitions and adult dosing</summary>
               <div class="drawer-body">
@@ -261,6 +264,17 @@
               <div class="grid" data-fields="egpa smoking"></div>
               <div class="grid full-width" data-fields="endemicExposure"></div>
             </section>
+            <div id="smoking-fields" class="hidden">
+              <details id="smoking-assessment" class="clinical-drawer">
+                <summary>Smoking cessation: optional dosing and safety review</summary>
+                <div class="drawer-body">
+                  <p class="hint">These details help tailor the cessation choices shown with the recommendations. Missing information does not prevent generating asthma guidance.</p>
+                  <div class="grid" data-fields="smokingCigarettesPerDay smokingFirstCigarette smokingRenal"></div>
+                  <div class="grid checkbox-grid" data-fields="smokingBupropionContra smokingVareniclineReaction smokingSeizure smokingPsychiatric smokingCvdConcern smokingHepaticConcern smokingBreastfeeding"></div>
+                  <div class="review-confirmation" data-fields="smokingSafetyReviewed"></div>
+                </div>
+              </details>
+            </div>
             <p class="hint">Answer each item individually; unassessed findings remain unknown. Weight and pretreatment IgE are requested only when the chosen biologic needs them for dosing.</p>
           </div>
         </details>
@@ -338,6 +352,14 @@
           <h2>Preventive Care and Vaccination</h2>
           <ul id="prevention-list"></ul>
         </article>
+        <article id="smoking-card" class="result-card hidden">
+          <h2>Smoking Cessation</h2>
+          <p id="smoking-instructions">Medication plus behavioral support improves quit success. Select the preferred plan to include in the SOAP note. A conditional choice does not confirm that contraindications were excluded or medication was prescribed.</p>
+          <fieldset id="smoking-options" class="biologic-options" aria-describedby="smoking-instructions">
+            <legend class="sr-only">Preferred smoking-cessation plan</legend>
+          </fieldset>
+          <p class="hint">A quit date or gradual reduction plan, behavioral support, and follow-up within 1-2 weeks of the quit attempt are recommended. Offer 1-800-QUIT-NOW when acceptable.</p>
+        </article>
         <article id="caution-card" class="result-card caution hidden">
           <h2>Safety Checks</h2>
           <ul id="caution-list"></ul>
@@ -365,7 +387,7 @@
       </section>
 
       <footer class="footer">
-        <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; and current CDC adult immunization guidance.</p>
+        <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; CDC adult immunization guidance; and ATS / WHO tobacco-cessation guidance.</p>
         <p><strong>Application last updated:</strong> October 13, 2026.</p>
         <ul class="evidence-links">
           <li><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026 strategy</a></li>

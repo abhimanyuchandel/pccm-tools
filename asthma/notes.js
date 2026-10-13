@@ -7,6 +7,7 @@
   "use strict";
 
   const unique = lines => [...new Set(lines.filter(Boolean))];
+  const proseList = values => values.length < 2 ? values.join("") : values.length === 2 ? values.join(" and ") : `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
   const days = { none: "no daytime symptoms", "one-two": "daytime symptoms 1-2 days/week", three: "daytime symptoms 3 days/week", "four-six": "daytime symptoms 4-6 days/week", daily: "daily daytime symptoms" };
   const nights = { none: "no nocturnal waking", "less-weekly": "nocturnal waking less than weekly", "weekly-plus": "nocturnal waking at least weekly" };
 
@@ -30,7 +31,7 @@
     if (d.adherence !== "unknown") lines.push(d.adherence === "adequate" ? "No controller-adherence concern was identified." : "Suboptimal controller adherence was identified.");
     if (d.accessBarrier === true) lines.push("A medication access / affordability barrier was identified.");
     if (d.stableMonths !== null) lines.push(`Stable symptom control had been maintained for ${d.stableMonths} months.`);
-    if (d.smoking !== "unknown") lines.push({ never: "The smoking history was negative.", former: "The patient was a former smoker.", current: "The patient was currently smoking." }[d.smoking]);
+    if (d.smoking !== "unknown") lines.push({ never: "The smoking history was negative.", former: "The patient was a former smoker.", current: d.smokingCigarettesPerDay > 0 ? `The patient reported smoking ${d.smokingCigarettesPerDay} cigarettes daily.` : "The patient was currently smoking." }[d.smoking]);
     if (d.allergenDriven === true) lines.push("Symptoms were associated with allergen exposure.");
     if (d.pregnant === true) lines.push("Pregnancy was documented.");
     const vaccines = { flu: "influenza", covid: "COVID-19", pneumococcal: "pneumococcal", rsv: "RSV", zoster: "zoster", tdap: "Tdap / Td" };
@@ -111,30 +112,46 @@
   }
 
   function assessment(d, f) {
-    const patient = d.age === null ? "The adult patient" : `The ${d.age}-year-old patient`;
-    const diagnosis = f.diagnosis.confirmed ? `with asthma supported by ${f.diagnosis.evidence.join(" and ")}` : f.diagnosis.established ? "with an established clinical asthma diagnosis, for which original objective evidence remained to be verified" : "with suspected asthma requiring objective confirmation";
-    const parts = [`${patient} ${diagnosis} was evaluated for ${f.acute.active ? "an active exacerbation" : f.acute.recentResolved ? "follow-up after a resolved exacerbation" : f.treatment.effectivePhase === "followup" ? "follow-up management" : "initial management"}.`];
-    if (f.acute.emergency) parts.push(`Urgent findings included ${f.acute.triggers.join("; ")}; these took priority over routine planning.`);
-    else if (f.acute.active) parts.push(`The acute presentation was ${f.acute.classification}${f.acute.complete ? "." : "; the assessment was incomplete and outpatient safety could not be established."}`);
+    const patient = d.age === null ? "The adult patient" : `The patient was ${d.age} years old and`;
+    const diagnosis = f.diagnosis.confirmed ? `Asthma was supported by ${proseList(f.diagnosis.evidence)}.` : f.diagnosis.established ? "An established clinical asthma diagnosis was documented, with original objective evidence still to be verified." : "Asthma was suspected and required objective confirmation.";
+    const reason = f.acute.active ? "an active exacerbation" : f.acute.recentResolved ? "follow up after a resolved exacerbation" : f.treatment.effectivePhase === "followup" ? "ongoing asthma management" : "initial asthma management";
+    const parts = [`${patient} was evaluated for ${reason}.`, diagnosis];
+    if (f.acute.emergency) {
+      const triggers = f.acute.triggers.map(text => text === "life-threatening clinical features" ? "life threatening clinical features" : text);
+      parts.push(`Urgent findings included ${proseList(triggers)}. These findings took priority over routine planning.`);
+    } else if (f.acute.active) {
+      parts.push(f.acute.mild ? "The documented acute presentation was mild." : f.acute.classification === "moderate" ? "The documented acute presentation included moderate features." : "The acute severity assessment remained incomplete.");
+      if (!f.acute.complete) parts.push("Outpatient safety could not be established from the available observations.");
+    }
     if (d.controller === "unknown") parts.push("The current maintenance regimen remained incompletely documented.");
     else if (["none", "saba-only"].includes(d.controller) && d.reliever !== "ics-formoterol") {
-      parts.push(d.reliever === "none" ? "No maintenance ICS-containing controller or reliever was documented." : d.reliever === "unknown" ? "No maintenance ICS-containing controller was documented; reliever therapy remained unverified." : `No maintenance ICS-containing controller was documented; the reliever was ${f.treatment.relieverName}.`);
-    } else parts.push(`At the encounter, treatment corresponded to ${f.treatment.description}; the reliever was ${f.treatment.relieverName}.`);
+      parts.push("No maintenance controller containing an inhaled corticosteroid was documented.");
+      if (d.reliever === "none") parts.push("No reliever was documented.");
+    } else {
+      const step = f.treatment.step === "1-2" ? "Steps 1 and 2" : f.treatment.step ? `Step ${f.treatment.step}` : "a treatment intensity requiring review";
+      if (f.treatment.track) parts.push(f.treatment.step ? `Current treatment corresponded to GINA Track ${f.treatment.track} ${step}.` : `The reliever strategy corresponded to GINA Track ${f.treatment.track}. The exact treatment step required verification of the regimen.`);
+      const dose = d.icsDose === "unknown" || f.severe.unverifiedHighSmart ? "an unverified corticosteroid dose" : `a ${d.icsDose} corticosteroid dose`;
+      const regimen = f.treatment.airOnly ? "as needed inhaled corticosteroid and formoterol without scheduled maintenance" : d.controller === "ics" ? `maintenance inhaled corticosteroid alone at ${dose}` : d.controller === "triple" ? `maintenance inhaled corticosteroid, LABA, and LAMA therapy at ${dose}` : d.controller === "ics-formoterol" ? `maintenance inhaled corticosteroid and formoterol at ${dose}` : `maintenance inhaled corticosteroid and LABA therapy at ${dose}`;
+      parts.push(`The current regimen consisted of ${regimen}.`);
+    }
+    const reliever = { "ics-formoterol": "an inhaled corticosteroid and formoterol combination", "ics-saba": "albuterol and budesonide", saba: "a short acting beta agonist", unknown: "not yet verified" }[d.reliever];
+    if (reliever) parts.push(`The reliever was ${reliever}.`);
     if (!["none", "unknown"].includes(d.currentBiologic)) parts.push(`The current biologic was ${logic.MEDICATIONS[d.currentBiologic].name}${d.biologicMonths === null ? "" : `, used for ${d.biologicMonths} months`}.`);
-    if (d.maintenanceOcs === true) parts.push(`Maintenance systemic corticosteroid use was documented${d.maintenanceOcsDose === null ? "" : ` at prednisone-equivalent ${d.maintenanceOcsDose} mg/day`}.`);
+    if (d.maintenanceOcs === true) parts.push(`Maintenance systemic corticosteroid use was documented${d.maintenanceOcsDose === null ? "" : ` at a prednisone equivalent dose of ${d.maintenanceOcsDose} mg/day`}.`);
     parts.push(f.control.classification === "not fully assessed" ? "Symptom control could not be fully classified from the available history." : `GINA symptom control was ${f.control.classification}${f.control.complete ? "" : ", with remaining history incomplete"}.`);
-    if (f.risk.factors.length) parts.push(`Future-risk considerations included ${f.risk.factors.join("; ")}.`);
+    if (f.risk.factors.length) parts.push(`Future exacerbation risk was increased by ${proseList(f.risk.factors.map(text => text === "prior ICU admission or life-threatening asthma" ? "prior ICU admission or a life threatening asthma episode" : text))}.`);
     const phenotype = [];
     if (d.eosinophils >= 150 || d.historicalEosinophils >= 300) phenotype.push("eosinophilic inflammation");
     if (d.feno >= 25) phenotype.push("elevated FeNO");
     if (d.perennialSensitization === true) phenotype.push("confirmed perennial allergic sensitization");
     if (d.nasalPolyps === true) phenotype.push("nasal polyposis");
     if (d.atopicDermatitis === true) phenotype.push("atopic dermatitis");
-    if (phenotype.length) parts.push(`Relevant phenotype / comorbidities included ${phenotype.join(", ")}.`);
+    if (phenotype.length) parts.push(`The relevant phenotype and comorbidities included ${proseList(phenotype)}.`);
     if (d.egpa === "suspected") parts.push("EGPA was suspected but had not been established.");
-    if (d.egpa === "confirmed") parts.push("Confirmed EGPA required coordinated indication-specific treatment.");
-    if (f.severe.established) parts.push("Persistent burden despite documented optimized high-dose ICS-LABA supported a severe-asthma assessment.");
-    if (f.proposedMedicationId) parts.push(`The recommended treatment change was ${logic.MEDICATIONS[f.proposedMedicationId].name}.`);
+    if (d.egpa === "confirmed") parts.push("Confirmed EGPA required coordinated treatment for that indication.");
+    if (f.severe.established) parts.push("Persistent disease burden despite optimized inhaled corticosteroid and LABA treatment at a high corticosteroid dose supported a severe asthma assessment.");
+    const proposed = { air: "as needed budesonide and formoterol", smartLow: "budesonide and formoterol SMART at a low maintenance corticosteroid dose", smartMedium: "budesonide and formoterol SMART at a medium maintenance corticosteroid dose" }[f.proposedMedicationId];
+    if (proposed) parts.push(`The recommended treatment change was ${proposed}.`);
     return parts.join(" ");
   }
 
@@ -153,6 +170,7 @@
     "acute-disposition": (d, f) => f.acute.dischargeCriteriaDocumented ? "Documented reassessment supported consideration of outpatient disposition, subject to clinical judgment rather than automatic clearance. Continued stability, room-air oxygenation, lung function above 70%, home support, and 1-2 hours after the last bronchodilator were to be verified; actual disposition remained to be documented." : "Outpatient disposition / discharge readiness was not established. Verification of sustained improvement for 1-2 hours after the last bronchodilator, only mild features, SpO2 at least 92% on room air, lung function above 70%, and home support was recommended before considering discharge.",
     "acute-followup": () => "After stabilization, an ICS-containing regimen, written action plan, urgent return precautions, and follow-up within 2-7 days were recommended, with review of triggers, adherence, and response.",
     "postacute-controller": () => "After acute stabilization, reassessment of controller intensity and an appropriate ICS-formoterol maintenance-and-reliever strategy were recommended when suitable; a complete regimen change, not duplicate LABA treatment, would be used. A maintenance triple inhaler would not be used for rescue.",
+    "postacute-smoking": () => "After stabilization, smoking-cessation counseling, medication suitability review, and quitline support were recommended. A definitive cessation medication plan was deferred until the acute episode had been addressed.",
     "diagnostic-confirmation": (d, f) => f.diagnosis.established ? "Review of historical objective evidence and, when appropriate, repeat spirometry, serial PEF, or bronchoprovocation was recommended without automatically withdrawing effective ICS treatment." : "Objective confirmation with pre/post-bronchodilator spirometry, serial PEF, or suitable bronchoprovocation was recommended. Clinically necessary ICS-containing treatment could be started provisionally with a plan for confirmation.",
     "steroid-effects": () => "Review of steroid adverse effects, dose/device, spacer and mouth-rinsing technique, cumulative OCS exposure, and relevant interactions was recommended, with the lowest effective ICS dose retained.",
     "resolve-reliever": () => "Resolution of the controller/reliever LABA mismatch was recommended before escalation, using a compatible SABA or albuterol-budesonide reliever or changing the entire controller to a suitable ICS-formoterol regimen.",
@@ -171,20 +189,25 @@
     "ics-protection": () => "An ICS-containing strategy was recommended rather than SABA-only treatment for confirmed asthma, with intensity guided by symptoms, lung function, and exacerbation history.",
     "phenotype-testing": () => "Blood eosinophils, FeNO, and clinically relevant allergic phenotype testing were recommended for future Step 5 decisions; pretreatment total IgE would be obtained when considering omalizumab dosing.",
     "future-biologic": () => "Phenotype-matched biologic therapy would be considered at follow-up if control remained inadequate despite optimized high-dose ICS-LABA, after verification of eligibility and necessary testing.",
-    "biologic-review": () => "Consideration of a suitable phenotype-matched biologic was recommended, with review of eligibility, comorbidities, dosing, route/interval, preferences, and coverage before ordering.",
+    "biologic-review": (d, f, rec) => !["none", "unknown"].includes(d.currentBiologic) ? "Review of the current biologic response and a coordinated single-agent strategy was recommended before any change." : rec.biologicCandidates.some(item => item.ready) ? "Addition of a suitable phenotype-matched biologic has been recommended based on the current severe-asthma presentation, subject to product safety review and coverage confirmation. Agent choice remained to be determined through shared decision making." : "Biologic treatment remained conditional on completing the outstanding eligibility and testing prerequisites before prescribing.",
     "azithromycin-review": () => "A monitored long-term azithromycin trial was considered when appropriate after mycobacterial screening, ECG/QTc, hearing and interaction review, and discussion of resistance; it was not recommended as routine exacerbation antibiotic treatment.",
     "egpa-workup": () => "Evaluation for suspected EGPA was recommended before attributing eosinophilia/systemic features to asthma or using a confirmed-disease indication.",
     "egpa-care": () => "Coordinated indication-specific treatment of confirmed EGPA was recommended rather than substitution of asthma-only dosing.",
     "selected-biologic": (d, f, rec) => {
       const candidate = rec.biologicCandidates.find(item => item.id === f.selectedBiologicId);
       if (!["none", "unknown"].includes(d.currentBiologic)) return `Review of response to ${logic.MEDICATIONS[d.currentBiologic].name}${d.biologicMonths === null ? "" : ` after ${d.biologicMonths} months`} was recommended before any change. ${candidate.name} was considered within a coordinated single-biologic strategy; routine combination of biologics was not recommended.`;
-      return candidate.ready ? `Planned initiation of ${candidate.name} after shared decision-making, authorization, and product safety review.` : `Considered ${candidate.name}, conditional on: ${candidate.prerequisites.join("; ")}. Initiation would await completion of these prerequisites.`;
+      return candidate.ready ? `${candidate.name} has been recommended based on the current presentation. Initiation remained subject to shared decision-making, authorization, and product safety review.` : candidate.future ? `${candidate.name} would be considered at subsequent follow-up only if control remained inadequate despite an appropriate optimized high-dose ICS-LABA trial. Initiation would await verification of the listed prerequisites.` : `Considered ${candidate.name}, conditional on: ${candidate.prerequisites.join("; ")}. Initiation would await completion of these prerequisites.`;
     },
-    "biologic-monitor": (d, f) => f.selectedBiologicId === "depemokimab" ? "Clinical response review over at least 6 months was recommended for depemokimab." : "Planned response assessment after about 4 months using symptoms, exacerbations, lung function, and steroid burden; an uncertain response could warrant a longer 6-12-month trial.",
+    "biologic-monitor": (d, f, rec) => {
+      const ready = rec.biologicCandidates.find(item => item.id === f.selectedBiologicId)?.ready;
+      const interval = f.selectedBiologicId === "depemokimab" ? "at least 6 months" : "about 4 months";
+      return `${ready ? "After initiation, response assessment was recommended" : "If biologic treatment is initiated after prerequisites are met, response assessment would be planned"} after ${interval} using symptoms, exacerbations, lung function, and steroid burden.${f.selectedBiologicId === "depemokimab" ? "" : " An uncertain response could warrant a longer 6-12-month trial."}`;
+    },
     "routine-followup": (d, f) => f.acute.recentResolved ? "Follow-up was to be individualized to recovery and control after the resolved episode; an initial post-exacerbation review within 2-7 days was recommended if not already completed, with earlier review for incomplete recovery or deterioration." : f.control.poor || f.risk.frequent || d.persistentExacerbations === true || f.treatment.effectivePhase === "initial" ? "Planned follow-up in about 4-6 weeks after initiation/adjustment, sooner for deterioration, with reassessment of control, exacerbations, technique, adherence, adverse effects, and appropriate lung function." : "Planned routine follow-up in about 3 months, or earlier at 4-8 weeks after step-down or another treatment change.",
     "technique-counsel": () => "Recommended inhaler-technique review with demonstration/teach-back, adherence/access review, and spacer use as appropriate.",
     "action-plan": () => "Recommended provision or update of a written asthma action plan covering usual therapy, worsening symptoms, reliever limits, return to the prior regimen, and urgent care. Emergency precautions included severe breathlessness, inability to speak, cyanosis, altered mental status, or poor rescue response.",
-    nonpharmacologic: d => `Recommended exposure reduction, regular activity as tolerated, and care of relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors${d.smoking === "current" ? ", with smoking-cessation counseling and pharmacotherapy recommended for consideration" : ""}.`,
+    nonpharmacologic: () => "Recommended exposure reduction, regular activity as tolerated, and care of relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors.",
+    "smoking-cessation": (d, f, rec) => logic.smokingPlanText(rec.smokingSupport),
     "vaccine-diagnostic": () => "Preventive vaccination review was recommended using local protocol and CDC age/condition guidance, without assuming an asthma-specific indication while diagnosis remained unconfirmed."
   };
 
@@ -209,10 +232,11 @@
     const f = rec.findings, groups = new Map(), medicationIds = new Set();
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
     rec.actions.filter(action => action.kind !== "alternative").forEach(action => {
+      if (["biologic-review", "future-biologic"].includes(action.id) && f.selectedBiologicId) return;
       const template = ACTION_NOTES[action.id];
       const text = template ? template(d, f, rec) : action.id.startsWith("vaccine-") ? vaccinePlan(action) : null;
       if (!text) throw new Error(`Missing clinical documentation template: ${action.id}`);
-      const heading = action.kind === "prevention" ? "Preventive care" : action.kind === "counseling" ? "Counseling and asthma action plan" : action.kind === "testing" ? "Testing" : ["followup", "monitoring"].includes(action.kind) ? "Monitoring and follow-up" : rec.emergency ? "Urgent management" : "Medication / management";
+      const heading = action.kind === "smoking" ? "Smoking cessation" : action.kind === "prevention" ? "Preventive care" : action.kind === "counseling" ? "Counseling and asthma action plan" : action.kind === "testing" ? "Testing" : ["followup", "monitoring"].includes(action.kind) ? "Monitoring and follow-up" : rec.emergency ? "Urgent management" : "Medication / management";
       append(heading, text);
       action.medicationIds.forEach(id => {
         if (id === f.proposedMedicationId || id === f.selectedBiologicId || ["tiotropium", "highDose", "azithromycin"].includes(id)) medicationIds.add(id);
@@ -228,7 +252,7 @@
     if (d.eosinophils >= 1500 || d.historicalEosinophils >= 1500) cautions.push("Evaluation of marked eosinophilia for EGPA, hypereosinophilic disease, and other causes was recommended rather than attribution to asthma alone.");
     if (d.endemicExposure === true && (d.eosinophils >= 300 || d.historicalEosinophils >= 300)) cautions.push("Parasite evaluation before systemic corticosteroids/biologics was recommended when epidemiologically indicated.");
     cautions.forEach(text => append("Clinical cautions", text));
-    const order = ["Urgent management", "Medication / management", "Testing", "Counseling and asthma action plan", "Preventive care", "Monitoring and follow-up", "Clinical cautions"].filter(key => groups.has(key));
+    const order = ["Urgent management", "Medication / management", "Testing", "Smoking cessation", "Counseling and asthma action plan", "Preventive care", "Monitoring and follow-up", "Clinical cautions"].filter(key => groups.has(key));
     return order.map((heading, index) => `${index + 1}. ${heading}\n${unique(groups.get(heading)).map(text => `- ${text}`).join("\n")}`).join("\n\n");
   }
 

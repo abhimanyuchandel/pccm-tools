@@ -102,6 +102,13 @@
       title: "CDC Adult Immunization Schedule Notes",
       url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html"
     },
+    atsTobacco: { id: "atsTobacco", title: "ATS Tobacco-Dependence Pharmacotherapy Guideline", url: "https://doi.org/10.1164/rccm.202005-1982ST" },
+    whoTobacco: { id: "whoTobacco", title: "WHO 2024 Tobacco Cessation Guideline", url: "https://www.ncbi.nlm.nih.gov/books/NBK604665/" },
+    uspstfTobacco: { id: "uspstfTobacco", title: "USPSTF Tobacco Cessation and Pregnancy Guidance", url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/tobacco-use-in-adults-and-pregnant-women-counseling-and-interventions" },
+    varenicline: { id: "varenicline", title: "Varenicline U.S. Prescribing Information", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=16a03b5e-03e0-4b0b-92a4-aaf0669906f7" },
+    bupropionSmoking: { id: "bupropionSmoking", title: "Bupropion SR Smoking-Cessation Prescribing Information", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a591e33a-52f0-41c8-a00b-4a1afcc3dc4c" },
+    nicotinePatch: { id: "nicotinePatch", title: "CDC Nicotine Patch Dosing and Precautions", url: "https://www.cdc.gov/tobacco/campaign/tips/quit-smoking/quit-smoking-medications/how-to-use-quit-smoking-medicines/how-to-use-a-nicotine-patch.html" },
+    nicotineGum: { id: "nicotineGum", title: "CDC Nicotine Gum Dosing and Precautions", url: "https://www.cdc.gov/tobacco/campaign/tips/quit-smoking/quit-smoking-medications/how-to-use-quit-smoking-medicines/how-to-use-nicotine-gum.html" },
     influenza: {
       id: "influenza",
       title: "CDC Seasonal Influenza Vaccine Guidance",
@@ -252,6 +259,44 @@
     }
   };
 
+  const BIOLOGIC_CONSIDERATIONS = {
+    omalizumab: {
+      typicalCriteria: "Allergic asthma with confirmed perennial sensitization, inadequate control on ICS-containing treatment, and a supported pretreatment IgE/weight dosing-table cell. Severe-asthma treatment review and local coverage criteria apply.",
+      benefits: "Established allergic-asthma option with an interchangeable biosimilar. May also address qualifying nasal polyposis or IgE-mediated food allergy using their own indication-specific dosing.",
+      limitations: "Every 2 or 4 weeks with weight/IgE-dependent dosing. Boxed anaphylaxis warning and initial observation requirements. Allergic symptoms alone do not establish sensitization or a valid dose."
+    },
+    mepolizumab: {
+      typicalCriteria: "Severe eosinophilic asthma with exacerbations despite optimized therapy. Common eligibility thresholds include eosinophils at least 150 currently or 300 historically, but payer and product requirements vary.",
+      benefits: "Eosinophilic exacerbation reduction and OCS-sparing evidence. May suit confirmed EGPA, qualifying HES, or nasal polyposis with indication-specific dosing. Self-administration may be suitable.",
+      limitations: "Every 4 weeks. Review hypersensitivity, helminth infection, and herpes-zoster risk. The asthma dose must not be substituted for an EGPA or HES regimen."
+    },
+    benralizumab: {
+      typicalCriteria: "Severe eosinophilic asthma with exacerbations or steroid dependence despite optimized therapy. Eosinophil thresholds vary by payer; larger counts and exacerbation burden generally favor response.",
+      benefits: "OCS-sparing evidence and every 8 week asthma maintenance after the first 3 monthly doses. Confirmed EGPA may favor an agent with that indication, using its separate schedule.",
+      limitations: "Initial loading visits and continued ICS treatment are required. EGPA uses every 4 week dosing, not the asthma maintenance interval. Review hypersensitivity and helminth infection; less frequent dosing does not establish superior efficacy."
+    },
+    depemokimab: {
+      typicalCriteria: "Severe eosinophilic asthma despite optimized therapy. Trials used eosinophils at least 150 currently or 300 in the prior year plus exacerbation history; these are trial signals, not universal insurer rules.",
+      benefits: "Healthcare-professional-administered 100 mg SC every 6 months may reduce visit and dosing burden for a suitable eosinophilic phenotype.",
+      limitations: "Administration requires a healthcare professional and initial response assessment takes at least 6 months. Pregnancy data are limited. The current U.S. label does not include EGPA, HES, or nasal polyposis."
+    },
+    reslizumab: {
+      typicalCriteria: "Adult severe eosinophilic asthma despite optimized therapy. Exacerbation trials generally used eosinophils at least 400. Verify weight for 3 mg/kg dosing and local coverage criteria.",
+      benefits: "Weight-based IV dosing may suit an eligible patient who prefers or requires supervised infusion treatment.",
+      limitations: "Monthly infusion, verified weight, and post-infusion observation. Boxed anaphylaxis warning and malignancy warning. No U.S. EGPA indication."
+    },
+    dupilumab: {
+      typicalCriteria: "Moderate-to-severe eosinophilic or OCS-dependent asthma. Common phenotype signals include eosinophils at least 150 or FeNO at least 25. GINA cautions against routine selection above 1500 eosinophils; evaluate suspected EGPA first.",
+      benefits: "OCS-sparing evidence. Elevated FeNO, qualifying atopic dermatitis, or nasal polyposis may favor this option. Self-administration may be suitable.",
+      limitations: "Every 2 week injections. Review eye symptoms, transient eosinophilia, eosinophilic complications, and helminth infection. Not an EGPA treatment choice; use indication-specific dosing for comorbid conditions."
+    },
+    tezepelumab: {
+      typicalCriteria: "Severe asthma with exacerbations despite optimized treatment. No minimum Type 2 biomarker threshold is required by the U.S. asthma indication; payer criteria still apply.",
+      benefits: "An option when eosinophils or FeNO are low or other phenotype-matched agents are unsuitable. Also has a U.S. nasal-polyposis indication. Higher Type 2 markers generally predict larger asthma benefits.",
+      limitations: "Every 4 weeks. Do not promise OCS-sparing benefit for every phenotype. Review hypersensitivity, helminth infection, live-vaccine precautions, and supervised steroid reduction."
+    }
+  };
+
   // Concise schedules shared by the retrospective note and the full prescribing references.
   const NOTE_SCHEDULES = {
     air: "Budesonide-formoterol 160/4.5 mcg, 1 inhalation as needed for symptoms or before exercise; maximum 12 total inhalations/day. Guideline-supported AIR use is off-label in the U.S.",
@@ -303,5 +348,5 @@
     return cell ? { doseMg: cell[0], intervalWeeks: cell[1] } : null;
   }
 
-  return { REVIEW_DATE, SOURCES, MEDICATIONS, getOmalizumabDose };
+  return { REVIEW_DATE, SOURCES, MEDICATIONS, BIOLOGIC_CONSIDERATIONS, getOmalizumabDose };
 });
