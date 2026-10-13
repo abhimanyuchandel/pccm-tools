@@ -150,7 +150,7 @@
     if (phenotype.length) parts.push(`The relevant phenotype and comorbidities included ${proseList(phenotype)}.`);
     if (d.egpa === "suspected") parts.push("EGPA was suspected but had not been established.");
     if (d.egpa === "confirmed") parts.push("Confirmed EGPA required coordinated treatment for that indication.");
-    if (f.severe.established) parts.push(f.severe.previouslyEstablished ? "Severe asthma had been established by a prior longitudinal assessment, and disease burden persisted despite optimized current treatment." : "Persistent disease burden despite optimized inhaled corticosteroid and LABA treatment at a high corticosteroid dose supported a severe asthma assessment.");
+    if (f.severe.established) parts.push("Severe asthma and the prior optimized treatment course were reviewed in selecting add on biologic therapy for persistent inadequate control.");
     const proposed = { air: "as needed budesonide and formoterol", smartLow: "budesonide and formoterol SMART at a low maintenance corticosteroid dose", smartMedium: "budesonide and formoterol SMART at a medium maintenance corticosteroid dose" }[f.proposedMedicationId];
     if (proposed) parts.push(`The planned regimen is ${proposed}.`);
     return parts.join(" ");
@@ -189,7 +189,7 @@
     "complete-control": () => "Complete symptom-control and exacerbation-risk assessment before assigning good control or reducing treatment. Retain appropriate ICS protection.",
     "ics-protection": () => "An ICS-containing strategy was recommended rather than SABA-only treatment for confirmed asthma, with intensity guided by symptoms, lung function, and exacerbation history.",
     "phenotype-testing": () => "Obtain blood eosinophils, FeNO, and clinically relevant allergic phenotype testing for Step 5 treatment planning. Obtain pretreatment total IgE if omalizumab is being pursued.",
-    "future-biologic": () => "Reassess phenotype-directed biologic treatment at follow-up if control remains inadequate after optimization and severe asthma is established. Future agent decision: ***.",
+    "future-biologic": () => "Review severe-asthma diagnosis, the optimized treatment history, phenotype, and agent-specific eligibility before biologic initiation. Biologic assessment and treatment decision: ***.",
     "biologic-review": (d, f, rec) => !["none", "unknown"].includes(d.currentBiologic) ? "Assess the current biologic response before changing to another agent. Continue a single-biologic strategy. Biologic continuation or switch plan: ***." : rec.biologicCandidates.some(item => item.ready) ? "Add phenotype-matched biologic therapy for established severe asthma. Biologic agent and initiation plan: ***." : "Complete the outstanding severe-asthma eligibility, phenotype, and medication safety assessment before prescribing a biologic. Agent and initiation plan: ***.",
     "azithromycin-review": () => "Complete mycobacterial screening, ECG/QTc, hearing and interaction review, and resistance-risk discussion before any long-term azithromycin prescription. Additional nonbiologic treatment decision: ***. Do not use antibiotics routinely for asthma exacerbations.",
     "egpa-workup": () => "Evaluate suspected EGPA and relevant organ involvement before attributing systemic features to asthma or using a confirmed EGPA treatment indication.",
@@ -228,6 +228,7 @@
     const f = rec.findings, groups = new Map(), medicationIds = new Set();
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
     for (const group of rec.plan?.groups || []) {
+      if (group.id === "lama" && rec.plan.selections.controller === "continue-biologic" && !group.selected) continue;
       if (!group.selected) append("Medication / management", group.placeholder + ".");
     }
     rec.actions.filter(action => action.kind !== "alternative").forEach(action => {

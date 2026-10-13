@@ -52,18 +52,29 @@
     if (has("resolve-reliever")) {
       options.push(option("compatible-reliever", "Retain controller and replace incompatible reliever", "Continue the documented ICS-containing controller. Replace ICS-formoterol relief with the selected compatible reliever; do not duplicate LABAs."));
     }
-    if (has("step5-review") && d.icsDose === "medium" && optimizedNow && !f.severe.previouslyEstablished && !tx.incompatible) {
+    if (has("step5-review") && d.icsDose === "medium" && optimizedNow && !tx.incompatible) {
       options.push(option("highDose", "Choose a monitored high-dose ICS-LABA trial", "Change to fluticasone propionate/salmeterol 500/50 mcg, 1 inhalation twice daily. Stop the previous combination controller and use the selected compatible reliever. Reassess benefit and steroid adverse effects after a limited 3-6-month trial; reduce to the lowest effective dose if there is no meaningful benefit.", ["highDose"], d.age === null ? ["Verify adult age"] : []));
     }
     if (has("stepdown")) {
       const smart = d.controller === "ics-formoterol" && tx.track === 1;
       const schedule = smart && tx.step === "4" ? catalog.MEDICATIONS.smartLow.noteSchedule : smart && tx.step === "3" ? "Budesonide-formoterol 160/4.5 mcg, 1 scheduled inhalation once daily plus 1 as needed, maximum 12 total inhalations/day. U.S. SMART reliever use is off-label." : "Reduce maintenance ICS by 25-50% using the selected product. Reduced controller product, strength, and schedule: ***. Retain a compatible reliever.";
       options.push(option("stepdown", "Proceed with supervised step-down", `Reduce the maintenance ICS regimen. ${schedule} Record baseline control and lung function, provide instructions to resume the previous regimen if control worsens, and reassess in 4-8 weeks. Do not withdraw ICS completely.${d.priorIcu === true ? " Use particularly close supervision because of prior life-threatening asthma." : ""}`, smart && tx.step === "4" ? ["smartLow"] : []));
-    } else if (d.stableMonths >= 3 && tx.maintenance && !tx.step5 && !f.severe.previouslyEstablished) {
+    } else if (d.stableMonths >= 3 && tx.maintenance && !tx.step5) {
       for (const key of ["recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling"]) confirm(key);
     }
     if (has("optimize") || has("clarify-regimen") || has("complete-control") || has("complete-initial")) {
       options.push(option("assessment", "Complete assessment and optimization before changing treatment", "Complete the documented treatment, symptom-control, and risk assessment. Address technique, adherence, access, exposures, and relevant comorbid contributors before choosing a routine treatment change. Retain appropriate ICS protection while completing this review."));
+    }
+    if (rec.biologicCandidates.length) {
+      const current = options.find(item => item.id === "continue");
+      const existing = !["none", "unknown"].includes(d.currentBiologic);
+      if (current && !current.blockers.length) {
+        const chosen = rec.biologicCandidates.find(item => item.id === f.selectedBiologicId);
+        const eligible = chosen ? chosen.eligibleForReview : rec.biologicCandidates.some(item => item.eligibleForReview);
+        const blockers = eligible ? [] : ["Complete the listed phenotype, safety, and dosing prerequisites before initiation"];
+        if (!existing) options.splice(options.findIndex(item => item.id === "continue") + 1, 0, option("continue-biologic", "Continue current inhaled regimen and initiate a phenotype-matched biologic", "Continue the current ICS-containing controller and compatible reliever at the documented doses.", [], blockers));
+        options.push(option("assess-biologic", existing ? "Continue inhaled regimen and review current biologic response" : "Continue inhaled regimen and complete biologic assessment", existing ? "Continue the current ICS-containing inhaled regimen. Assess response to the current biologic and review phenotype, treatment history, and a coordinated single-agent strategy before any switch." : "Continue the current ICS-containing inhaled regimen. Complete severe-asthma treatment-history review and outstanding phenotype, medication safety, and dosing assessments before choosing biologic initiation."));
+      }
     }
     if (options.length) {
       const group = choose("controller", "Controller strategy", "Controller and reliever plan: ***", options);
@@ -101,6 +112,14 @@
       rec.actions = rec.actions.filter(action => !replace.includes(action.id));
       rec.actions.push({ id: `chosen-${group.id}`, text: group.selected.text, noteText: group.selected.text, kind: "management", medicationIds: group.selected.medicationIds, sourceIds: ["gina"], selectedPlan: true });
     }
+    if (["continue-biologic", "assess-biologic"].includes(plan.selections.controller)) {
+      rec.actions = rec.actions.filter(action => !["biologic-review", "future-biologic"].includes(action.id));
+      if (plan.selections.controller === "continue-biologic" && !rec.findings.selectedBiologicId) {
+        rec.actions.find(action => action.id === "chosen-controller").text += " Add phenotype-matched biologic therapy after product safety and authorization requirements are completed. Biologic agent and dosing: ***.";
+        rec.actions.find(action => action.id === "chosen-controller").noteText = rec.actions.find(action => action.id === "chosen-controller").text;
+      }
+    }
+    if (plan.selections.controller === "continue-biologic") rec.actions = rec.actions.filter(action => action.id !== "azithromycin-review" && (action.id !== "lama" || plan.selections.lama));
     if (plan.selections.controller === "stepdown") {
       const followup = rec.actions.find(action => action.id === "routine-followup");
       if (followup) followup.text = "Follow up in 4-8 weeks to reassess control, lung function, and response to step-down. Resume the previous regimen and contact the clinic if control worsens.";

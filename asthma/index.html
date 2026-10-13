@@ -14,14 +14,14 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-4">
-  <script src="/asthma/input-schema.js?v=20261013-4" defer></script>
-  <script src="/asthma/medications.js?v=20261013-4" defer></script>
-  <script src="/asthma/smoking.js?v=20261013-4" defer></script>
-  <script src="/asthma/plans.js?v=20261013-4" defer></script>
-  <script src="/asthma/logic.js?v=20261013-4" defer></script>
-  <script src="/asthma/notes.js?v=20261013-4" defer></script>
-  <script src="/asthma/app.js?v=20261013-4" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-5">
+  <script src="/asthma/input-schema.js?v=20261013-5" defer></script>
+  <script src="/asthma/medications.js?v=20261013-5" defer></script>
+  <script src="/asthma/smoking.js?v=20261013-5" defer></script>
+  <script src="/asthma/plans.js?v=20261013-5" defer></script>
+  <script src="/asthma/logic.js?v=20261013-5" defer></script>
+  <script src="/asthma/notes.js?v=20261013-5" defer></script>
+  <script src="/asthma/app.js?v=20261013-5" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -136,24 +136,6 @@
                 <div class="review-confirmation" data-fields="treatmentReviewed"></div>
                 <p class="hint">Confirm after reviewing the additional maintenance therapies and treatment barriers. Biologic status is recorded separately above.</p>
               </section>
-              <div class="grid form-section-grid">
-                <section class="form-subgroup" aria-label="Optimized treatment trial">
-                  <div data-fields="optimizedTherapy"></div>
-                </section>
-                <section class="form-subgroup" aria-label="Prior severe-asthma assessment">
-                  <div data-fields="severeAsthmaEstablished"></div>
-                  <details id="severe-asthma-examples" class="compact-reference">
-                    <summary>Examples of a prior severe-asthma diagnosis</summary>
-                    <ul class="reference-examples">
-                      <li>Persistent poor control or repeated steroid-treated exacerbations despite an adequate trial of high-dose ICS-LABA, with adherence and technique verified and contributing conditions addressed.</li>
-                      <li>Asthma that worsened when optimized high-dose ICS-LABA was reduced.</li>
-                      <li>Asthma now controlled on a biologic after a documented assessment established severe asthma.</li>
-                    </ul>
-                    <p class="hint">A previous ICU admission, a triple inhaler, or biologic use alone does not establish this diagnosis.</p>
-                    <a class="hint" href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe-asthma definition</a>
-                  </details>
-                </section>
-              </div>
             </div>
           </details>
         </section>
@@ -327,6 +309,19 @@
         <article id="plan-card" class="result-card encounter-plan hidden">
           <h2>Encounter Treatment Plan</h2>
           <p class="hint">Select the plan agreed for this encounter. Choices update the recommendations and SOAP note together. Unresolved decisions remain ***; copying is still available.</p>
+          <div id="biologic-plan-review" class="clinical-callout hidden">
+            <p class="hint">Select biologic initiation only after confirming severe asthma and an adequate optimized inhaled-treatment course. Choosing the initiation plan records this clinical review, not medication administration.</p>
+            <details id="severe-asthma-examples" class="compact-reference">
+              <summary>Biologic eligibility: treatment history and clinical review</summary>
+              <ul class="reference-examples">
+                <li>Verify diagnosis, technique, adherence, access, relevant exposures, and comorbid contributors. Poor control on Step 4-5 alone is not sufficient.</li>
+                <li>Review an adequate optimized high-dose ICS-LABA course, usually over 3-6 months, or a documented longitudinal severe-asthma assessment. Asthma that worsened when optimized high-dose ICS-LABA was reduced is another supporting history.</li>
+                <li>Match phenotype, exacerbation history, and comorbidities to the chosen agent. Verify product eligibility, contraindications, dosing, and coverage before the first dose.</li>
+              </ul>
+              <p class="hint">Medium-dose MART may remain the inhaled regimen with Step 5 add-ons. A previous ICU admission, triple inhaler, or biologic use alone does not confirm severe asthma.</p>
+              <a class="hint" href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe-asthma guidance</a>
+            </details>
+          </div>
           <div id="plan-options"></div>
           <details id="plan-confirmations" class="clinical-drawer hidden">
             <summary>Complete findings needed for treatment decisions</summary>
@@ -343,7 +338,7 @@
         </article>
         <article id="biologic-guidance-card" class="result-card biologic-card hidden">
           <h2>Biologic Considerations</h2>
-          <p id="biologic-instructions">Choose an agent for the encounter plan or future follow-up. A phenotype match is not automatic eligibility. Complete outstanding prerequisites before initiation; an unresolved agent choice remains *** in the note.</p>
+          <p id="biologic-instructions">For initiation, select the combined inhaled-regimen plus biologic plan above, then choose an agent here. Otherwise, the agent remains an assessment or follow-up option. Complete outstanding prerequisites before initiation; an unresolved agent choice remains *** in the note.</p>
           <fieldset id="biologic-options" class="biologic-options" aria-describedby="biologic-instructions">
             <legend class="sr-only">Agent for clinical note</legend>
             <div id="biologic-primary-options"></div>

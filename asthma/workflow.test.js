@@ -8,7 +8,7 @@ const N = require("./notes.js");
 const routine = (patch = {}) => ({ ...L.createEmptyState(), age: 45, managementPhase: "followup", diagnosisContext: "established", dxChallenge: true,
   controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol", symptomDays: "none", nightWaking: "none",
   activityLimitation: false, ocsExacerbations: 0, hospitalExacerbations: 0, treatmentReviewed: true, pregnant: false, ...patch });
-const poor = patch => routine({ symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ocsExacerbations: 2, eosinophils: 450, optimizedTherapy: true, ...patch });
+const poor = patch => routine({ symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ocsExacerbations: 2, eosinophils: 450, ...patch });
 const build = (data, planSelections = {}, other = {}) => L.buildRecommendation(data, { ...other, planSelections });
 const text = rec => N.buildNoteText(rec.findings.data, rec);
 const group = (rec, id) => rec.plan.groups.find(item => item.id === id);
@@ -35,26 +35,26 @@ test("medium MART is Step 4 alone and Step 5 with add-ons without high-dose rela
   }
 });
 test("longitudinal severe-asthma evidence supports optimized medium MART biologic review", () => {
-  const rec = build(poor({ severeAsthmaEstablished: true }), { controller: "continue", lama: "defer" }, { selectedBiologicId: "benralizumab" });
+  const rec = build(poor(), { controller: "continue-biologic", lama: "defer" }, { selectedBiologicId: "benralizumab" });
   assert.equal(rec.findings.severe.highIntensity, false);
   assert.equal(rec.findings.severe.established, true);
   assert.equal(rec.biologicCandidates.find(item => item.id === "benralizumab").ready, true);
   assert.doesNotMatch(rec.biologicCandidates[0].prerequisites.join(" "), /high-dose.*trial/);
-  assert.match(text(rec), /Severe asthma had been established by a prior longitudinal assessment/);
+  assert.match(text(rec), /Severe asthma and the prior optimized treatment course were reviewed/);
   assert.match(text(rec), /Benralizumab.*has been recommended/);
   assert.doesNotMatch(text(rec), /500\/50|a high corticosteroid dose supported/);
 });
 test("history alone does not bypass current optimization or biologic prerequisites", () => {
-  for (const patch of [{ severeAsthmaEstablished: null }, { optimizedTherapy: null }, { technique: "incorrect" }, { adherence: "suboptimal" }, { accessBarrier: true }]) {
-    const rec = build(poor({ severeAsthmaEstablished: true, ...patch }), {}, { selectedBiologicId: "benralizumab" });
+  for (const patch of [{ technique: "unknown", treatmentReviewed: false }, { technique: "incorrect" }, { adherence: "suboptimal" }, { accessBarrier: true }]) {
+    const rec = build(poor(patch), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
     assert.ok(rec.biologicCandidates.every(item => !item.ready));
     assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended/);
   }
 });
 test("a historical severe diagnosis does not make a low-dose foundation ready for new biologics", () => {
-  const rec = build(poor({ icsDose: "low", severeAsthmaEstablished: true }), {}, { selectedBiologicId: "benralizumab" });
-  assert.equal(rec.biologicCandidates.find(item => item.id === "benralizumab").ready, false);
-  assert.match(text(rec), /Verify an appropriate current medium- or high-dose ICS-LABA foundation/);
+  const rec = build(poor({ icsDose: "low" }), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+  assert.equal(rec.biologicCandidates.length, 0);
+  assert.equal(rec.plan.selections.controller, null);
   assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|30 mg SC every/);
 });
 test("unknown risks produce targeted confirmations, not reassuring note statements", () => {
@@ -137,4 +137,83 @@ test("shared selected actions produce identical display and note instructions", 
   const rec = build(poor(), { controller: "continue", lama: "add" });
   for (const action of rec.actions.filter(item => item.selectedPlan)) assert.ok(text(rec).includes(action.text));
   assert.deepEqual(build(poor(), { controller: "continue", lama: "add" }), rec);
+});
+
+test("the two retired checkboxes are absent from schema and clinical state", () => {
+  const d = L.normalizeState({ optimizedTherapy: true, severeAsthmaEstablished: true });
+  for (const key of ["optimizedTherapy", "severeAsthmaEstablished"]) assert.equal(Object.hasOwn(d, key), false);
+  assert.equal(L.classifySevereAsthmaState(poor()).established, false);
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const inputSection = html.split('id="treatment-addons"')[1].split('<section class="panel" aria-labelledby="diagnosis-heading"')[0];
+  assert.doesNotMatch(inputSection, /optimizedTherapy|severeAsthmaEstablished|severe-asthma-examples/);
+});
+test("biologic matching alone does not become initiation even with a selected agent", () => {
+  const rec = build(poor(), { controller: "continue" }, { selectedBiologicId: "benralizumab" });
+  assert.equal(rec.biologicCandidates.find(item => item.id === "benralizumab").eligibleForReview, true);
+  assert.equal(rec.biologicCandidates.find(item => item.id === "benralizumab").ready, false);
+  assert.match(text(rec), /Reassess Benralizumab/);
+  assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|30 mg SC every/);
+});
+test("combined plan without an agent reserves a focused placeholder, not a guessed drug", () => {
+  const rec = build(poor(), { controller: "continue-biologic" });
+  assert.equal(rec.plan.selections.controller, "continue-biologic");
+  assert.match(text(rec), /Biologic agent and dosing: \*\*\*/);
+  assert.doesNotMatch(text(rec), /LAMA add-on decision:|Benralizumab.*has been recommended|500\/50/);
+});
+test("combined plan and selected ready agent produce a complete matched medication plan", () => {
+  const rec = build(poor(), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+  assert.match(text(rec), /Continue the current ICS-containing controller/);
+  assert.match(text(rec), /Benralizumab.*has been recommended/);
+  assert.match(text(rec), /30 mg SC every 4 weeks for the first 3 doses, then every 8 weeks/);
+  assert.doesNotMatch(text(rec), /Controller and reliever plan:|LAMA add-on decision:|Encounter Treatment Plan|chosen below|500\/50/);
+  assert.deepEqual(rec.medications.map(item => item.id), ["benralizumab"]);
+});
+test("missing prescribing prerequisites disable initiation and retain an assessment option", () => {
+  for (const patch of [{ pregnant: null }, { ocsExacerbations: null }, { dxChallenge: false }, { age: null }]) {
+    const rec = build(poor(patch), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+    assert.equal(rec.plan.selections.controller, "assess-biologic");
+    assert.equal(rec.findings.severe.established, false);
+    assert.equal(rec.biologicCandidates.find(item => item.id === "benralizumab").ready, false);
+    assert.match(text(rec), /Complete severe-asthma treatment-history review/);
+    assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|30 mg SC every/);
+  }
+});
+test("dosing changes downgrade a previously selected initiation plan with an explanation", () => {
+  const rec = build(poor({ weightKg: null }), { controller: "continue-biologic" }, { selectedBiologicId: "reslizumab" });
+  assert.equal(rec.plan.selections.controller, "assess-biologic");
+  assert.ok(rec.cautions.some(item => /initiation was changed to an assessment plan/.test(item)));
+  assert.match(text(rec), /Verify weight before finalizing/);
+  assert.doesNotMatch(text(rec), /Reslizumab.*has been recommended|\d+ mg IV every/);
+});
+test("existing biologic treatment leads to response review instead of a second initiation", () => {
+  const rec = build(poor({ currentBiologic: "mepolizumab" }), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+  assert.equal(rec.plan.selections.controller, "assess-biologic");
+  assert.equal(group(rec, "controller").options.some(item => item.id === "continue-biologic"), false);
+  assert.match(text(rec), /Assess response to Mepolizumab/);
+  assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|30 mg SC every/);
+});
+test("active and urgent episodes never acquire reviewed biologic eligibility from a stored plan", () => {
+  for (const patch of [{ spo2: 85 }, { acutePresentation: "active" }]) {
+    const rec = build(poor(patch), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+    assert.deepEqual(rec.plan.groups, []);
+    assert.equal(rec.findings.severe.clinicianReviewed, false);
+    assert.doesNotMatch(text(rec), /Benralizumab|add on biologic therapy/);
+  }
+});
+test("known suspected EGPA keeps initiation pending despite clinical plan selection", () => {
+  const rec = build(poor({ egpa: "suspected" }), { controller: "continue-biologic" }, { selectedBiologicId: "benralizumab" });
+  assert.equal(rec.plan.selections.controller, "assess-biologic");
+  assert.match(text(rec), /Complete suspected EGPA and organ-involvement assessment/);
+  assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|30 mg SC every/);
+});
+test("a chosen biologic plan does not copy an unselected azithromycin alternative", () => {
+  const rec = build(poor({ eosinophils: 0, feno: 5, perennialSensitization: false }), { controller: "continue-biologic" }, { selectedBiologicId: "tezepelumab" });
+  assert.match(text(rec), /Tezepelumab.*has been recommended/);
+  assert.doesNotMatch(text(rec), /azithromycin|Additional nonbiologic treatment decision/i);
+});
+test("an unselected encounter plan does not imply that a phenotype match must wait for follow-up", () => {
+  const rec = build(poor(), {}, { selectedBiologicId: "benralizumab" });
+  assert.match(text(rec), /Benralizumab.*matches the documented phenotype/);
+  assert.match(text(rec), /Biologic initiation decision: \*\*\*/);
+  assert.doesNotMatch(text(rec), /Benralizumab.*has been recommended|Reassess Benralizumab.*at follow-up|30 mg SC every/);
 });

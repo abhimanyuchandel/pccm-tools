@@ -119,11 +119,8 @@ async function main() {
     assert.match(await page.locator("#ics-dose-reference").textContent(), /Examples are not dose-equivalent substitutions/);
     assert.equal(await text(), priorNote); assert.equal(await page.locator("#copy-note-btn").isDisabled(), false);
     await page.locator("#treatment-addons > summary").click();
-    assert.equal(await page.locator("#optimized-therapy").getAttribute("aria-describedby"), "optimized-therapy-help");
-    assert.match(await page.locator("#optimized-therapy-help").textContent(), /adequate treatment trial/);
-    assert.equal(await page.locator("#optimized-therapy").evaluate(node => node.closest("label").contains(document.getElementById("optimized-therapy-help"))), false);
-    await page.locator("#severe-asthma-examples > summary").click();
-    assert.match(await page.locator("#severe-asthma-examples").textContent(), /documented assessment established severe asthma/);
+    assert.equal(await page.locator("#optimized-therapy, #severe-asthma-established").count(), 0);
+    assert.equal(await page.locator("#treatment-addons #severe-asthma-examples").count(), 0);
     assert.equal(await text(), priorNote);
     await page.locator('.workflow-nav a[href="#preventive-panel"]').click();
     assert.equal(await page.locator("#preventive-panel").evaluate(node => node.open), true);
@@ -173,11 +170,13 @@ async function main() {
 
     await load(); await setInputs(page, { ...state, symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true,
       ocsExacerbations: 2, eosinophils: 450, feno: 45 }); await generate();
-    assert.match(await text(), /Reassess phenotype-directed biologic treatment at follow-up if control remains inadequate/);
+    assert.match(await text(), /Review severe-asthma diagnosis, the optimized treatment history/);
     await page.locator('[name="biologic-selection"][value="benralizumab"]').check();
     assert.doesNotMatch(await text(), /Planned initiation/);
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
-    await setInputs(page, { controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true }); await generate();
+    await setInputs(page, { controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high" }); await generate();
+    assert.doesNotMatch(await text(), /Benralizumab.*has been recommended/);
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
     assert.match(await text(), /Benralizumab.*has been recommended/);
     assert.equal(await page.getByText("Benefits, limitations, and typical prescribing criteria", { exact: true }).count(), 6);
     assert.doesNotMatch(await text(), /Preferred biologic|Additional biologic option|Depemokimab|Reslizumab/);
@@ -195,6 +194,7 @@ async function main() {
     assert.equal(await page.locator("#weight-kg").isEnabled(), true);
     assert.equal(await text(), "");
     await page.locator("#biologic-dosing button").click();
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
     assert.match(await text(), /217.5 mg IV every 4 weeks/);
     await setInputs(page, { allergenDriven: true, perennialSensitization: true }); await generate();
     await page.locator('[name="biologic-selection"][value="omalizumab"]').check();
@@ -202,7 +202,9 @@ async function main() {
     assert.doesNotMatch(await text(), /adult asthma-table dose was/);
     await setInputs(page, { weightKg: 50, totalIge: 100, igePretreatment: true });
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
-    await generate(); assert.match(await text(), /150 mg SC every 4 weeks/);
+    await generate();
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
+    assert.match(await text(), /150 mg SC every 4 weeks/);
     await setInputs(page, { totalIge: 700, weightKg: 100 }); await generate();
     assert.match(await text(), /No dose is specified for this IgE \/ weight combination/);
     assert.doesNotMatch(await text(), /adult asthma-table dose was/);
@@ -282,7 +284,7 @@ async function main() {
     await load();
     await setInputs(page, { ...state, smoking: "current", smokingSafetyReviewed: true, smokingCigarettesPerDay: 20,
       smokingFirstCigarette: "within30", smokingRenal: "normal", pregnant: false,
-      controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true, symptomDays: "daily", nightWaking: "weekly-plus", ocsExacerbations: 2, eosinophils: 450 });
+      controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", symptomDays: "daily", nightWaking: "weekly-plus", ocsExacerbations: 2, eosinophils: 450 });
     await generate();
     assert.equal(await page.locator("#smoking-card").isVisible(), true);
     assert.equal(await page.locator("#smoking-fields").evaluate(node => node.classList.contains("hidden")), false);
@@ -292,6 +294,7 @@ async function main() {
     assert.match(await text(), /Start Varenicline/);
     assert.match(await text(), /1 mg twice daily from day 8/);
     await page.locator('[name="biologic-selection"][value="benralizumab"]').check();
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
     assert.match(await text(), /Start Varenicline/);
     assert.match(await text(), /Benralizumab.*has been recommended/);
     await page.locator('[name="smoking-selection"][value="combinationNrt"]').check();
@@ -365,16 +368,22 @@ async function main() {
     assert.match(await page.locator("#caution-list").textContent(), /previous controller strategy choice/);
 
     await load();
-    await setInputs(page, { ...state, symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ocsExacerbations: 2, eosinophils: 450, severeAsthmaEstablished: true, optimizedTherapy: true });
+    await setInputs(page, { ...state, symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ocsExacerbations: 2, eosinophils: 450 });
     await generate();
-    await page.locator('[name="plan-controller"][value="continue"]').check();
+    assert.equal(await page.locator("#biologic-plan-review").isVisible(), true);
+    assert.match(await page.locator("#biologic-plan-review").textContent(), /Choosing the initiation plan records this clinical review/);
+    assert.equal(await page.locator("#optimized-therapy, #severe-asthma-established").count(), 0);
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
+    assert.equal(await page.evaluate(() => document.activeElement.closest("article")?.id), "biologic-guidance-card");
+    assert.match(await text(), /Biologic agent and dosing: \*\*\*/);
+    assert.doesNotMatch(await text(), /LAMA add-on decision:/);
     await page.locator('[name="plan-lama"][value="add"]').check();
     await page.locator('[name="biologic-selection"][value="benralizumab"]').check();
     assert.match(await text(), /Continue the current ICS-containing controller/);
     assert.match(await text(), /Add tiotropium Respimat/);
     assert.match(await text(), /Benralizumab.*has been recommended/);
     assert.doesNotMatch(await text(), /500\/50|Controller and reliever plan:|LAMA add-on decision:/);
-    assert.equal(await page.locator('[name="plan-controller"][value="continue"]').isChecked(), true);
+    assert.equal(await page.locator('[name="plan-controller"][value="continue-biologic"]').isChecked(), true);
     await setInputs(page, { lamaAddon: true }); await generate();
     assert.equal(await page.locator('[name="plan-lama"]').count(), 0);
     assert.doesNotMatch(await text(), /Add tiotropium Respimat/);
@@ -384,8 +393,35 @@ async function main() {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `encounter plan overflow at ${width}`);
       if ([390, 1280].includes(width)) await capture(page.locator("#plan-card"), `encounter-plan-${width}`);
     }
+
+    await page.locator('[name="plan-controller"][value="assess-biologic"]').check();
+    assert.match(await text(), /Complete severe-asthma treatment-history review/);
+    assert.doesNotMatch(await text(), /Benralizumab.*has been recommended|30 mg SC every/);
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
+    assert.match(await text(), /Benralizumab.*has been recommended/);
+    await setInputs(page, { pregnant: null });
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await generate();
+    assert.equal(await page.locator('[name="plan-controller"][value="continue-biologic"]').isDisabled(), true);
+    assert.equal(await page.locator('[name="plan-controller"][value="assess-biologic"]').isChecked(), true);
+    assert.doesNotMatch(await text(), /Benralizumab.*has been recommended/);
+    assert.match(await page.locator("#caution-list").textContent(), /initiation was changed to an assessment plan/);
+    await page.locator("#plan-confirmations > summary").click();
+    await page.locator('[name="confirm-pregnant"][value="no"]').check();
+    await generate();
+    assert.equal(await page.locator('[name="plan-controller"][value="continue-biologic"]').isEnabled(), true);
+    assert.equal(await page.locator('[name="plan-controller"][value="assess-biologic"]').isChecked(), true);
+    await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
+    assert.match(await text(), /Benralizumab.*has been recommended/);
+    await page.locator("#copy-note-btn").click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
+    await setInputs(page, { currentBiologic: "mepolizumab" }); await generate();
+    assert.equal(await page.locator('[name="plan-controller"][value="continue-biologic"]').count(), 0);
+    assert.equal(await page.locator('[name="plan-controller"][value="assess-biologic"]').isChecked(), true);
+    assert.match(await text(), /Assess response to Mepolizumab/);
+    assert.doesNotMatch(await text(), /Benralizumab.*has been recommended|30 mg SC every/);
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: five shortcuts, manual high-dose therapy, selected encounter plans, biologic and cessation decisions, prose Assessment, clipboard/stale safeguards, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: combined biologic plan, eligibility instructions without retired checkboxes, assessment downgrade, dosing and current-biologic safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

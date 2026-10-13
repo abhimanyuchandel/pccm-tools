@@ -44,8 +44,6 @@
     adherence: exception("Controller adherence concern", "suboptimal"),
     technique: exception("Inhaler technique concern", "incorrect"),
     accessBarrier: exception("Medication access or affordability barrier"),
-    optimizedTherapy: confirmation("Adequate trial of optimized treatment completed", "Check if technique, adherence, medication access, exposures, and comorbidities were addressed during an adequate treatment trial. Before confirming severe asthma, this usually includes 3-6 months of optimized high-dose ICS-LABA, not just a review today."),
-    severeAsthmaEstablished: confirmation("Severe asthma previously confirmed", "Check only if a prior clinical assessment established severe asthma. See examples below."),
     icsSideEffects: exception("Significant ICS adverse effects / steroid toxicity concerns"),
     diagnosisContext: choice("Asthma diagnosis context", [["established", "Established diagnosis"], ["suspected", "Suspected / being evaluated"]], { compact: true }),
     typicalSymptoms: yesNo("Typical variable respiratory symptoms (diagnostic history)", "Variable wheeze, dyspnea, chest tightness, or cough with relevant triggers."),

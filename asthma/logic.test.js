@@ -12,7 +12,8 @@ const base = (patch = {}) => ({ ...L.createEmptyState(), age: 45, managementPhas
   ocsExacerbations: 0, hospitalExacerbations: 0, recentExacerbation: false, priorIcu: false, urgentRedFlags: false, acutePresentation: "none",
   adherence: "adequate", technique: "correct", accessBarrier: false, pregnant: false, ...patch });
 const poor = (patch = {}) => base({ symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ...patch });
-const severe = (patch = {}) => poor({ controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", optimizedTherapy: true, ocsExacerbations: 2, eosinophils: 450, feno: 45, weightKg: 75, ...patch });
+const severe = (patch = {}) => poor({ controller: "ics-laba", labaType: "non-formoterol", reliever: "ics-saba", icsDose: "high", ocsExacerbations: 2, eosinophils: 450, feno: 45, weightKg: 75, ...patch });
+const initiation = { controller: "continue-biologic" };
 const acute = (patch = {}) => base({ acutePresentation: "active", acuteSpeech: "sentences", acuteCanLieDown: true, acuteUnableToLieDown: false, acuteCannotDrink: false, acuteCyanosis: false,
   acuteMentalStatus: "normal", acuteRespiratoryEffort: "normal-mild", acuteAccessoryMuscles: "none-mild", acuteAirEntry: "normal", acuteWheeze: "none-mild", roomAir: true,
   spo2: 96, respiratoryRate: 20, acuteLungFunctionPercent: 80, acuteLungFunctionType: "pef", acuteLungFunctionReference: "personal-best", ...patch });
@@ -148,22 +149,23 @@ test("missing phenotype testing has one prioritized recommendation", () => {
 test("triple therapy and high dose without optimization do not assert severe asthma", () => {
   assert.equal(L.classifySevereAsthmaState(poor({ controller: "triple", icsDose: "medium" })).established, false);
   assert.equal(L.classifySevereAsthmaState(poor({ icsDose: "high" })).established, false);
-  assert.equal(L.classifySevereAsthmaState(severe()).established, true);
+  assert.equal(L.classifySevereAsthmaState(severe()).established, false);
+  assert.equal(L.classifySevereAsthmaState(severe(), undefined, undefined, { planSelections: initiation }).established, true);
 });
 test("biologics are matched to phenotype, not ranked as a single universally superior agent", () => {
   const rec = L.buildRecommendation(severe());
   for (const id of ["mepolizumab", "benralizumab", "depemokimab", "reslizumab", "dupilumab", "tezepelumab"]) assert.ok(rec.biologicCandidates.some(item => item.id === id), id);
-  assert.ok(rec.biologicCandidates.every(item => item.ready));
+  assert.ok(rec.biologicCandidates.every(item => item.eligibleForReview && !item.ready));
   assert.doesNotMatch(note(severe()), /Plan to initiate|Planned initiation|Preferred biologic|Additional biologic option|Biologic consideration:/);
 });
 test("biologic selection drives only the selected medication in the SOAP plan", () => {
-  const text = note(severe(), "benralizumab");
+  const text = note(severe(), "benralizumab", initiation);
   assert.match(text, /Benralizumab.*has been recommended for the current severe-asthma presentation/); assert.match(text, /30 mg SC every 4 weeks for the first 3 doses, then every 8 weeks/);
   for (const name of ["Reslizumab", "Mepolizumab", "Tezepelumab", "Dupilumab", "Depemokimab"]) assert.doesNotMatch(text, new RegExp(name));
 });
 test("chosen dupilumab schedule reflects documented OCS dependence / comorbidity", () => {
-  assert.match(note(severe(), "dupilumab"), /400 mg SC loading followed by 200 mg SC every 2 weeks/);
-  assert.match(note(severe({ maintenanceOcs: true }), "dupilumab"), /600 mg SC loading followed by 300 mg SC every 2 weeks/);
+  assert.match(note(severe(), "dupilumab", initiation), /400 mg SC loading followed by 200 mg SC every 2 weeks/);
+  assert.match(note(severe({ maintenanceOcs: true }), "dupilumab", initiation), /600 mg SC loading followed by 300 mg SC every 2 weeks/);
 });
 test("an unsupported selection does not silently initiate a biologic", () => {
   const rec = L.buildRecommendation(severe({ eosinophils: 0, feno: 5 }), { selectedBiologicId: "benralizumab" });
@@ -193,7 +195,7 @@ test("suspected EGPA is not confirmed disease or a dupilumab match", () => {
 });
 test("confirmed EGPA uses indication-specific dosing in the chosen-agent note", () => {
   const data = severe({ egpa: "confirmed" });
-  const mepo = note(data, "mepolizumab"), benra = note(data, "benralizumab");
+  const mepo = note(data, "mepolizumab", initiation), benra = note(data, "benralizumab", initiation);
   assert.match(mepo, /mepolizumab 300 mg SC every 4 weeks/);
   assert.doesNotMatch(mepo, /mepolizumab 100 mg SC every 4 weeks/);
   assert.match(benra, /benralizumab 30 mg SC every 4 weeks under the confirmed EGPA indication/);
@@ -229,7 +231,7 @@ test("omalizumab dosing cannot use IgE of undocumented timing or during treatmen
   assert.doesNotMatch(note(data, "omalizumab"), /150 mg (?:SC|subcutaneously) every/);
   const confirmed = { ...data, igePretreatment: true };
   assert.equal(L.getOmalizumabFeasibility(confirmed).feasible, true);
-  assert.match(note(confirmed, "omalizumab"), /150 mg SC every 4 weeks/);
+  assert.match(note(confirmed, "omalizumab", initiation), /150 mg SC every 4 weeks/);
 });
 test("an acute severe finding prevents contradictory red-flag denial in the note", () => {
   const text = note(acute({ acuteCyanosis: true, urgentRedFlags: false }));
@@ -430,7 +432,8 @@ test("review confirmations centrally resolve only routine exceptions", () => {
     for (const key of Object.keys(defaults)) assert.equal(reversed[key], empty[key], key);
   }
   const reviewed = L.normalizeState({ treatmentReviewed: true, riskReviewed: true, urgentRedFlags: null });
-  for (const key of ["optimizedTherapy", "severeAsthmaEstablished", "lungFunctionStable", "perennialSensitization", "igePretreatment", "urgentRedFlags", "roomAir", "ocsExacerbations", "hospitalExacerbations", "weightKg", "totalIge"]) assert.equal(reviewed[key], null, key);
+  for (const key of ["lungFunctionStable", "perennialSensitization", "igePretreatment", "urgentRedFlags", "roomAir", "ocsExacerbations", "hospitalExacerbations", "weightKg", "totalIge"]) assert.equal(reviewed[key], null, key);
+  for (const key of ["optimizedTherapy", "severeAsthmaEstablished"]) assert.equal(Object.hasOwn(reviewed, key), false);
   assert.equal(reviewed.dxBd, false); assert.equal(reviewed.typicalSymptoms, null);
   assert.equal(L.classifyControl(reviewed).classification, "not fully assessed");
 });
@@ -479,7 +482,7 @@ test("routine-visit default applies only to an unanswered red-flag field without
 });
 test("prior severe-asthma examples remain explanatory and do not establish current eligibility", () => {
   const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-  assert.match(html, /Examples of a prior severe-asthma diagnosis/);
+  assert.match(html, /Biologic eligibility: treatment history and clinical review/);
   assert.match(html, /Asthma that worsened when optimized high-dose ICS-LABA was reduced/);
   const data = severe({ optimizedTherapy: null, severeAsthmaEstablished: true });
   assert.equal(L.classifySevereAsthmaState(data).established, false);
@@ -606,16 +609,16 @@ test("SOAP Assessment contains complete prose without colons, semicolons, or hyp
   }
 });
 test("all seven biologic options provide tradeoffs, typical criteria, and patient-specific fit", () => {
-  const rec = L.buildRecommendation(severe({ allergenDriven: true, perennialSensitization: true, totalIge: 100, igePretreatment: true }));
+  const rec = L.buildRecommendation(severe({ allergenDriven: true, perennialSensitization: true, totalIge: 100, igePretreatment: true }), { planSelections: initiation });
   assert.equal(rec.biologicCandidates.length, 7);
   for (const candidate of rec.biologicCandidates) {
     assert.ok(candidate.benefits && candidate.limitations && candidate.typicalCriteria && candidate.criteriaFit, candidate.id);
     assert.match(candidate.criteriaFit, /support the usual clinical criteria/);
   }
-  assert.match(L.buildRecommendation(poor({ eosinophils: 450 })).biologicCandidates[0].criteriaFit, /do not establish immediate prescribing eligibility/);
+  assert.match(L.buildRecommendation(poor({ eosinophils: 450, ocsExacerbations: 2 })).biologicCandidates[0].criteriaFit, /Select the combined inhaled-regimen plus biologic plan only after reviewing/);
 });
 test("biologic wording distinguishes a present recommendation from future or provisional eligibility", () => {
-  const current = severe(), now = note(current, "benralizumab");
+  const current = severe(), now = note(current, "benralizumab", initiation);
   assert.match(now, /Benralizumab.*has been recommended for the current severe-asthma presentation/);
   assert.doesNotMatch(now, /Agent choice remained/);
   const future = poor({ eosinophils: 450 }), later = note(future, "benralizumab");
@@ -658,7 +661,7 @@ test("missing drug-specific dosing leaves supported advanced options provisional
   assert.doesNotMatch(note(data), /Verified weight|total IgE/);
 });
 test("verified reslizumab weight yields exactly the labelled weight-based dose", () => {
-  assert.match(note(severe({ weightKg: 72.5 }), "reslizumab"), /217.5 mg IV every 4 weeks \(3 mg\/kg at verified weight 72.5 kg\)/);
+  assert.match(note(severe({ weightKg: 72.5 }), "reslizumab", initiation), /217.5 mg IV every 4 weeks \(3 mg\/kg at verified weight 72.5 kg\)/);
   assert.equal(N.buildNoteText(severe({ weightKg: 0 }), L.buildRecommendation(severe({ weightKg: 0 }), { selectedBiologicId: "reslizumab" })), "");
 });
 test("routine and resolved-exacerbation follow-up do not invoke acute assessment", () => {

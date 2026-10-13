@@ -404,7 +404,7 @@
     if (!candidate) body.append(element("span", "hint", "Leave the agent decision as *** in the note, or select an option below."));
     else {
       body.append(element("span", "hint", candidate.reason));
-      const timing = candidate.future ? "Future add-on consideration" : candidate.ready ? "Documented criteria support consideration" : "Prerequisites require review";
+      const timing = candidate.ready ? "Initiation supported by the selected clinical plan" : candidate.eligibleForReview ? "Phenotype match: review eligibility at Encounter Treatment Plan" : "Assessment, safety, or dosing prerequisites remain";
       body.append(element("span", "option-status", timing));
       if (candidate.prerequisites.length) {
         const list = element("ul", "prerequisite-list");
@@ -509,6 +509,7 @@
         : "Urgent assessment or higher-level care is recommended. Review the clinical safety and acute management steps before routine outpatient planning."
       : "";
     renderBiologics(rec);
+    show("biologic-plan-review", rec.biologicCandidates.length > 0 && !rec.emergency && !rec.findings.acute.active);
     renderSmoking(rec);
     renderPlan(rec);
     updateConditionalFields();
@@ -744,7 +745,14 @@
       planSelections = output.planSelections; recommendation = output.rec; revision += 1;
       const name = event.target.name, value = event.target.value;
       renderRecommendation(recommendation, output.note);
-      Array.from(document.getElementById("plan-options").querySelectorAll("input")).find(input => input.name === name && input.value === value)?.focus({ preventScroll: true });
+      const revealBiologic = group.dataset.planGroup === "controller" && planSelections.controller === "continue-biologic";
+      if (revealBiologic) {
+        const heading = document.querySelector("#biologic-guidance-card h2");
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+        heading.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      }
+      if (!revealBiologic) Array.from(document.getElementById("plan-options").querySelectorAll("input")).find(input => input.name === name && input.value === value)?.focus({ preventScroll: true });
       copyStatus.textContent = "SOAP note updated with the selected encounter plan.";
     } catch (error) { planSelections = previous; markStale(); status.textContent = error.message || "Regenerate before choosing a treatment plan."; }
   }
