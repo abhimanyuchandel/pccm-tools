@@ -98,6 +98,60 @@ test("controller and reliever choice removes competing dosing from the note and 
   assert.doesNotMatch(text(selected), /Controller and reliever plan:|Airsupra|500\/50/);
   assert.deepEqual(selected.medications.map(item => item.id), ["air"]);
 });
+test("AIR-only follow-up always presents a step-up decision instead of copying competing alternatives", () => {
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+  const rec = build(data);
+  const controller = group(rec, "controller");
+  assert.equal(controller.optimizationReviewRequired, true);
+  for (const id of ["smartLow", "track2"]) assert.ok(controller.options.find(option => option.id === id).blockers.length);
+  assert.ok(controller.options.some(option => option.id === "assessment" && !option.blockers.length));
+  assert.ok(rec.actions.some(action => action.id === "optimize"));
+  assert.match(text(rec), /Controller and reliever plan: \*\*\*/);
+  assert.doesNotMatch(text(rec), /A step-up.*was considered|Track 2 regimen could|Start Low-dose SMART|160\/4.5/);
+});
+test("selected low-dose SMART produces a definitive regimen without the Track 2 alternative", () => {
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three" });
+  const rec = build(data, { controller: "smartLow" });
+  assert.equal(group(rec, "controller").optimizationReviewRequired, false);
+  assert.equal(rec.plan.selections.controller, "smartLow");
+  assert.match(text(rec), /Change to Low-dose SMART.*160\/4.5.*1 inhalation twice daily plus 1 as needed/s);
+  assert.doesNotMatch(text(rec), /Controller and reliever plan:|Track 2 regimen could|was considered after verification|Airsupra/);
+  assert.deepEqual(rec.medications.map(item => item.id), ["smartLow"]);
+});
+test("selected AIR-only follow-up Track 2 plan documents only the chosen controller and reliever", () => {
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three" });
+  const pending = build(data, { controller: "track2" });
+  assert.match(text(pending), /Start low-dose maintenance ICS-LABA/);
+  assert.match(text(pending), /Compatible reliever and dosing: \*\*\*/);
+  assert.doesNotMatch(text(pending), /Start or adjust|Low-dose SMART|Budesonide-formoterol 160/);
+  const selected = build(data, { controller: "track2", reliever: "airsupra" });
+  assert.match(text(selected), /albuterol-budesonide.*2 inhalations as needed/s);
+  assert.doesNotMatch(text(selected), /Controller and reliever plan:|Compatible reliever and dosing:|SMART.*was considered/);
+  assert.deepEqual(selected.medications.map(item => item.id), ["airsupra"]);
+  assert.equal(data.controller, "none");
+  assert.equal(selected.findings.treatment.airOnly, true);
+});
+test("unreviewed optimization rejects an initiation selection without hiding the decision controls", () => {
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+  for (const id of ["smartLow", "track2"]) {
+    const rec = build(data, { controller: id });
+    assert.equal(rec.plan.selections.controller, null);
+    assert.ok(group(rec, "controller").options.find(option => option.id === id).blockers.length);
+    assert.ok(rec.cautions.some(item => /previous controller strategy/.test(item)));
+    assert.match(text(rec), /Controller and reliever plan: \*\*\*/);
+    assert.doesNotMatch(text(rec), /Change to Low-dose SMART|Start low-dose maintenance ICS-LABA|A step-up.*was considered/);
+  }
+});
+test("step-up fallback cannot copy an unchosen controller alternative", () => {
+  assert.equal(N.ACTION_NOTES.stepup(), "Controller and reliever plan: ***.");
+  const data = routine({ controller: "ics", icsDose: "low", reliever: "saba", sabaFrequency: "more-two", symptomDays: "three" });
+  const smart = build(data, { controller: "smartLow" });
+  assert.match(text(smart), /Replace the previous maintenance ICS inhaler/);
+  const track2 = build(data, { controller: "track2", reliever: "saba" });
+  assert.match(text(track2), /Change to low-dose maintenance ICS-LABA/);
+  assert.match(text(track2), /Reliever product, strength, and schedule: \*\*\*/);
+  assert.doesNotMatch(text(track2), /Start or adjust|Budesonide-formoterol 160|SMART.*was considered/);
+});
 test("Track 2 choice requires a compatible reliever choice, not an inferred prescription", () => {
   const data = routine({ icsDose: "low", symptomDays: "daily", activityLimitation: true });
   const pending = build(data, { controller: "track2" });

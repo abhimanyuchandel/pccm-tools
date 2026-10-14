@@ -593,6 +593,15 @@
       fieldset.dataset.planGroup = group.id;
       fieldset.disabled = stale || rec.invalid;
       fieldset.append(element("legend", "result-subtitle", group.title));
+      if (group.optimizationReviewRequired) {
+        const help = element("p", "hint");
+        help.append(document.createTextNode("Before routine step-up, review inhaler technique, adherence, and medication access, and address any concerns. "));
+        const link = element("a", "", "Review add-ons and treatment optimization");
+        link.href = "#treatment-addons";
+        link.addEventListener("click", event => { event.preventDefault(); openAndFocus(control("treatmentReviewed")); });
+        help.append(link, document.createTextNode(". Regenerate after updating the review to enable the appropriate treatment choices."));
+        fieldset.append(help);
+      }
       const choices = element("div", "plan-choice-grid");
       [{ id: "", label: "Complete in EMR (***)", blockers: [] }, ...group.options].forEach(option => {
         const label = element("label", "biologic-option plan-option");

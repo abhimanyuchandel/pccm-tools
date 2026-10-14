@@ -415,7 +415,7 @@
     if (d.clinicalIcsResponse === true && !d.icsObjectiveResponse && !d.dxIcsObjective) result.rationale.push("Subjective symptom improvement after ICS is clinically useful but does not substitute for objective airflow variability.");
     if (treatment.incompatible) action("resolve-reliever", "Resolve the controller / reliever LABA mismatch before further treatment escalation. Use a compatible SABA or albuterol-budesonide reliever, or convert the entire controller to a suitable ICS-formoterol regimen.", "management", ["airsupra"]);
     const modifiable = d.adherence === "suboptimal" || d.technique === "incorrect" || d.accessBarrier === true;
-    const prerequisitesIncomplete = treatment.maintenance && (d.adherence === "unknown" || d.technique === "unknown" || d.accessBarrier === null);
+    const prerequisitesIncomplete = (treatment.maintenance || treatment.airOnly) && (d.adherence === "unknown" || d.technique === "unknown" || d.accessBarrier === null);
     const poor = control.poor || risk.frequent || d.persistentExacerbations === true;
     if (treatment.effectivePhase === "initial") {
       const proposed = pickInitialTreatment(d);

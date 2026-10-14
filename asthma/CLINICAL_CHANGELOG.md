@@ -1,8 +1,15 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 13, 2026. Asset version: `20261013-6`.
+Clinical reference review: October 13, 2026. Asset version: `20261013-7`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Definitive Controller-Plan Selection
+
+- Corrected an AIR-only follow-up edge case: a proposed low-dose SMART step-up could previously have no controller-selection group when technique, adherence, and access remained undocumented. The SOAP note then copied a conditional SMART-versus-Track-2 paragraph. Whenever the engine proposes an initial controller or routine step-up, **Encounter Treatment Plan** now includes the corresponding controller choices. This is a workflow fix, not an automatic prescription.
+- Follow-up escalation choices remain unavailable until current optimization is assessed and concerns addressed; the choice controls stay visible with their prerequisites. An inline link opens **Add-ons and treatment optimization**, with instructions to update the review and regenerate. Inadequately controlled AIR-only therapy receives the same optimization-before-step-up safeguard as maintenance treatment. Checking a review does not override positively documented adherence, technique, or access concerns. [GINA 2026 Summary Guide, treatment adjustment](https://ginasthma.org/wp-content/uploads/2026/07/GINA-Summary-Guide-2026-WEB-WMS.pdf).
+- Selecting SMART documents its direct start/change instruction and existing product-specific schedule. Selecting Track 2 documents a direct start/change instruction, a controller prescription placeholder, and only the chosen compatible reliever. Replaced controllers are not duplicated. Removed the conditional step-up paragraph from the fallback note template; an unresolved controller decision remains a focused `***` placeholder instead of competing alternatives. Selection does not alter the recorded current regimen or invent completed treatment or safety review.
+- Verification: 158 clinical/note/site tests, including AIR-only with incomplete optimization, supported SMART and Track 2 selections, blocked selections, changed prerequisites, matching medication details, and fallback wording. Browser coverage includes keyboard selection, review navigation, automatic note updates, clipboard/stale safeguards, green generation confirmation, preserved regeneration position, and 320/390/768/1280 px layouts. No prediction API, persistence, backend, or production changes.
 
 ## Symptom-Control Completion and Regeneration Feedback
 

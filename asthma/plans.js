@@ -41,12 +41,17 @@
       options.push(option("continue", "Continue current inhaled regimen", "Continue the current ICS-containing controller and compatible reliever at the documented doses.", [], blockers));
     }
     const proposed = f.proposedMedicationId;
-    if (proposed && (tx.effectivePhase === "initial" || optimizedNow)) {
+    const optimizationReviewRequired = Boolean(proposed && tx.effectivePhase === "followup" && !optimizedNow);
+    if (proposed) {
       const names = { air: "AIR-only", smartLow: "Low-dose SMART", smartMedium: "Medium-dose SMART" };
-      options.push(option(proposed, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}`, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}. ${catalog.MEDICATIONS[proposed].noteSchedule}${tx.combination ? " Stop the replaced ICS-LABA controller rather than adding a second LABA." : ""}`, [proposed], d.age === null ? ["Verify adult age"] : []));
+      const blockers = [];
+      if (d.age === null) blockers.push("Verify adult age");
+      if (optimizationReviewRequired) blockers.push("Review and address inhaler technique, adherence, and access before selecting a routine step-up");
+      options.push(option(proposed, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}`, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}. ${catalog.MEDICATIONS[proposed].noteSchedule}${tx.combination ? " Stop the replaced ICS-LABA controller rather than adding a second LABA." : d.controller === "ics" ? " Replace the previous maintenance ICS inhaler with this regimen." : ""}`, [proposed], blockers));
       const intensity = proposed === "smartMedium" ? "medium" : "low";
       const category = proposed === "air" ? "ICS" : "ICS-LABA";
-      options.push(option("track2", `Use ${intensity}-dose maintenance ${category} with a separate reliever`, `Start or adjust ${intensity}-dose maintenance ${category}. Controller product, strength, and schedule: ***.`, [], d.age === null ? ["Verify adult age"] : []));
+      const instruction = tx.effectivePhase === "initial" || !tx.maintenance ? "Start" : "Change to";
+      options.push(option("track2", `Use ${intensity}-dose maintenance ${category} with a separate reliever`, `${instruction} ${intensity}-dose maintenance ${category}. Controller product, strength, and schedule: ***.${tx.combination ? " Replace the previous ICS-LABA controller; do not add a second LABA." : d.controller === "ics" ? " Replace the previous maintenance ICS inhaler with this regimen." : ""}`, [], blockers));
     }
     if (has("resolve-reliever")) {
       options.push(option("compatible-reliever", "Retain controller and replace incompatible reliever", "Continue the documented ICS-containing controller. Replace ICS-formoterol relief with the selected compatible reliever; do not duplicate LABAs."));
@@ -77,6 +82,7 @@
     }
     if (options.length) {
       const group = choose("controller", "Controller strategy", "Controller and reliever plan: ***", options);
+      group.optimizationReviewRequired = optimizationReviewRequired;
       if (["track2", "compatible-reliever", "highDose"].includes(group.selected?.id)) {
         choose("reliever", "Compatible reliever", "Compatible reliever and dosing: ***", [
           option("saba", "Continue or prescribe the documented SABA", "Use the documented SABA as needed for symptoms. Reliever product, strength, and schedule: ***. Retain the selected ICS-containing controller."),

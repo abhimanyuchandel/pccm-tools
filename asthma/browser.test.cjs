@@ -472,6 +472,46 @@ async function main() {
     assert.match(await text(), /Assess response to Mepolizumab/);
     assert.doesNotMatch(await text(), /Benralizumab.*has been recommended|30 mg SC every/);
 
+    await load();
+    await setInputs(page, { ...state, controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+    await generate();
+    assert.equal(await page.locator("#plan-card").isVisible(), true);
+    for (const id of ["smartLow", "track2"]) assert.equal(await page.locator(`[name="plan-controller"][value="${id}"]`).isDisabled(), true);
+    assert.match(await text(), /Controller and reliever plan: \*\*\*/);
+    assert.doesNotMatch(await text(), /A step-up.*was considered|Track 2 regimen could/);
+    await page.locator('#plan-options a[href="#treatment-addons"]').click();
+    assert.equal(await page.locator("#treatment-addons").evaluate(node => node.open), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), "treatment-reviewed");
+    await page.locator("#treatment-reviewed").check();
+    await generateWithoutMoving("#generate-btn");
+    const lowSmartPlan = page.locator('[name="plan-controller"][value="smartLow"]');
+    assert.equal(await lowSmartPlan.isEnabled(), true);
+    await lowSmartPlan.focus(); await page.keyboard.press("Space");
+    assert.match(await text(), /Change to Low-dose SMART.*160\/4.5.*1 inhalation twice daily/s);
+    assert.doesNotMatch(await text(), /Controller and reliever plan:|Track 2 regimen could|Start low-dose maintenance ICS-LABA/);
+    assert.match(await page.locator("#management-steps").textContent(), /Change to Low-dose SMART/);
+    await page.locator("#copy-note-btn").click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
+    await page.locator('[name="plan-controller"][value="track2"]').check();
+    assert.match(await text(), /Start low-dose maintenance ICS-LABA/);
+    assert.match(await text(), /Compatible reliever and dosing: \*\*\*/);
+    await page.locator('[name="plan-reliever"][value="airsupra"]').check();
+    assert.match(await text(), /albuterol-budesonide/);
+    assert.doesNotMatch(await text(), /Low-dose SMART|Budesonide-formoterol 160|Compatible reliever and dosing:/);
+    await page.locator("#copy-note-btn").click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `step-up decision overflow at ${width}`);
+      if ([390, 1280].includes(width)) await capture(page.locator("#plan-card"), `step-up-choice-${width}`);
+    }
+    await page.locator("#treatment-reviewed").uncheck();
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await generateWithoutMoving("#generate-btn");
+    assert.equal(await page.locator('[name="plan-controller"][value="track2"]').isDisabled(), true);
+    assert.match(await text(), /Controller and reliever plan: \*\*\*/);
+    assert.doesNotMatch(await text(), /Start low-dose maintenance ICS-LABA|albuterol-budesonide.*2 inhalations/);
+
     await load(); await setInputs(page, state);
     await page.emulateMedia({ reducedMotion: "no-preference" });
     for (const width of [320, 390, 768, 1280]) {
@@ -506,7 +546,7 @@ async function main() {
     assert.equal(await page.locator("#emergency-output").isVisible(), true);
     assert.equal(await text(), "");
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: explicit symptom-control answers and missing-field links, generation checkmarks and stable viewport/focus, failed/urgent generation, combined biologic plans, dosing safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: definitive SMART/Track 2 plan selection and missing optimization review, explicit symptom-control answers, generation checkmarks and stable viewport/focus, failed/urgent generation, biologic/dosing safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
