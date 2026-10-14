@@ -6,7 +6,7 @@ const state = {
   age: 45, managementPhase: "followup", diagnosisContext: "established", typicalSymptoms: true, dxChallenge: true,
   controller: "ics-formoterol", icsDose: "medium", reliever: "ics-formoterol", symptomDays: "none", nightWaking: "none",
   ocsExacerbations: 0, hospitalExacerbations: 0, urgentRedFlags: false, acutePresentation: "none",
-  treatmentReviewed: true, activityLimitation: false, pregnant: false
+  lamaAddon: false, maintenanceOcs: false, activityLimitation: false, pregnant: false
 };
 
 async function setInputs(page, values) {
@@ -80,6 +80,14 @@ async function main() {
     assert.equal(await page.locator("#acute-fields").isVisible(), false);
     assert.equal(await page.locator("#biologic-dosing").isVisible(), false);
     assert.equal(await page.locator("#current-biologic").inputValue(), "none");
+    assert.equal(await page.locator(".workflow-nav, #form-instructions, .contributors-drawer, #treatment-reviewed").count(), 0);
+    assert.equal(await page.locator(".heroLead").textContent(), "Structured decision support for the typical encounter for an adult patient with asthma.");
+    assert.match(await page.locator(".footer").textContent(), /SOAP notes produced from this application will require editing to incorporate patient specific nuance/);
+    assert.equal(await page.locator('#air-smart-reference > summary .disclosure-label').textContent(), "Reference");
+    assert.equal(await page.locator('#treatment-addons > summary .disclosure-label').textContent(), "Patient inputs");
+    assert.notEqual(await page.locator('#air-smart-reference > summary').evaluate(node => getComputedStyle(node).backgroundColor), await page.locator('#treatment-addons > summary').evaluate(node => getComputedStyle(node).backgroundColor));
+    const absentConcerns = await page.evaluate(() => Object.fromEntries(Object.entries(window.asthmaInputSchema).filter(([, definition]) => definition.uncheckedValue !== undefined).map(([key, definition]) => [key, definition.uncheckedValue])));
+    assert.deepEqual(absentConcerns, { adherence: "adequate", technique: "correct", accessBarrier: false, icsSideEffects: false });
     assert.equal(await page.locator('[name="acutePresentation"][value="none"]').isChecked(), true);
     assert.equal(await page.locator('[name="urgentRedFlags"][value="no"]').isChecked(), true);
     assert.equal(await page.locator('[name="phenotypeReviewed"]').count(), 0);
@@ -161,10 +169,9 @@ async function main() {
     assert.equal(await page.locator("#optimized-therapy, #severe-asthma-established").count(), 0);
     assert.equal(await page.locator("#treatment-addons #severe-asthma-examples").count(), 0);
     assert.equal(await text(), priorNote);
-    await page.locator('.workflow-nav a[href="#preventive-panel"]').click();
+    await page.locator('#preventive-panel > summary').click();
     assert.equal(await page.locator("#preventive-panel").evaluate(node => node.open), true);
-    assert.equal(await page.evaluate(() => document.activeElement.id), "preventive-panel");
-    await page.locator('.workflow-nav a[href="#phenotype-panel"]').click();
+    await page.locator('#phenotype-panel > summary').click();
     assert.equal(await page.locator("#phenotype-panel").evaluate(node => node.open), true);
     assert.equal(await text(), priorNote);
     await page.locator("#note-jump-link").click();
@@ -172,16 +179,16 @@ async function main() {
     assert.equal(await text(), priorNote);
     await page.locator("#copy-note-btn").click();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
-    await setInputs(page, { activityLimitation: null, priorIcu: null, treatmentReviewed: false });
+    await setInputs(page, { activityLimitation: null, priorIcu: null });
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await text(), "");
     assert.equal(await page.locator("#note-jump-link").isVisible(), false);
     await generate();
     assert.match(await text(), /could not be fully classified/);
-    assert.doesNotMatch(await text(), /No prior ICU|No controller-adherence concern|No inhaler-technique concern/);
+    assert.doesNotMatch(await text(), /No prior ICU|No inhaler-technique concern was identified/);
     await openDetails();
     await page.locator("#set-symptoms-negative-btn").click(); await generate();
     assert.match(await text(), /was well controlled/);
-    await setInputs(page, { priorIcu: true, treatmentReviewed: true }); await generate();
+    await setInputs(page, { priorIcu: true }); await generate();
     assert.match(await text(), /history included ICU/);
     await setInputs(page, { recentExacerbation: null }); await generate(); assert.match(await text(), /history included ICU/);
     await page.locator('[data-treatment-preset="smartLow"]').click();
@@ -258,7 +265,7 @@ async function main() {
       await page.setViewportSize({ width, height: 900 });
       const sizing = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
       assert.ok(sizing.scroll <= sizing.client + 1, `horizontal overflow at ${width}: ${JSON.stringify(sizing)}`);
-      const sizes = await page.locator('.workflow-nav a, [data-treatment-preset], .choice-option, .checkbox-row').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => ({ height: node.getBoundingClientRect().height, width: node.getBoundingClientRect().width })));
+      const sizes = await page.locator('[data-treatment-preset], .choice-option, .checkbox-row').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => ({ height: node.getBoundingClientRect().height, width: node.getBoundingClientRect().width })));
       assert.ok(sizes.every(size => size.height >= 44 && size.width >= 44), `small tap target at ${width}`);
       const overlaps = await page.locator('#treatment-addons .grid, #phenotype-panel .grid').evaluateAll(grids => grids.flatMap(grid => {
         const boxes = Array.from(grid.children).filter(node => node.getClientRects().length).map(node => node.getBoundingClientRect());
@@ -275,7 +282,7 @@ async function main() {
         await capture(page.locator("#biologic-guidance-card"), `biologics-${width}`);
         await capture(page.locator("#air-smart-reference"), `air-smart-${width}`);
         await capture(page.locator("#ics-dose-reference"), `ics-examples-${width}`);
-        await capture(page.locator(".workflow-nav"), `navigation-${width}`);
+        await capture(page.locator(".hero"), `simplified-intro-${width}`);
         await capture(page.locator('#symptoms-heading').locator('..'), `symptoms-${width}`);
         await capture(page.locator("#treatment-addons"), `add-ons-${width}`);
         await capture(page.locator("#phenotype-panel"), `phenotype-${width}`);
@@ -473,17 +480,13 @@ async function main() {
     assert.doesNotMatch(await text(), /Benralizumab.*has been recommended|30 mg SC every/);
 
     await load();
-    await setInputs(page, { ...state, controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+    await setInputs(page, { ...state, controller: "none", icsDose: "unknown", symptomDays: "three" });
     await generate();
     assert.equal(await page.locator("#plan-card").isVisible(), true);
-    for (const id of ["smartLow", "track2"]) assert.equal(await page.locator(`[name="plan-controller"][value="${id}"]`).isDisabled(), true);
+    for (const id of ["smartLow", "track2"]) assert.equal(await page.locator(`[name="plan-controller"][value="${id}"]`).isEnabled(), true);
     assert.match(await text(), /Controller and reliever plan: \*\*\*/);
     assert.doesNotMatch(await text(), /A step-up.*was considered|Track 2 regimen could/);
-    await page.locator('#plan-options a[href="#treatment-addons"]').click();
-    assert.equal(await page.locator("#treatment-addons").evaluate(node => node.open), true);
-    assert.equal(await page.evaluate(() => document.activeElement.id), "treatment-reviewed");
-    await page.locator("#treatment-reviewed").check();
-    await generateWithoutMoving("#generate-btn");
+    assert.equal(await page.locator('#plan-options a[href="#treatment-addons"]').count(), 0);
     const lowSmartPlan = page.locator('[name="plan-controller"][value="smartLow"]');
     assert.equal(await lowSmartPlan.isEnabled(), true);
     await lowSmartPlan.focus(); await page.keyboard.press("Space");
@@ -505,12 +508,27 @@ async function main() {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `step-up decision overflow at ${width}`);
       if ([390, 1280].includes(width)) await capture(page.locator("#plan-card"), `step-up-choice-${width}`);
     }
-    await page.locator("#treatment-reviewed").uncheck();
+    await page.locator('#treatment-addons > summary').click();
+    await page.locator("#adherence").check();
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
     await generateWithoutMoving("#generate-btn");
-    assert.equal(await page.locator('[name="plan-controller"][value="track2"]').isDisabled(), true);
+    assert.equal(await page.locator('[name="plan-controller"][value="track2"]').count(), 0);
     assert.match(await text(), /Controller and reliever plan: \*\*\*/);
     assert.doesNotMatch(await text(), /Start low-dose maintenance ICS-LABA|albuterol-budesonide.*2 inhalations/);
+    assert.match(await text(), /Suboptimal controller adherence was identified/);
+    await page.locator("#adherence").uncheck();
+    await generateWithoutMoving("#generate-btn");
+    assert.equal(await page.locator('[name="plan-controller"][value="track2"]').isEnabled(), true);
+    assert.match(await text(), /No controller-adherence concern was documented/);
+    for (const [id, positive] of [["technique", /An inhaler-technique concern was identified/], ["access-barrier", /A medication access \/ affordability barrier was identified/], ["ics-side-effects", /Review of steroid adverse effects/]]) {
+      await page.locator(`#${id}`).check();
+      assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+      await generateWithoutMoving("#generate-btn");
+      assert.match(await text(), positive);
+      await page.locator(`#${id}`).uncheck();
+      await generateWithoutMoving("#generate-btn");
+      assert.doesNotMatch(await text(), positive);
+    }
 
     await load(); await setInputs(page, state);
     await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -546,7 +564,7 @@ async function main() {
     assert.equal(await page.locator("#emergency-output").isVisible(), true);
     assert.equal(await text(), "");
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: definitive SMART/Track 2 plan selection and missing optimization review, explicit symptom-control answers, generation checkmarks and stable viewport/focus, failed/urgent generation, biologic/dosing safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: simplified language, reference/input disclosures, treatment-barrier defaults and positive exceptions, definitive plan selection, symptom-control answers, generation checkmarks and stable viewport/focus, biologic/dosing safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -8,7 +8,6 @@
   const history = (label) => ({ type: "history", label });
   const exception = (label, checkedValue = true, hint = "") => ({ type: "exception", label, checkedValue, hint });
   const confirmation = (label, hint = "") => ({ type: "confirmation", label, hint });
-  const reviewed = () => ({ type: "review", label: "Reviewed this group; unchecked items are absent or without concern." });
   const vaccine = (label, hint = "") => choice(label, [["due", "Due / incomplete"], ["complete", "Current / complete"]], { hint, compact: true });
 
   // Presentation metadata only; clinical classification belongs to asthmaLogic.
@@ -31,20 +30,19 @@
       ["ics-formoterol", "ICS-formoterol (AIR / SMART)"], ["ics-saba", "Albuterol-budesonide (Airsupra)"],
       ["saba", "SABA (e.g., albuterol)"], ["none", "No reliever"]
     ], { hint: "Reliever = the inhaler used as needed for symptoms. SMART uses the same ICS-formoterol inhaler for maintenance and relief." }),
-    treatmentReviewed: reviewed(),
     lamaAddon: exception("Separate LAMA add-on", true, "Long-acting muscarinic antagonist, such as tiotropium. Do not count the LAMA already included in a triple inhaler as a separate add-on."),
     currentBiologic: choice("Current biologic", [
       ["none", "None"], ["omalizumab", "Omalizumab"], ["mepolizumab", "Mepolizumab"],
       ["benralizumab", "Benralizumab"], ["reslizumab", "Reslizumab"], ["dupilumab", "Dupilumab"],
       ["tezepelumab", "Tezepelumab"], ["depemokimab", "Depemokimab"]
-    ], { defaultValue: "none", hint: "Defaults to none. Change this if the patient is receiving a biologic." }),
+    ], { defaultValue: "none" }),
     biologicMonths: number("Time on current biologic (months)", { usualMax: 120 }),
     maintenanceOcs: exception("Maintenance oral corticosteroids"),
     maintenanceOcsDose: number("Maintenance prednisone-equivalent dose (mg/day)", { usualMax: 100 }),
-    adherence: exception("Controller adherence concern", "suboptimal"),
-    technique: exception("Inhaler technique concern", "incorrect"),
-    accessBarrier: exception("Medication access or affordability barrier"),
-    icsSideEffects: exception("Significant ICS adverse effects / steroid toxicity concerns"),
+    adherence: { ...exception("Controller adherence concern", "suboptimal"), uncheckedValue: "adequate" },
+    technique: { ...exception("Inhaler technique concern", "incorrect"), uncheckedValue: "correct" },
+    accessBarrier: { ...exception("Medication access or affordability barrier"), uncheckedValue: false },
+    icsSideEffects: { ...exception("Significant ICS adverse effects / steroid toxicity concerns"), uncheckedValue: false },
     diagnosisContext: choice("Asthma diagnosis context", [["established", "Established diagnosis"], ["suspected", "Suspected / being evaluated"]], { compact: true }),
     typicalSymptoms: yesNo("Typical variable respiratory symptoms (diagnostic history)", "Variable wheeze, dyspnea, chest tightness, or cough with relevant triggers."),
     dxBd: history("Historical bronchodilator responsiveness"),

@@ -28,7 +28,7 @@
     if (d.recentExacerbation === true) lines.push(f.acute.recentResolved ? "The patient was seen after a recent resolved exacerbation." : "A recent exacerbation was reported.");
     if (d.priorIcu === true) lines.push("The history included ICU admission, intubation, or life-threatening asthma.");
     if (d.priorIcu === false) lines.push("No prior ICU admission, intubation, or life-threatening asthma was reported.");
-    if (d.adherence !== "unknown") lines.push(d.adherence === "adequate" ? "No controller-adherence concern was identified." : "Suboptimal controller adherence was identified.");
+    if (d.adherence !== "unknown") lines.push(d.adherence === "adequate" ? "No controller-adherence concern was documented." : "Suboptimal controller adherence was identified.");
     if (d.accessBarrier === true) lines.push("A medication access / affordability barrier was identified.");
     if (d.stableMonths !== null) lines.push(`Stable symptom control had been maintained for ${d.stableMonths} months.`);
     if (d.smoking !== "unknown") lines.push({ never: "The smoking history was negative.", former: "The patient was a former smoker.", current: d.smokingCigarettesPerDay > 0 ? `The patient reported smoking ${d.smokingCigarettesPerDay} cigarettes daily.` : "The patient was currently smoking." }[d.smoking]);
@@ -85,7 +85,7 @@
     if (d.perennialSensitization === true) lines.push("Perennial aeroallergen sensitization had been confirmed.");
     if (d.perennialSensitization === false) lines.push("Perennial aeroallergen sensitization had not been confirmed.");
     if (d.technique === "incorrect") lines.push("An inhaler-technique concern was identified.");
-    if (d.technique === "correct") lines.push("No inhaler-technique concern was identified.");
+    if (d.technique === "correct") lines.push("No inhaler-technique concern was documented.");
     if (f.acute.active || f.acute.emergency) {
       const features = [];
       if (d.acuteSpeech !== "unknown") features.push(`speech: ${{ sentences: "full sentences", phrases: "phrases", unable: "unable to speak normally" }[d.acuteSpeech]}`);

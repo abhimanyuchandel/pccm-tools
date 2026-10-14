@@ -34,6 +34,16 @@
     return key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
   }
 
+  function decorateDisclosures() {
+    document.querySelectorAll("details.reference-disclosure, details.input-disclosure").forEach(details => {
+      const summary = details.querySelector(":scope > summary");
+      if (!summary || summary.querySelector(".disclosure-label")) return;
+      const title = element("span", "disclosure-title");
+      title.append(...summary.childNodes);
+      summary.append(element("span", "disclosure-label", details.classList.contains("reference-disclosure") ? "Reference" : "Patient inputs"), title);
+    });
+  }
+
   function createField(key) {
     const definition = schema[key];
     if (!definition) throw new Error(`Unknown form field: ${key}`);
@@ -128,7 +138,7 @@
   function value(key) {
     const field = control(key), definition = schema[key];
     if (["history", "confirmation", "review"].includes(definition.type)) return field.checked ? true : definition.type === "review" ? false : null;
-    if (definition.type === "exception") return field.checked ? definition.checkedValue : field.dataset.explicitNo === "true" ? false : ["adherence", "technique"].includes(key) ? "unknown" : null;
+    if (definition.type === "exception") return field.checked ? definition.checkedValue : definition.uncheckedValue !== undefined ? definition.uncheckedValue : field.dataset.explicitNo === "true" ? false : null;
     return form.elements.namedItem(key).value;
   }
 
@@ -259,8 +269,9 @@
       const wrapper = control(key).closest(".clinical-field");
       let badge = wrapper.querySelector(".confirmed-finding");
       if (!badge) { badge = element("span", "hint confirmed-finding"); wrapper.append(badge); }
-      badge.textContent = value(key) === false ? "Individually documented as absent." : "";
-      badge.classList.toggle("hidden", value(key) !== false);
+      const confirmedAbsent = value(key) === false && schema[key].uncheckedValue === undefined;
+      badge.textContent = confirmedAbsent ? "Individually documented as absent." : "";
+      badge.classList.toggle("hidden", !confirmedAbsent);
     });
     document.querySelectorAll("[data-treatment-preset]").forEach(button => {
       const id = button.dataset.treatmentPreset, preset = window.asthmaLogic.TREATMENT_PRESETS[id];
@@ -420,7 +431,7 @@
     choice.append(label);
     const medication = candidate && window.asthmaLogic.MEDICATIONS[candidate.id];
     if (medication?.detail) {
-      const comparison = element("details", "clinical-drawer biologic-reference");
+      const comparison = element("details", "clinical-drawer biologic-reference reference-disclosure");
       comparison.append(element("summary", "", "Benefits, limitations, and typical prescribing criteria"));
       const content = element("div", "drawer-body biologic-comparison");
       for (const [title, text] of [["Potential advantages", candidate.benefits], ["Limitations and cautions", candidate.limitations], ["Typical criteria", candidate.typicalCriteria], ["This patient's fit", candidate.criteriaFit]]) {
@@ -430,7 +441,7 @@
       }
       comparison.append(content); choice.append(comparison);
       // Keep the disclosure outside the label so reviewing dosing cannot select an agent.
-      const reference = element("details", "clinical-drawer biologic-reference");
+      const reference = element("details", "clinical-drawer biologic-reference reference-disclosure");
       reference.append(element("summary", "", "U.S. dosing and prescribing reference"));
       const detail = element("div", "drawer-body");
       if (medication.offLabel) detail.append(element("span", "off-label-tag", "Off-label use"));
@@ -528,6 +539,7 @@
     show("biologic-plan-review", rec.biologicCandidates.length > 0 && !rec.emergency && !rec.findings.acute.active);
     renderSmoking(rec);
     renderPlan(rec);
+    decorateDisclosures();
     updateConditionalFields();
     noteOutput.value = note;
     noteOutput.placeholder = rec.invalid ? "Correct the data-quality errors and regenerate recommendations to create a SOAP note." : "";
@@ -561,7 +573,7 @@
       label.append(radio, body);
       const wrapper = element("div", "biologic-choice"); wrapper.append(label);
       if (option) {
-        const details = element("details", "clinical-drawer biologic-reference");
+        const details = element("details", "clinical-drawer biologic-reference reference-disclosure");
         details.append(element("summary", "", "Evidence, cautions, and treatment course"));
         const content = element("div", "drawer-body");
         for (const [title, text] of [["Evidence", option.evidence], ["Clinical selection", option.cautions], ["Course", option.schedule]]) {
@@ -598,7 +610,7 @@
         help.append(document.createTextNode("Before routine step-up, review inhaler technique, adherence, and medication access, and address any concerns. "));
         const link = element("a", "", "Review add-ons and treatment optimization");
         link.href = "#treatment-addons";
-        link.addEventListener("click", event => { event.preventDefault(); openAndFocus(control("treatmentReviewed")); });
+        link.addEventListener("click", event => { event.preventDefault(); openAndFocus(control("adherence")); });
         help.append(link, document.createTextNode(". Regenerate after updating the review to enable the appropriate treatment choices."));
         fieldset.append(help);
       }
@@ -836,6 +848,7 @@
   try {
     if (!schema) throw new Error("The input form could not be loaded. Refresh the page and try again.");
     buildForm();
+    decorateDisclosures();
     updateConditionalFields();
     updateInputSummaries();
     const onInput = (event) => {
@@ -896,14 +909,6 @@
       if (changed) markStale();
       updateConditionalFields(); updateInputSummaries();
       if (!stale) status.textContent = `${button.querySelector(".preset-label").textContent} recorded as current treatment. Other clinical findings were preserved.`;
-    }));
-    document.querySelectorAll(".workflow-nav a").forEach(link => link.addEventListener("click", event => {
-      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-      const target = document.getElementById(link.hash.slice(1));
-      if (!target) return;
-      if (target.tagName === "DETAILS") target.open = true;
-      target.tabIndex = -1;
-      target.focus({ preventScroll: true });
     }));
     copyButton.addEventListener("click", copyNote);
   } catch (error) {

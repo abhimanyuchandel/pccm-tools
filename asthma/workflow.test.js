@@ -7,7 +7,7 @@ const N = require("./notes.js");
 
 const routine = (patch = {}) => ({ ...L.createEmptyState(), age: 45, managementPhase: "followup", diagnosisContext: "established", dxChallenge: true,
   controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol", symptomDays: "none", nightWaking: "none",
-  activityLimitation: false, ocsExacerbations: 0, hospitalExacerbations: 0, treatmentReviewed: true, pregnant: false, ...patch });
+  activityLimitation: false, ocsExacerbations: 0, hospitalExacerbations: 0, lamaAddon: false, maintenanceOcs: false, pregnant: false, ...patch });
 const poor = patch => routine({ symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true, ocsExacerbations: 2, eosinophils: 450, ...patch });
 const build = (data, planSelections = {}, other = {}) => L.buildRecommendation(data, { ...other, planSelections });
 const text = rec => N.buildNoteText(rec.findings.data, rec);
@@ -25,6 +25,26 @@ test("a retired risk review flag cannot fill in negative findings", () => {
   assert.equal(Object.hasOwn(d, "riskReviewed"), false);
   for (const key of ["activityLimitation", "recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling"]) assert.equal(d[key], null, key);
   assert.equal(L.normalizeState({ riskReviewed: true, priorIcu: true }).priorIcu, true);
+});
+test("language cleanup and disclosure types retain clear clinical input and reference structure", () => {
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const schemaContext = { window: {} };
+  require("node:vm").runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), schemaContext);
+  const schema = schemaContext.window.asthmaInputSchema;
+  assert.match(html, /Structured decision support for the typical encounter for an adult patient with asthma\./);
+  assert.match(html, /SOAP notes produced from this application will require editing to incorporate patient specific nuance/);
+  assert.doesNotMatch(html, /workflow-nav|form-instructions|Contributors|Diagnosis, treatment review, exacerbation care|Other findings and add-ons are preserved|These are not treatment recommendations/);
+  assert.match(html, /id="air-smart-reference" class="[^"]*reference-disclosure/);
+  assert.match(html, /id="treatment-addons" class="[^"]*input-disclosure/);
+  assert.equal(schema.currentBiologic.hint, undefined);
+  assert.equal(Object.hasOwn(schema, "treatmentReviewed"), false);
+  for (const [key, value] of Object.entries(L.TREATMENT_BARRIER_DEFAULTS)) assert.equal(schema[key].uncheckedValue, value, key);
+});
+test("unknown maintenance OCS is individually confirmed for a possible step-down", () => {
+  const data = routine({ stableMonths: 4, lungFunctionStable: true, maintenanceOcs: null });
+  const rec = build(data);
+  assert.ok(rec.plan.confirmations.some(item => item.key === "maintenanceOcs"));
+  assert.equal(rec.plan.groups.find(item => item.id === "controller").options.some(item => item.id === "stepdown"), false);
 });
 test("medium MART is Step 4 alone and Step 5 with add-ons without high-dose relabeling", () => {
   assert.equal(L.getTreatmentContext(routine()).step, "4");
@@ -66,7 +86,7 @@ test("unknown risks produce targeted confirmations, not reassuring note statemen
   assert.equal(group(rec, "controller").options.some(item => item.id === "stepdown"), false);
 });
 test("LAMA selection needs known absence and never duplicates a triple inhaler", () => {
-  const unknown = build(poor({ treatmentReviewed: false }), { lama: "add" });
+  const unknown = build(poor({ lamaAddon: null }), { lama: "add" });
   assert.equal(group(unknown, "lama").selected, null);
   assert.ok(unknown.plan.confirmations.some(item => item.key === "lamaAddon"));
   for (const patch of [{ lamaAddon: true }, { controller: "triple" }]) assert.equal(group(build(poor(patch)), "lama"), undefined);
@@ -75,7 +95,7 @@ test("LAMA selection needs known absence and never duplicates a triple inhaler",
   assert.doesNotMatch(text(selected), /500\/50|A tiotropium add-on was considered/);
 });
 test("unreviewed optimization cannot become a definite add-on prescription", () => {
-  const rec = build(poor({ treatmentReviewed: false, lamaAddon: false }), { lama: "add" });
+  const rec = build(poor({ adherence: "unknown", technique: "unknown", accessBarrier: null, lamaAddon: false }), { lama: "add" });
   assert.equal(group(rec, "lama").selected, null);
   assert.ok(group(rec, "lama").options.find(item => item.id === "add").blockers.some(item => /technique, adherence, and access/.test(item)));
   assert.doesNotMatch(text(rec), /Add tiotropium Respimat/);
@@ -99,7 +119,7 @@ test("controller and reliever choice removes competing dosing from the note and 
   assert.deepEqual(selected.medications.map(item => item.id), ["air"]);
 });
 test("AIR-only follow-up always presents a step-up decision instead of copying competing alternatives", () => {
-  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", adherence: "unknown", technique: "unknown", accessBarrier: null });
   const rec = build(data);
   const controller = group(rec, "controller");
   assert.equal(controller.optimizationReviewRequired, true);
@@ -132,7 +152,7 @@ test("selected AIR-only follow-up Track 2 plan documents only the chosen control
   assert.equal(selected.findings.treatment.airOnly, true);
 });
 test("unreviewed optimization rejects an initiation selection without hiding the decision controls", () => {
-  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", treatmentReviewed: false });
+  const data = routine({ controller: "none", icsDose: "unknown", symptomDays: "three", adherence: "unknown", technique: "unknown", accessBarrier: null });
   for (const id of ["smartLow", "track2"]) {
     const rec = build(data, { controller: id });
     assert.equal(rec.plan.selections.controller, null);

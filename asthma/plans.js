@@ -11,6 +11,7 @@
     recentExacerbation: "Recent asthma exacerbation",
     priorIcu: "Prior ICU admission or life-threatening asthma", pregnant: "Pregnant",
     respiratoryInfection: "Current respiratory infection", travelling: "Upcoming travel or limited follow-up access",
+    maintenanceOcs: "Maintenance oral corticosteroids",
     lamaAddon: "Already using a separate LAMA add-on"
   };
 
@@ -64,7 +65,7 @@
       const schedule = smart && tx.step === "4" ? catalog.MEDICATIONS.smartLow.noteSchedule : smart && tx.step === "3" ? "Budesonide-formoterol 160/4.5 mcg, 1 scheduled inhalation once daily plus 1 as needed, maximum 12 total inhalations/day. U.S. SMART reliever use is off-label." : "Reduce maintenance ICS by 25-50% using the selected product. Reduced controller product, strength, and schedule: ***. Retain a compatible reliever.";
       options.push(option("stepdown", "Proceed with supervised step-down", `Reduce the maintenance ICS regimen. ${schedule} Record baseline control and lung function, provide instructions to resume the previous regimen if control worsens, and reassess in 4-8 weeks. Do not withdraw ICS completely.${d.priorIcu === true ? " Use particularly close supervision because of prior life-threatening asthma." : ""}`, smart && tx.step === "4" ? ["smartLow"] : []));
     } else if (d.stableMonths >= 3 && tx.maintenance && !tx.step5) {
-      for (const key of ["recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling"]) confirm(key);
+      for (const key of ["recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling", "maintenanceOcs"]) confirm(key);
     }
     if (has("optimize") || has("clarify-regimen") || has("complete-control") || has("complete-initial")) {
       options.push(option("assessment", "Complete assessment and optimization before changing treatment", "Complete the documented treatment, symptom-control, and risk assessment. Address technique, adherence, access, exposures, and relevant comorbid contributors before choosing a routine treatment change. Retain appropriate ICS protection while completing this review."));

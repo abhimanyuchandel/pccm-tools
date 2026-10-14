@@ -14,14 +14,14 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-7">
-  <script src="/asthma/input-schema.js?v=20261013-7" defer></script>
-  <script src="/asthma/medications.js?v=20261013-7" defer></script>
-  <script src="/asthma/smoking.js?v=20261013-7" defer></script>
-  <script src="/asthma/plans.js?v=20261013-7" defer></script>
-  <script src="/asthma/logic.js?v=20261013-7" defer></script>
-  <script src="/asthma/notes.js?v=20261013-7" defer></script>
-  <script src="/asthma/app.js?v=20261013-7" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261014-1">
+  <script src="/asthma/input-schema.js?v=20261014-1" defer></script>
+  <script src="/asthma/medications.js?v=20261014-1" defer></script>
+  <script src="/asthma/smoking.js?v=20261014-1" defer></script>
+  <script src="/asthma/plans.js?v=20261014-1" defer></script>
+  <script src="/asthma/logic.js?v=20261014-1" defer></script>
+  <script src="/asthma/notes.js?v=20261014-1" defer></script>
+  <script src="/asthma/app.js?v=20261014-1" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -34,38 +34,17 @@
       <header class="hero">
         <p class="eyebrow">Pulmonary Medicine</p>
         <h1>Asthma Management</h1>
-        <p class="heroLead">Structured decision support for adult asthma care.</p>
-        <p class="heroNote">Diagnosis, treatment review, exacerbation care, and a SOAP note for U.S. pulmonary practice.</p>
-        <details class="contributors-drawer">
-          <summary>Contributors</summary>
-          <ul class="contributors-list">
-            <li>Abhimanyu Chandel, MD MAS</li>
-            <li>Ryan Fashempour, MD</li>
-          </ul>
-        </details>
+        <p class="heroLead">Structured decision support for the typical encounter for an adult patient with asthma.</p>
       </header>
 
       <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
-      <nav class="workflow-nav" aria-label="Clinical input sections">
-        <span class="workflow-nav-label">Jump to</span>
-        <div class="workflow-nav-links">
-          <a href="#encounter-heading">Treatment</a>
-          <a href="#diagnosis-heading">Diagnosis</a>
-          <a href="#symptoms-heading">Symptoms</a>
-          <a href="#acute-heading">Acute</a>
-          <a href="#phenotype-panel">Biomarkers</a>
-          <a href="#preventive-panel">Vaccines</a>
-        </div>
-      </nav>
-      <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
-        <p id="form-instructions" class="form-instructions">Enter current treatment and findings. Answer the symptom questions explicitly and check risks that are present; unchecked risk boxes and blank numbers remain undocumented. Treatment and cessation safety reviews have their own confirmations. Select the encounter plan after generating recommendations, or complete its *** placeholders in your EMR.</p>
-
+      <form id="asthma-form" class="form-panels" novalidate autocomplete="off">
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
           <div class="grid" data-fields="managementPhase age"></div>
           <div class="treatment-shortcuts">
             <h3 id="shortcut-heading" class="subsection-title">Optional current-treatment shortcuts</h3>
-            <p id="shortcut-help" class="hint">Records the current controller, reliever, and ICS intensity. Other findings and add-ons are preserved. These are not treatment recommendations.</p>
+            <p id="shortcut-help" class="hint">Records the current controller, reliever, and ICS intensity.</p>
             <div class="shortcut-buttons" role="group" aria-labelledby="shortcut-heading" aria-describedby="shortcut-help">
               <button type="button" class="ghost-btn" data-treatment-preset="none" aria-pressed="false"><span class="preset-label">None</span><span class="preset-detail">No controller or reliever</span></button>
               <button type="button" class="ghost-btn" data-treatment-preset="saba" aria-pressed="false"><span class="preset-label">As-needed SABA</span><span class="preset-detail">Reliever only, e.g., albuterol</span></button>
@@ -75,7 +54,7 @@
             </div>
             <p class="hint">SABA (e.g., albuterol) provides relief without ICS protection. <a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA recommends an ICS-containing strategy for asthma</a>.</p>
             <p class="hint"><strong>AIR-only:</strong> ICS-formoterol as needed. <strong>SMART:</strong> the same inhaler for daily maintenance and as-needed relief.</p>
-            <details id="air-smart-reference" class="clinical-drawer treatment-reference">
+            <details id="air-smart-reference" class="clinical-drawer treatment-reference reference-disclosure">
               <summary>AIR and SMART: definitions and adult dosing</summary>
               <div class="drawer-body">
                 <p class="hint"><strong>AIR</strong> means anti-inflammatory reliever. <strong>SMART</strong> means single maintenance and reliever therapy; GINA calls this <strong>MART</strong> (maintenance-and-reliever therapy). These shortcuts use budesonide-formoterol <strong>160/4.5 mcg per inhalation</strong> (Symbicort or Breyna).</p>
@@ -95,7 +74,7 @@
           <div class="grid" data-fields="controller reliever"></div>
           <div id="ics-dose-fields" class="hidden">
             <div class="grid" data-fields="icsDose"></div>
-            <details id="ics-dose-reference" class="clinical-drawer treatment-reference">
+            <details id="ics-dose-reference" class="clinical-drawer treatment-reference reference-disclosure">
               <summary>ICS dose intensity: common adult maintenance examples</summary>
               <div class="drawer-body">
                 <p class="hint"><strong>ICS intensity describes the inhaled corticosteroid dose, not symptom severity or the number of drugs in the inhaler.</strong> Classify the prescribed scheduled maintenance dose using the exact corticosteroid, strength, device, and daily inhalations. Review as-needed use separately; AIR-only has no scheduled maintenance dose.</p>
@@ -115,7 +94,7 @@
             </details>
           </div>
           <div id="laba-type-fields" class="grid hidden" data-fields="labaType"></div>
-          <details id="treatment-addons" class="clinical-drawer">
+          <details id="treatment-addons" class="clinical-drawer input-disclosure">
             <summary>Add-ons and treatment optimization</summary>
             <div class="drawer-body">
               <div class="grid form-section-grid">
@@ -133,8 +112,7 @@
               <section class="form-subgroup" aria-labelledby="treatment-barriers-heading">
                 <h3 id="treatment-barriers-heading" class="subsection-title">Treatment barriers and adverse effects</h3>
                 <div class="grid checkbox-grid" data-fields="adherence technique accessBarrier icsSideEffects"></div>
-                <div class="review-confirmation" data-fields="treatmentReviewed"></div>
-                <p class="hint">Confirm after reviewing the additional maintenance therapies and treatment barriers. Biologic status is recorded separately above.</p>
+                <p class="hint">Check any current concerns; unchecked treatment barriers are assumed absent.</p>
               </section>
             </div>
           </details>
@@ -143,14 +121,14 @@
         <section class="panel" aria-labelledby="diagnosis-heading">
           <h2 id="diagnosis-heading">2) Diagnosis and Objective Testing</h2>
           <div class="grid" data-fields="diagnosisContext typicalSymptoms"></div>
-          <details class="clinical-drawer">
+          <details class="clinical-drawer input-disclosure">
             <summary>Previously documented diagnostic evidence</summary>
             <div class="drawer-body">
               <p class="hint">Check verified positive results from prior testing. An unchecked box means no positive result is documented here, not that the test was negative.</p>
               <div class="grid checkbox-grid" data-fields="dxBd dxIcsObjective dxChallenge dxPef"></div>
             </div>
           </details>
-          <details id="testing-details" class="clinical-drawer">
+          <details id="testing-details" class="clinical-drawer input-disclosure">
             <summary>Spirometry and additional testing</summary>
             <div class="drawer-body">
               <div class="spirometry-groups">
@@ -164,7 +142,7 @@
                 </section>
               </div>
               <div class="grid full-width" data-fields="bronchodilatorHeld"></div>
-              <details class="washout-note">
+              <details class="washout-note reference-disclosure">
                 <summary>Bronchodilator washout reference</summary>
                 <div class="washout-note-body">
                   <table class="washout-table" aria-label="ATS/ERS bronchodilator washout times">
@@ -205,7 +183,7 @@
             </div>
             <div class="grid" data-fields="recentExacerbation priorIcu persistentExacerbations"></div>
           </div>
-          <details class="clinical-drawer">
+          <details class="clinical-drawer input-disclosure">
             <summary>Stability and step-down considerations</summary>
             <div class="drawer-body">
               <div class="grid" data-fields="stableMonths lungFunctionStable pregnant respiratoryInfection travelling"></div>
@@ -231,7 +209,7 @@
           </div>
         </section>
 
-        <details id="phenotype-panel" class="panel panel-drawer">
+        <details id="phenotype-panel" class="panel panel-drawer input-disclosure">
           <summary><span class="drawer-title">5) Phenotype and Modifiers</span><span class="hint">Biomarkers, comorbidities, and relevant exposures</span></summary>
           <div class="drawer-body">
             <div class="grid grid-three" data-fields="eosinophils historicalEosinophils feno"></div>
@@ -246,7 +224,7 @@
               <div class="grid full-width" data-fields="endemicExposure"></div>
             </section>
             <div id="smoking-fields" class="hidden">
-              <details id="smoking-assessment" class="clinical-drawer">
+              <details id="smoking-assessment" class="clinical-drawer input-disclosure">
                 <summary>Smoking cessation: optional dosing and safety review</summary>
                 <div class="drawer-body">
                   <p class="hint">These details help tailor the cessation choices shown with the recommendations. Missing information does not prevent generating asthma guidance.</p>
@@ -260,11 +238,11 @@
           </div>
         </details>
 
-        <details id="preventive-panel" class="panel panel-drawer">
+        <details id="preventive-panel" class="panel panel-drawer input-disclosure">
           <summary><span class="drawer-title">6) Preventive Care Status</span><span class="hint">Documented vaccine history; unknown does not mean incomplete</span></summary>
           <div class="drawer-body">
             <div class="grid" data-fields="pneumococcal rsv zoster tdap flu covid"></div>
-            <details class="clinical-drawer vaccine-reference">
+            <details class="clinical-drawer vaccine-reference reference-disclosure">
               <summary>Adult asthma vaccine quick reference</summary>
               <div class="drawer-body">
                 <p class="hint">General guidance, not a record of vaccination. Prior products, immune status and local protocols affect the individual schedule.</p>
@@ -314,7 +292,7 @@
           <p class="hint">Choose one controller strategy for this encounter, then a separate reliever if requested. The recommendations and SOAP note document only the selected plan and dosing. Unselected decisions remain *** for completion in your EMR.</p>
           <div id="biologic-plan-review" class="clinical-callout hidden">
             <p class="hint">Select biologic initiation only after confirming severe asthma and an adequate optimized inhaled-treatment course. Choosing the initiation plan records this clinical review, not medication administration.</p>
-            <details id="severe-asthma-examples" class="compact-reference">
+            <details id="severe-asthma-examples" class="compact-reference reference-disclosure">
               <summary>Biologic eligibility: treatment history and clinical review</summary>
               <ul class="reference-examples">
                 <li>Verify diagnosis, technique, adherence, access, relevant exposures, and comorbid contributors. Poor control on Step 4-5 alone is not sufficient.</li>
@@ -326,7 +304,7 @@
             </details>
           </div>
           <div id="plan-options"></div>
-          <details id="plan-confirmations" class="clinical-drawer hidden">
+          <details id="plan-confirmations" class="clinical-drawer input-disclosure hidden">
             <summary>Complete findings needed for treatment decisions</summary>
             <div class="drawer-body">
               <p class="hint">Confirm individual findings only if assessed. Changes require regeneration; unchecked risks are never assumed absent.</p>
@@ -348,7 +326,7 @@
           <fieldset id="biologic-options" class="biologic-options" aria-describedby="biologic-instructions">
             <legend class="sr-only">Agent for clinical note</legend>
             <div id="biologic-primary-options"></div>
-            <details id="biologic-more-options" class="clinical-drawer hidden">
+            <details id="biologic-more-options" class="clinical-drawer input-disclosure hidden">
               <summary id="biologic-more-summary">Additional options</summary>
               <div id="biologic-additional-options" class="drawer-body"></div>
             </details>
@@ -404,7 +382,7 @@
 
       <footer class="footer">
         <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; CDC adult immunization guidance; and ATS / WHO tobacco-cessation guidance.</p>
-        <p><strong>Application last updated:</strong> October 13, 2026.</p>
+        <p><strong>Application last updated:</strong> October 14, 2026.</p>
         <ul class="evidence-links">
           <li><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026 strategy</a></li>
           <li><a href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe asthma guide</a></li>
@@ -413,7 +391,7 @@
           <li><a href="https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html" target="_blank" rel="noopener noreferrer">CDC adult vaccine guidance</a></li>
           <li><a href="https://www.lung.org/getmedia/dc79f142-a963-47bc-8337-afe3c3e87734/Asthma-Action-Plan.pdf" target="_blank" rel="noopener noreferrer">Asthma action plan</a></li>
         </ul>
-        <p class="warning">This platform encodes clinical practice guidelines into structured decision-support tools to promote consistency and transparency. However, these outputs are simplifications of complex clinical recommendations and may not capture all relevant patient-specific factors.</p>
+        <p class="warning">This platform encodes clinical practice guidelines into structured decision-support tools to promote consistency and transparency. However, these outputs are simplifications of complex clinical recommendations and may not capture all relevant patient-specific factors. SOAP notes produced from this application will require editing to incorporate patient specific nuance.</p>
         <p class="warning">Clinical decisions must always be made in the context of individual patient circumstances, clinician expertise, and institutional protocols. Users are responsible for independently verifying results and should not rely solely on this tool for patient care decisions.</p>
       </footer>
     </div>

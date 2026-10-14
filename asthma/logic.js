@@ -13,9 +13,9 @@
   const HISTORY = "dxBd dxIcsObjective dxChallenge dxPef".split(" ");
   NUMBERS.push("smokingCigarettesPerDay");
   BOOLEANS.push("smokingBupropionContra", "smokingVareniclineReaction", "smokingSeizure", "smokingPsychiatric", "smokingCvdConcern", "smokingHepaticConcern", "smokingBreastfeeding");
-  const REVIEW_FLAGS = ["treatmentReviewed", "acuteReassessmentAvailable", "smokingSafetyReviewed"];
+  const REVIEW_FLAGS = ["acuteReassessmentAvailable", "smokingSafetyReviewed"];
+  const TREATMENT_BARRIER_DEFAULTS = { adherence: "adequate", technique: "correct", accessBarrier: false, icsSideEffects: false };
   const REVIEW_DEFAULTS = {
-    treatmentReviewed: { lamaAddon: false, maintenanceOcs: false, accessBarrier: false, icsSideEffects: false, adherence: "adequate", technique: "correct" },
     smokingSafetyReviewed: { smokingBupropionContra: false, smokingVareniclineReaction: false, smokingSeizure: false, smokingPsychiatric: false, smokingCvdConcern: false, smokingHepaticConcern: false, smokingBreastfeeding: false }
   };
   const TREATMENT_PRESETS = {
@@ -51,6 +51,7 @@
     data.currentBiologic = "none";
     data.acutePresentation = "none";
     data.urgentRedFlags = false;
+    Object.assign(data, TREATMENT_BARRIER_DEFAULTS);
     return data;
   }
 
@@ -60,12 +61,15 @@
       const value = input[key];
       data[key] = value === null || value === undefined || String(value).trim() === "" ? null : Number(value);
     });
-    BOOLEANS.forEach(key => { data[key] = input[key] === true || input[key] === "yes" ? true : input[key] === false || input[key] === "no" ? false : null; });
+    BOOLEANS.forEach(key => {
+      if (!Object.hasOwn(input, key) && Object.hasOwn(TREATMENT_BARRIER_DEFAULTS, key)) return;
+      data[key] = input[key] === true || input[key] === "yes" ? true : input[key] === false || input[key] === "no" ? false : null;
+    });
     HISTORY.forEach(key => { data[key] = input[key] === true; });
     REVIEW_FLAGS.forEach(key => { data[key] = input[key] === true; });
     Object.keys(ENUMS).forEach(key => { if (ENUMS[key].includes(input[key])) data[key] = input[key]; });
     if (!Object.hasOwn(input, "urgentRedFlags") && data.acutePresentation === "none") data.urgentRedFlags = false;
-    // A reviewed group confirms only its routine exceptions, never testing or optimization.
+    // Drug-specific safety review never supplies diagnostic evidence or longitudinal optimization.
     Object.entries(REVIEW_DEFAULTS).forEach(([flag, defaults]) => {
       if (data[flag]) Object.entries(defaults).forEach(([key, value]) => {
         if (data[key] === null || data[key] === "unknown") data[key] = value;
@@ -497,5 +501,5 @@
     return finish();
   }
 
-  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getRoutineVisitDefaults, getVaccineGuidance, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, smokingPlanText: smoking.planText, REVIEW_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
+  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getRoutineVisitDefaults, getVaccineGuidance, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, smokingPlanText: smoking.planText, REVIEW_DEFAULTS, TREATMENT_BARRIER_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
 });

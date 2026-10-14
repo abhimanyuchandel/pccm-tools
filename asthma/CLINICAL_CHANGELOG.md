@@ -1,8 +1,16 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 13, 2026. Asset version: `20261013-7`.
+Clinical reference review: October 13, 2026. Workflow revision: October 14, 2026. Asset version: `20261014-1`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Language and Disclosure Cleanup
+
+- Updated the introductory sentence and removed the secondary description, contributor drawer, Jump to navigation, and lengthy form instructions. Shortened the current-treatment shortcut helper and removed the current-biologic default explanation without changing the default. Added the requested SOAP-editing sentence to the site disclaimer. Updated the application revision date; the clinical reference review date remains October 13.
+- Removed the treatment-group review checkbox and its shared-state key. Unchecked controller-adherence, inhaler-technique, access/affordability, and significant ICS-adverse-effect concerns now resolve to absence of concern in both browser state and pure logic. This is a user-requested point-of-care convention, not a guideline requirement or proof of completed assessment. Positive findings always take precedence. Explicit unknown values remain unknown in structured state, and clinical edits continue to invalidate the note.
+- The defaults do not extend to LAMA/maintenance-OCS exposure, diagnostic evidence, pregnancy, exacerbations, phenotype, dosing prerequisites, or cessation-medication safety review. Where step-down needs a known maintenance-OCS assessment, that finding is now offered in the individual-confirmation drawer. Longitudinal severe-asthma review at biologic plan selection remains independent. SOAP wording records that no adherence/technique concern was documented, rather than claiming verification or demonstration occurred.
+- Expandable form sections are labelled **Patient inputs**, with an accented blue treatment surface. Informational sections are labelled **Reference**, with restrained neutral styling. This distinction covers dosing, washout, vaccines, and dynamic biologic/cessation reference disclosures as well as optional data-entry sections. Native details/summary keyboard controls, responsive tables, and the SOAP-note shortcut are retained.
+- Verification includes 163 clinical/note/site regression tests plus browser checks for exact copy removals, scoped defaults and positive reversals, medication-exposure safeguards, reference/input distinction, definitive plan selections, copy/stale behavior, regeneration confirmation/viewport, keyboard operation, and layouts at 320/390/768/1280 px. No backend, persistence, API, fitted-model, or production changes.
 
 ## Definitive Controller-Plan Selection
 

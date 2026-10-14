@@ -717,14 +717,6 @@ input.numeric-alert:focus {
   resize: vertical;
 }
 
-.asthma-page .form-instructions {
-  margin: 0;
-  padding: 2px 6px 4px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
 .asthma-page .full-width {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -804,46 +796,6 @@ input.numeric-alert:focus {
 .asthma-page .quick-choices .choice-option span {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.asthma-page .workflow-nav {
-  padding: 12px 16px;
-  border: 1px solid var(--line-soft);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.asthma-page .workflow-nav-label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.asthma-page .workflow-nav-links {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.asthma-page .workflow-nav a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 8px;
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
-  color: var(--accent);
-  background: #fbfdff;
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.asthma-page .workflow-nav a:hover {
-  border-color: #527599;
-  background: #edf4fb;
 }
 
 .asthma-page :is(h2, .panel[id]) {
@@ -1169,6 +1121,52 @@ input.numeric-alert:focus {
 
 .asthma-page .clinical-drawer > .drawer-body {
   padding: 0 16px 16px;
+}
+
+.asthma-page .input-disclosure {
+  border-left: 3px solid #40658a;
+}
+
+.asthma-page .input-disclosure > summary {
+  background: #edf3f9;
+  border-radius: 12px;
+}
+
+.asthma-page .reference-disclosure {
+  border: 1px solid #dce3e9;
+  background: #f6f8fa;
+}
+
+.asthma-page .reference-disclosure > summary {
+  color: #465b6c;
+  font-weight: 600;
+}
+
+.asthma-page .disclosure-label {
+  display: inline-block;
+  margin: 0 8px 3px 0;
+  padding: 3px 7px;
+  border: 1px solid #b7c9dc;
+  border-radius: 5px;
+  background: #fff;
+  color: #234c70;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.asthma-page .reference-disclosure > summary .disclosure-label {
+  border-color: #d2dbe2;
+  background: #edf1f4;
+  color: #465b6c;
+}
+
+.asthma-page :is(.input-disclosure, .reference-disclosure) > summary {
+  min-height: 48px;
+  overflow-wrap: anywhere;
 }
 
 .asthma-page .panel-drawer > summary {
@@ -1525,14 +1523,6 @@ input.numeric-alert:focus {
 }
 
 @media (max-width: 760px) {
-  .asthma-page .workflow-nav {
-    padding: 12px;
-  }
-
-  .asthma-page .workflow-nav-links {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .asthma-page .shortcut-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

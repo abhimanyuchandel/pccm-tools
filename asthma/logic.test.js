@@ -462,6 +462,34 @@ test("review confirmations centrally resolve only routine exceptions", () => {
   assert.equal(reviewed.dxBd, false); assert.equal(reviewed.typicalSymptoms, null);
   assert.equal(L.classifyControl(reviewed).classification, "not fully assessed");
 });
+test("routine treatment-barrier defaults are scoped to the four requested concerns", () => {
+  const expected = { adherence: "adequate", technique: "correct", accessBarrier: false, icsSideEffects: false };
+  assert.deepEqual(L.TREATMENT_BARRIER_DEFAULTS, expected);
+  for (const data of [L.createEmptyState(), L.normalizeState({}), L.normalizeState({ treatmentReviewed: true })]) {
+    for (const [key, value] of Object.entries(expected)) assert.equal(data[key], value, key);
+    for (const key of ["lamaAddon", "maintenanceOcs", "pregnant", "priorIcu", "lungFunctionStable", "perennialSensitization", "igePretreatment", "ocsExacerbations", "hospitalExacerbations", "weightKg"]) assert.equal(data[key], null, key);
+    assert.equal(Object.hasOwn(data, "treatmentReviewed"), false);
+  }
+});
+test("positive treatment concerns override absence defaults and explicit unknowns remain unknown", () => {
+  const positive = { adherence: "suboptimal", technique: "incorrect", accessBarrier: true, icsSideEffects: true };
+  const data = L.normalizeState(positive);
+  for (const [key, value] of Object.entries(positive)) assert.equal(data[key], value, key);
+  const unknown = L.normalizeState({ adherence: "unknown", technique: "unknown", accessBarrier: null, icsSideEffects: null });
+  assert.equal(unknown.adherence, "unknown"); assert.equal(unknown.technique, "unknown");
+  assert.equal(unknown.accessBarrier, null); assert.equal(unknown.icsSideEffects, null);
+  assert.deepEqual(L.normalizeState(unknown), unknown);
+});
+test("treatment-barrier defaults do not confirm severe asthma, medication exposure, or completed care", () => {
+  const data = severe({ lamaAddon: null, maintenanceOcs: null });
+  const rec = L.buildRecommendation(data);
+  assert.equal(rec.findings.severe.established, false);
+  assert.equal(rec.findings.data.lamaAddon, null); assert.equal(rec.findings.data.maintenanceOcs, null);
+  const text = N.buildNoteText(data, rec);
+  assert.match(text, /No controller-adherence concern was documented/);
+  assert.match(text, /No inhaler-technique concern was documented/);
+  assert.doesNotMatch(text, /No inhaler-technique concern was identified|Technique was verified|Counseling was completed/);
+});
 test("positive exceptions and existing biologics persist with or without group confirmation", () => {
   for (const reviewed of [true, false]) {
     const d = L.normalizeState({ treatmentReviewed: reviewed, riskReviewed: reviewed,
