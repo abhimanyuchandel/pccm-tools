@@ -233,7 +233,10 @@
       ["Prevention and screening", ["prevention", "screening"]],
       ["Rehabilitation and other referrals", ["rehabilitation", "referral"]],
       ["Oxygen and ventilation", ["oxygen", "ventilation"]],
-      ["Advanced-care evaluation", ["lvr", "transplant", "advanced"]],
+      [
+        "Lung volume reduction and transplant evaluation",
+        ["lvr", "transplant", "advanced"],
+      ],
       [
         "Other care and action plan",
         ["comorbidity", "supportive", "counseling"],

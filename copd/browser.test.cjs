@@ -16,15 +16,18 @@ const routine = {
   fev1fvc: 0.55,
   fev1Predicted: 45,
   catScore: 18,
+  mmrcScore: 3,
   persistentDyspnea: true,
   moderateExac: 1,
   severeExac: 0,
   recurrentPneumonia: false,
   eosinophils: 320,
   chronicBronchitis: true,
-  addonSafety: true,
+  roflumilastSafety: true,
   roflumilastLiver: false,
-  lowWeightConcern: false,
+  roflumilastWeightConcern: false,
+  ensifentrineSafety: true,
+  ensifentrineDevice: true,
   smokingStatus: "current",
   packYears: 30,
   quitReadiness: "ready",
@@ -77,6 +80,12 @@ async function main() {
       await page.waitForSelector("#field-age");
     };
     const input = async (key, value) => {
+      if (key === "mmrcScore") {
+        await page
+          .locator("#mmrc-item-" + (value === null ? "unknown" : value))
+          .check();
+        return;
+      }
       const direct = page.locator("#field-" + key);
       if (await direct.count()) {
         const tag = await direct.evaluate((n) => n.tagName);
@@ -102,15 +111,21 @@ async function main() {
     };
     const walk = async (values) => {
       let count = 0;
+      const visited = [];
       while (await page.locator("#next-btn").isVisible()) {
         if (++count > 65) throw new Error("workflow did not reach review");
         const fields = await page
           .locator("#step-content [data-field]")
           .evaluateAll((nodes) => nodes.map((n) => n.dataset.field));
+        visited.push({
+          title: await page.locator("#step-title").innerText(),
+          fields,
+        });
         for (const key of fields)
           if (Object.hasOwn(values, key)) await input(key, values[key]);
         await page.locator("#next-btn").click();
       }
+      return visited;
     };
     const generate = async () => {
       const b = page.locator("#generate-btn");
@@ -243,6 +258,82 @@ async function main() {
       await page.locator("#note-output").inputValue(),
       /Start prednisone/,
     );
+    // Each maintenance drug has its own review; biologics ask one parasite-status question.
+    await load();
+    const reviewStages = await walk({
+      ...routine,
+      managementPhase: "followup",
+      currentRegimen: "triple",
+      smokingStatus: "former",
+      moderateExac: 2,
+      biologicReview: true,
+      helminthReview: "no-concern",
+      azithromycinQtSafety: true,
+      azithromycinHearingLiverSafety: true,
+      azithromycinInfectionReview: true,
+    });
+    assert.deepEqual(
+      reviewStages.find(
+        (s) => s.title === "Biologic treatment: eligibility and safety",
+      ).fields,
+      ["biologicReview", "helminthReview"],
+    );
+    for (const name of [
+      "Roflumilast: prescribing checks",
+      "Maintenance azithromycin: prescribing checks",
+      "Ensifentrine: prescribing checks",
+    ]) {
+      assert.ok(
+        reviewStages.some((s) => s.title === name),
+        "missing separate review: " + name,
+      );
+    }
+    assert.ok(
+      reviewStages
+        .flatMap((s) => s.fields)
+        .every(
+          (k) =>
+            ![
+              "addonSafety",
+              "endemicAreaExposure",
+              "parasiteAssessment",
+            ].includes(k),
+        ),
+    );
+    await generate();
+    await page.locator("#result-plan-controller-continue").check();
+    await page.locator("#result-plan-addon-dupilumab").check();
+    assert.match(
+      await page.locator("#note-output").inputValue(),
+      /Start Dupilumab 300 mg/,
+    );
+    assert.doesNotMatch(
+      await page.locator("#note-output").inputValue(),
+      /Start Roflumilast|Start Ensifentrine|Start Azithromycin/,
+    );
+    await page
+      .getByRole("button", { name: "Medication review", exact: true })
+      .click();
+    for (
+      let i = 0;
+      i < 4 &&
+      (await page.locator("#step-title").innerText()) !==
+        "Biologic treatment: eligibility and safety";
+      i++
+    )
+      await page.locator("#next-btn").click();
+    await input("helminthReview", "pending");
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await page.locator("#review-btn").click();
+    await generate();
+    assert.equal(
+      await page.locator("#result-plan-addon-dupilumab").isDisabled(),
+      true,
+    );
+    assert.doesNotMatch(
+      await page.locator("#note-output").inputValue(),
+      /Start Dupilumab/,
+    );
     // CAT/mMRC auto-application and partial-score/manual-score protection.
     await load();
     await page.getByRole("button", { name: "Symptoms", exact: true }).click();
@@ -255,11 +346,20 @@ async function main() {
     await input("catScore", 23);
     await page.locator("#cat-item-0").selectOption("");
     assert.equal(await page.locator("#field-catScore").inputValue(), "23");
-    await page
-      .getByText("Optional mMRC descriptor selection", { exact: true })
-      .click();
+    assert.equal(await page.locator("#mmrc-item-unknown").isChecked(), true);
+    assert.equal(await page.locator("#mmrc-item-3").isVisible(), true);
+    assert.equal(
+      await page.locator("input[type=number][id=field-mmrcScore]").count(),
+      0,
+    );
     await page.locator("#mmrc-item-3").check();
-    assert.equal(await page.locator("#field-mmrcScore").inputValue(), "3");
+    assert.equal(await page.locator("#mmrc-item-3").isChecked(), true);
+    await page.locator("#next-btn").click();
+    await page.locator("#back-btn").click();
+    assert.equal(await page.locator("#mmrc-item-3").isChecked(), true);
+    assert.equal(await page.locator("#field-catScore").inputValue(), "23");
+    await page.locator("#mmrc-item-unknown").check();
+    assert.equal(await page.locator("#field-catScore").inputValue(), "23");
     await page.locator("#next-btn").click();
     await page
       .getByRole("button", {
@@ -292,6 +392,52 @@ async function main() {
         () => document.documentElement.scrollWidth > innerWidth,
       );
       assert.equal(overflow, false, "horizontal overflow at " + width);
+      await page.getByRole("button", { name: "Symptoms", exact: true }).click();
+      assert.equal(await page.locator("#mmrc-item-0").isVisible(), true);
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        ),
+        false,
+      );
+      await page
+        .getByRole("button", { name: "Prevention", exact: true })
+        .click();
+      for (
+        let i = 0;
+        i < 12 &&
+        (await page.locator("#step-title").innerText()) !==
+          "Respiratory vaccinations";
+        i++
+      )
+        await page.locator("#next-btn").click();
+      await page
+        .getByText("Reference · U.S. adult vaccine reference", { exact: true })
+        .click();
+      const table = page.getByRole("table", {
+        name: "U.S. adult vaccine reference",
+      });
+      assert.equal(await table.isVisible(), true);
+      assert.equal(await table.getByRole("row").count(), 7);
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        ),
+        false,
+        "vaccine table overflow at " + width,
+      );
+      if (width === 390 || width === 1280)
+        await page.screenshot({
+          path: "/tmp/copd-vaccines-" + width + ".png",
+          fullPage: true,
+        });
+      await page
+        .getByRole("button", { name: "Procedures & transplant", exact: true })
+        .click();
+      assert.equal(
+        await page.locator("#step-title").innerText(),
+        "Lung volume reduction and transplant referral",
+      );
       await page.getByRole("button", { name: "Plan", exact: true }).click();
       assert.equal(
         await page.evaluate(

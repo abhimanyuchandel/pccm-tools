@@ -648,6 +648,85 @@ button.quiet:hover {
   gap: 8px;
   margin-top: 14px;
 }
+.reference-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-top: 15px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.reference-table th,
+.reference-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.reference-table thead th {
+  background: #e8eff7;
+  color: var(--accent);
+  font-weight: 700;
+}
+.reference-table th:first-child {
+  width: 20%;
+}
+.reference-table th:nth-child(2) {
+  width: 32%;
+}
+.reference-table tbody th {
+  font-weight: 700;
+  color: var(--accent);
+}
+.mobile-table-label {
+  display: none;
+}
+@media (max-width: 600px) {
+  .reference-table,
+  .reference-table tbody,
+  .reference-table tr,
+  .reference-table th,
+  .reference-table td {
+    display: block;
+    width: 100% !important;
+  }
+  .reference-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .reference-table tr {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    margin-bottom: 12px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .reference-table thead tr {
+    border: 0;
+  }
+  .reference-table tbody th {
+    padding: 10px 12px;
+    background: #e8eff7;
+  }
+  .reference-table td {
+    padding: 8px 12px;
+    border: 0;
+  }
+  .reference-table td:last-child {
+    padding-bottom: 12px;
+  }
+  .mobile-table-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+}
 .footer {
   margin: 52px 0 30px;
   padding-top: 24px;

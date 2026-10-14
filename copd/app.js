@@ -6,6 +6,13 @@
     S = window.copdSchema,
     C = window.copdMedications;
   const $ = (id) => document.getElementById(id);
+  const mmrcDescriptions = [
+    "Breathless only with strenuous exercise.",
+    "Short of breath when hurrying on level ground or walking up a slight hill.",
+    "Walks slower than peers because of breathlessness, or stops for breath at own pace on level ground.",
+    "Stops for breath after about 100 m or a few minutes on level ground.",
+    "Too breathless to leave home, or breathless when dressing or undressing.",
+  ];
   const el = (tag, className, text) => {
     const n = document.createElement(tag);
     if (className) n.className = className;
@@ -22,7 +29,6 @@
   const calculator = {
     values: Array(8).fill(""),
     catOwned: false,
-    mmrcOwned: false,
   };
   const answered = (k, value) =>
     S[k].type === "number"
@@ -40,7 +46,9 @@
           ? "Yes"
           : "No"
         : S[k].type === "number"
-          ? String(v)
+          ? k === "mmrcScore"
+            ? v + "/4 · " + mmrcDescriptions[v]
+            : String(v)
           : S[k].options.find(([id]) => id === v)?.[1] || String(v);
   const keepViewport = (fn) => {
     const x = scrollX,
@@ -90,7 +98,6 @@
     )
       state.addonContext = "yes";
     if (key === "catScore") calculator.catOwned = false;
-    if (key === "mmrcScore") calculator.mmrcOwned = false;
     invalidate();
     updateEngine();
     renderProgress();
@@ -108,10 +115,50 @@
     const ref = C.REFERENCES[key];
     if (!ref) return null;
     const details = el("details", "reference");
-    details.append(
-      el("summary", "", "Reference · " + ref.title),
-      el("p", "", ref.text),
-    );
+    details.append(el("summary", "", "Reference · " + ref.title));
+    if (ref.table) {
+      const table = el("table", "reference-table");
+      table.setAttribute("role", "table");
+      const caption = el("caption", "sr-only", ref.title),
+        head = el("thead"),
+        body = el("tbody"),
+        headerRow = el("tr");
+      head.setAttribute("role", "rowgroup");
+      body.setAttribute("role", "rowgroup");
+      headerRow.setAttribute("role", "row");
+      ref.table.headers.forEach((text) => {
+        const th = el("th", "", text);
+        th.scope = "col";
+        th.setAttribute("role", "columnheader");
+        headerRow.append(th);
+      });
+      head.append(headerRow);
+      ref.table.rows.forEach((row) => {
+        const tr = el("tr");
+        tr.setAttribute("role", "row");
+        row.forEach((text, i) => {
+          const cell = el(i === 0 ? "th" : "td");
+          cell.setAttribute("role", i === 0 ? "rowheader" : "cell");
+          if (i === 0) {
+            cell.scope = "row";
+            cell.textContent = text;
+          } else {
+            const label = el(
+              "span",
+              "mobile-table-label",
+              ref.table.headers[i],
+            );
+            label.setAttribute("aria-hidden", "true");
+            cell.append(label, el("span", "", text));
+          }
+          tr.append(cell);
+        });
+        body.append(tr);
+      });
+      table.append(caption, head, body);
+      details.append(table);
+    }
+    if (ref.text) details.append(el("p", "", ref.text));
     const links = el("div", "reference-links");
     ref.sources.forEach((id) => {
       const src = C.SOURCES[id];
@@ -132,7 +179,8 @@
     const id = "field-" + key,
       hintId = id + "-hint",
       feedbackId = id + "-feedback";
-    if (f.type === "concern") {
+    if (key === "mmrcScore") outer.append(mmrcField(hintId));
+    else if (f.type === "concern") {
       const label = el("label", "concern-option"),
         input = el("input");
       input.type = "checkbox";
@@ -296,7 +344,7 @@
       });
       host.append(b);
     }
-    if (stage.calculators) host.append(catCalculator(), mmrcCalculator());
+    if (stage.calculators) host.append(catCalculator());
     if (stage.reference) host.append(reference(stage.reference));
     if (stage.plans) {
       host.append(
@@ -547,7 +595,7 @@
       ],
       ["Initial GOLD profile", r.group || "Not classified"],
       [
-        "Advanced assessment",
+        "Procedures and transplant",
         r.findings.advanced.bode === null
           ? "BODE not calculated without complete components"
           : "BODE " + r.findings.advanced.bode + "/10",
@@ -708,39 +756,33 @@
     details.append(rows);
     return details;
   }
-  function mmrcCalculator() {
-    const details = el("details", "calculator");
-    details.append(el("summary", "", "Optional mMRC descriptor selection"));
-    const options = [
-      "Breathless only with strenuous exercise.",
-      "Short of breath when hurrying on level ground or walking up a slight hill.",
-      "Walks slower than peers because of breathlessness, or stops for breath at own pace on level ground.",
-      "Stops for breath after about 100 m or a few minutes on level ground.",
-      "Too breathless to leave home, or breathless when dressing or undressing.",
-    ];
+  function mmrcField(hintId) {
+    const set = el("fieldset");
+    set.append(el("legend", "", S.mmrcScore.label));
     const list = el("div", "mmrc-list");
-    options.forEach((text, i) => {
+    [
+      { value: null, text: "Not assessed" },
+      ...mmrcDescriptions.map((text, value) => ({
+        value,
+        text: value + " · " + text,
+      })),
+    ].forEach(({ value, text }) => {
       const label = el("label", "choice-option"),
         input = el("input");
       input.type = "radio";
-      input.name = "mmrc-descriptor";
-      input.id = "mmrc-item-" + i;
-      input.value = i;
-      input.checked = state.mmrcScore === i && calculator.mmrcOwned;
+      input.name = "mmrcScore";
+      input.id = "mmrc-item-" + (value === null ? "unknown" : value);
+      input.value = value === null ? "unknown" : value;
+      input.checked = state.mmrcScore === value;
+      input.setAttribute("aria-describedby", hintId);
       input.addEventListener("change", () => {
-        state.mmrcScore = i;
-        calculator.mmrcOwned = true;
-        $("field-mmrcScore").value = i;
-        invalidate();
-        updateEngine();
-        renderProgress();
-        renderFieldWarnings();
+        change("mmrcScore", value);
       });
-      label.append(input, el("span", "", i + " · " + text));
+      label.append(input, el("span", "", text));
       list.append(label);
     });
-    details.append(list);
-    return details;
+    set.append(list);
+    return set;
   }
   $("back-btn").addEventListener("click", () => {
     const i = stages.findIndex((s) => s.id === stageId);
@@ -759,7 +801,7 @@
     state = L.createEmptyState();
     selections = {};
     calculator.values.fill("");
-    calculator.catOwned = calculator.mmrcOwned = false;
+    calculator.catOwned = false;
     generated = false;
     stale = true;
     stageId = "context";

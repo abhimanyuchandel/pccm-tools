@@ -934,10 +934,10 @@
             !known(d.age) && "Confirm adult age.",
             !diagnosis.supported && "Confirm the COPD diagnostic context.",
             !therapy.optimized && "Address treatment barriers.",
-            d.addonSafety !== true &&
-              "Complete the selected add-on's safety and interaction review.",
           ];
         const add = (id, why, blockers) => {
+          if (["roflumilast", "azithromycin", "ensifentrine"].includes(id))
+            r.references.push(id + "Review");
           r.addonCandidates.push({
             id,
             why,
@@ -964,6 +964,10 @@
               ...base,
               d.currentEnsifentrine !== false &&
                 "Clarify existing ensifentrine exposure.",
+              d.ensifentrineSafety !== true &&
+                "Complete ensifentrine hypersensitivity and psychiatric-risk review.",
+              d.ensifentrineDevice !== true &&
+                "Confirm access and ability to use the twice-daily jet-nebulizer treatment.",
             ],
           );
         if (
@@ -979,8 +983,10 @@
                 "Clarify existing roflumilast exposure.",
               d.roflumilastLiver !== false &&
                 "Exclude moderate/severe hepatic impairment.",
-              (d.lowWeightConcern !== false || d.moodConcern) &&
-                "Review low weight, weight loss and mood risk.",
+              d.roflumilastWeightConcern !== false &&
+                "Review low weight or unexplained weight loss before roflumilast.",
+              d.roflumilastSafety !== true &&
+                "Complete roflumilast mood, interaction and monitoring review.",
             ],
           );
         if (
@@ -995,6 +1001,12 @@
               ...base,
               d.currentAzithromycin !== false &&
                 "Clarify existing macrolide exposure.",
+              d.azithromycinQtSafety !== true &&
+                "Review ECG/QTc, arrhythmia risk and interacting medications.",
+              d.azithromycinHearingLiverSafety !== true &&
+                "Review hearing/balance, liver tests and macrolide allergy.",
+              d.azithromycinInfectionReview !== true &&
+                "Review microbiology, NTM assessment when indicated, and resistance risk.",
             ],
           );
         if (d.currentRegimen === "triple" && risk.recurrent) {
@@ -1004,11 +1016,8 @@
               "Confirm persistent disease despite optimized triple therapy, phenotype, safety and local access criteria.",
             d.currentBiologic !== "none" &&
               "Reconcile current biologic; do not duplicate agents.",
-            d.endemicAreaExposure === null &&
-              "Assess helminth/endemic exposure.",
-            d.endemicAreaExposure === true &&
-              d.parasiteAssessment !== true &&
-              "Complete appropriate parasite evaluation/treatment.",
+            !["no-concern", "addressed"].includes(d.helminthReview) &&
+              "Complete the parasitic-infection risk review and indicated evaluation/treatment.",
           ];
           if (
             d.eosinophils !== null &&
@@ -1469,7 +1478,7 @@
         if (!adv.lvr && !adv.transplant)
           action(
             "advanced-review",
-            "Review advanced-care goals and available CT, lung volumes, DLCO, exercise and gas-exchange data if substantial limitation persists. Incomplete screening does not establish eligibility or ineligibility.",
+            "Review lung volume reduction and transplant referral options if substantial limitation persists. Review available CT, lung volumes, DLCO, exercise and gas-exchange data. Incomplete screening does not establish procedural or transplant eligibility.",
             "advanced",
             ["lvr", "transplant"],
           );

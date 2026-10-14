@@ -125,7 +125,7 @@
         "symptoms",
         "Symptoms",
         "Symptoms and activity",
-        ["catScore", "mmrcScore", "persistentDyspnea"],
+        ["mmrcScore", "catScore", "persistentDyspnea"],
         null,
         { calculators: true },
       );
@@ -166,36 +166,6 @@
           ["eosinophils", "historicalEosinophils", "chronicBronchitis"],
           "inhalers",
         );
-      if (r.addonCandidates.length) {
-        add(
-          "addon-safety",
-          "Treatment",
-          "Additional-treatment safety review",
-          ["addonSafety"],
-          "inhalers",
-          {
-            hint: "Review the candidate cards in the encounter plan. A candidate may remain visible while prerequisites are unresolved; no definitive prescription is generated until they are satisfied.",
-          },
-        );
-        if (r.addonCandidates.some((c) => c.id === "roflumilast"))
-          add("roflumilast-safety", "Treatment", "Roflumilast prerequisites", [
-            "roflumilastLiver",
-            "lowWeightConcern",
-            "moodConcern",
-          ]);
-        if (
-          r.addonCandidates.some((c) =>
-            ["dupilumab", "mepolizumab"].includes(c.id),
-          )
-        )
-          add(
-            "biologic-safety",
-            "Treatment",
-            "Biologic prerequisites",
-            ["biologicReview", "endemicAreaExposure", "parasiteAssessment"],
-            "inhalers",
-          );
-      }
       add(
         "smoking",
         "Prevention",
@@ -347,24 +317,24 @@
       );
       add(
         "advanced-screen",
-        "Advanced care",
-        "Would advanced-care review help?",
+        "Procedures & transplant",
+        "Lung volume reduction and transplant referral",
         ["emphysema", "progression", "advancedInterest"],
         "advanced",
       );
       if (d.advancedInterest === "detail") {
         add(
           "advanced-pft",
-          "Advanced care",
-          "Available emphysema workup",
+          "Procedures & transplant",
+          "Emphysema: CT and lung-function workup",
           ["ctDistribution", "rv", "tlc", "dlco"],
           "advanced",
           { optional: true },
         );
         add(
           "advanced-exercise",
-          "Advanced care",
-          "Exercise and procedural assessment",
+          "Procedures & transplant",
+          "Exercise capacity and procedural risk",
           [
             "bmi",
             "walkDistance",
@@ -376,13 +346,62 @@
         );
         add(
           "advanced-context",
-          "Advanced care",
-          "Procedural context",
+          "Procedures & transplant",
+          "Procedure and transplant considerations",
           ["proceduralContra"],
           "advanced",
           { optional: true },
         );
       }
+      if (r.addonCandidates.some((c) => c.id === "roflumilast"))
+        add(
+          "roflumilast-safety",
+          "Medication review",
+          "Roflumilast: prescribing checks",
+          ["roflumilastLiver", "roflumilastWeightConcern", "roflumilastSafety"],
+          "roflumilastReview",
+          {
+            hint: "An option for exacerbations with chronic bronchitis and FEV1 below 50%. Complete these checks only if considering roflumilast; otherwise leave them not assessed. This does not select a prescription.",
+          },
+        );
+      if (r.addonCandidates.some((c) => c.id === "azithromycin"))
+        add(
+          "azithromycin-safety",
+          "Medication review",
+          "Maintenance azithromycin: prescribing checks",
+          [
+            "azithromycinQtSafety",
+            "azithromycinHearingLiverSafety",
+            "azithromycinInfectionReview",
+          ],
+          "azithromycinReview",
+          {
+            hint: "A monitored, off-label option for exacerbation prevention, particularly in non-current smokers. Complete only if considering maintenance azithromycin; this is not the acute-antibiotic pathway.",
+          },
+        );
+      if (r.addonCandidates.some((c) => c.id === "ensifentrine"))
+        add(
+          "ensifentrine-safety",
+          "Medication review",
+          "Ensifentrine: prescribing checks",
+          ["ensifentrineSafety", "ensifentrineDevice"],
+          "ensifentrineReview",
+          {
+            hint: "A nebulized maintenance option for persistent symptoms despite long-acting bronchodilation. Complete only if considering ensifentrine; otherwise leave these checks not assessed.",
+          },
+        );
+      if (
+        r.addonCandidates.some((c) =>
+          ["dupilumab", "mepolizumab"].includes(c.id),
+        )
+      )
+        add(
+          "biologic-safety",
+          "Medication review",
+          "Biologic treatment: eligibility and safety",
+          ["biologicReview", "helminthReview"],
+          "inhalers",
+        );
       add(
         "plans",
         "Plan",

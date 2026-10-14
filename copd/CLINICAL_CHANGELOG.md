@@ -1,7 +1,18 @@
 # COPD guided encounter revision
 
-Clinical review date: October 14, 2026. Asset version: 20261014-2.
+Clinical review date: October 14, 2026. Asset version: 20261014-3.
 Delivery: preview branch `codex/copd-guided-soap`; production promotion requires clinical review.
+
+## Point-of-care refinements
+
+- Made the mMRC descriptor choices the primary, always-visible dyspnea input. The chosen descriptor directly records the existing 0-4 score, with an explicit not-assessed option. CAT/CAAT manual entry, item-score calculation and the existing combined symptom interpretation are unchanged.
+- Consolidated overlapping parasite questions into one helminth-review status. No relevant risk, risk addressed, and evaluation/treatment pending are distinct. An unassessed or pending status still prevents definitive biologic initiation. This does not impose universal parasite testing. See the helminth precautions in the linked Dupixent and Nucala prescribing information.
+- Replaced the shared add-on safety gate with roflumilast-specific liver/weight/mood-interaction checks, azithromycin-specific ECG/hearing-liver/microbiology checks, and ensifentrine-specific psychiatric/hypersensitivity and delivery checks. The reviews appear only for relevant candidate drugs. Leaving one review incomplete does not block a different drug with its own prerequisites satisfied.
+- General mood concerns still prompt clinical care, but are not automatically treated as a contraindication to roflumilast when its specific mood and interaction review is acceptable. Child-Pugh B/C impairment and unresolved weight-loss concerns remain explicit safeguards.
+- Placed candidate-specific medication review after tobacco and other relevant history so newly identified azithromycin candidates do not acquire an unseen earlier question.
+- Converted the existing CDC vaccine reminder into a six-row eligibility/product/schedule table, with labelled mobile rows. This is reference content only and is not copied into the clinical note. Vaccine recommendation logic is unchanged.
+- Replaced vague advanced-care labels in navigation, questions, recommendations and the SOAP plan with explicit lung volume reduction and transplant referral wording. Referral rules are unchanged.
+- Additional source for maintenance macrolide safety: [BTS long-term macrolide guideline and prescribing reference](https://www.brit-thoracic.org.uk/clinical-resources/guidelines/long-term-macrolide-use/). Roflumilast and ensifentrine checks use their linked U.S. prescribing information.
 
 ## Architecture and documentation
 

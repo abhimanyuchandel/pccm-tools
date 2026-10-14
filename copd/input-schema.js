@@ -130,7 +130,7 @@
     mmrcScore: num(
       "mMRC dyspnea score (0-4)",
       4,
-      "One symptom instrument is sufficient; both are optional.",
+      "Select the description that best matches the patient's usual breathlessness. CAT/CAAT may be entered separately; both scores are not required.",
       { integer: true },
     ),
     persistentDyspnea: yesNo(
@@ -176,24 +176,54 @@
     ),
     biologicReview: yesNo(
       "COPD biologic eligibility and safety reviewed?",
-      "Confirm persistent exacerbations despite appropriate optimized inhaled therapy, eosinophilic phenotype, product precautions, exposure/helminth risk, and coverage. Matching a biomarker alone does not establish eligibility.",
+      "Confirm persistent exacerbations despite appropriate optimized inhaled therapy, eosinophilic phenotype, product-specific precautions and coverage. Matching a biomarker alone does not establish eligibility.",
     ),
-    endemicAreaExposure: yesNo(
-      "Patient has lived or resided in an endemic area for parasitic infection?",
-    ),
-    parasiteAssessment: yesNo(
-      "Relevant parasitic infection risk evaluated and treated when indicated?",
-    ),
-    addonSafety: yesNo(
-      "Selected add-on's safety and interactions reviewed and acceptable?",
-      "For roflumilast review weight loss, mood/suicidality, hepatic disease and interactions. For azithromycin review ECG/QTc, hearing, liver tests, interacting drugs and NTM risk. For ensifentrine review psychiatric history and device use.",
+    helminthReview: choice(
+      "Parasitic infection review before biologic treatment",
+      [
+        ["no-concern", "Reviewed; no relevant exposure or infection concern"],
+        [
+          "addressed",
+          "Relevant risk evaluated; infection treated if indicated",
+        ],
+        [
+          "pending",
+          "Possible exposure or infection needs evaluation / treatment",
+        ],
+      ],
+      "Review relevant residence/travel and known or suspected helminth infection. Test or treat when indicated by the history; routine parasite testing is not required for every patient.",
     ),
     roflumilastLiver: yesNo(
       "Moderate or severe hepatic impairment?",
       "Child-Pugh B or C is a contraindication to roflumilast.",
     ),
-    lowWeightConcern: yesNo(
-      "Underweight, unintentional weight loss, or significant mood concern relevant to roflumilast?",
+    roflumilastWeightConcern: yesNo(
+      "Underweight or clinically significant unintentional weight loss?",
+      "Roflumilast can cause further weight loss. Review baseline weight and arrange monitoring; reassess an unexplained decline before prescribing.",
+    ),
+    roflumilastSafety: yesNo(
+      "Roflumilast mood and interaction review acceptable?",
+      "Review depression/suicidality and the risk-benefit balance. Avoid strong enzyme inducers such as rifampin or carbamazepine; CYP3A4 or combined CYP3A4/1A2 inhibitors can increase exposure. Plan weight and mood monitoring.",
+    ),
+    azithromycinQtSafety: yesNo(
+      "Baseline ECG/QTc and interacting medications acceptable for maintenance azithromycin?",
+      "Review QT prolongation, arrhythmia risk, electrolyte concerns and other QT-prolonging drugs. Arrange a repeat ECG after initiation as appropriate.",
+    ),
+    azithromycinHearingLiverSafety: yesNo(
+      "Hearing/balance, liver tests and macrolide allergy review acceptable?",
+      "Review baseline hearing or balance problems and liver function. Plan adverse-effect and liver-test monitoring during treatment.",
+    ),
+    azithromycinInfectionReview: yesNo(
+      "Respiratory microbiology and resistance risk reviewed?",
+      "Review prior cultures and obtain sputum/NTM testing when indicated, especially with bronchiectasis or suspected NTM disease. Do not use macrolide monotherapy for active NTM infection.",
+    ),
+    ensifentrineSafety: yesNo(
+      "Ensifentrine allergy and psychiatric-risk review acceptable?",
+      "Exclude prior serious hypersensitivity. Review depression, suicidal thoughts or behavior, and other mood concerns; plan monitoring for new or worsening psychiatric symptoms.",
+    ),
+    ensifentrineDevice: yesNo(
+      "Twice-daily jet-nebulizer treatment feasible?",
+      "Requires a standard jet nebulizer with a mouthpiece and air compressor. Confirm access and ability to use it. This is maintenance treatment, not a rescue medication.",
     ),
     smokingStatus: choice("Smoking status", [
       ["current", "Current"],
@@ -332,11 +362,15 @@
     progression: yesNo(
       "Progressive disease or substantial limitation despite optimized care?",
     ),
-    advancedInterest: choice("Advanced-care assessment", [
-      ["screen", "Brief referral screen"],
-      ["detail", "Review available detailed workup"],
-      ["defer", "Defer / not aligned with current goals"],
-    ]),
+    advancedInterest: choice(
+      "Lung volume reduction or transplant referral review",
+      [
+        ["screen", "Brief referral screen"],
+        ["detail", "Review available procedure / transplant workup"],
+        ["defer", "Defer procedural or transplant evaluation"],
+      ],
+      "Consider valves or lung volume reduction surgery for selected emphysema, and transplant referral for advanced/progressive COPD. These are referral assessments, not confirmation of eligibility.",
+    ),
     ctDistribution: choice("CT emphysema distribution", [
       ["upper", "Upper-lobe predominant"],
       ["heterogeneous", "Other heterogeneous"],

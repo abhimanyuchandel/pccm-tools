@@ -281,9 +281,9 @@ test("roflumilast requires low FEV1, chronic bronchitis, events and appropriate 
       fev1Predicted: 40,
       chronicBronchitis: true,
       moderateExac: 1,
-      addonSafety: true,
+      roflumilastSafety: true,
       roflumilastLiver: false,
-      lowWeightConcern: false,
+      roflumilastWeightConcern: false,
     },
     { addon: "roflumilast" },
   );
@@ -306,9 +306,8 @@ const bio = {
   moderateExac: 2,
   eosinophils: 300,
   chronicBronchitis: true,
-  addonSafety: true,
   biologicReview: true,
-  endemicAreaExposure: false,
+  helminthReview: "no-concern",
 };
 test("biologics remain provisional until optimization and agent-specific prerequisites are verified", () => {
   const provisional = build(
@@ -337,8 +336,8 @@ test("mepolizumab evidence profile is not copied from dupilumab or a universal p
 });
 test("helminth risk, current biologic exposure and positive safety concerns block definitive biologic initiation", () => {
   for (const x of [
-    { endemicAreaExposure: null },
-    { endemicAreaExposure: true, parasiteAssessment: null },
+    { helminthReview: "unknown" },
+    { helminthReview: "pending" },
     { addonContext: "yes", currentBiologic: "mepolizumab" },
     { adherenceConcern: true },
   ]) {
@@ -348,10 +347,8 @@ test("helminth risk, current biologic exposure and positive safety concerns bloc
     );
   }
   assert.equal(
-    build(
-      { ...bio, endemicAreaExposure: true, parasiteAssessment: true },
-      { addon: "dupilumab" },
-    ).selections.addon,
+    build({ ...bio, helminthReview: "addressed" }, { addon: "dupilumab" })
+      .selections.addon,
     "dupilumab",
   );
 });
@@ -372,11 +369,137 @@ test("ensifentrine and azithromycin use relevant contexts without duplicate curr
         persistentDyspnea: true,
         addonContext: "yes",
         currentEnsifentrine: true,
-        addonSafety: true,
+        ensifentrineSafety: true,
+        ensifentrineDevice: true,
       },
       { addon: "ensifentrine" },
     ).selections.addon,
     undefined,
+  );
+});
+test("drug-specific checks do not require an unrelated medication's safety review", () => {
+  const rof = build(
+    {
+      fev1Predicted: 40,
+      chronicBronchitis: true,
+      moderateExac: 1,
+      roflumilastLiver: false,
+      roflumilastWeightConcern: false,
+      roflumilastSafety: true,
+    },
+    { addon: "roflumilast" },
+  );
+  assert.equal(rof.selections.addon, "roflumilast");
+  assert.equal(rof.data.azithromycinQtSafety, null);
+  const az = build(
+    {
+      moderateExac: 1,
+      azithromycinQtSafety: true,
+      azithromycinHearingLiverSafety: true,
+      azithromycinInfectionReview: true,
+    },
+    { addon: "azithromycin" },
+  );
+  assert.equal(az.selections.addon, "azithromycin");
+  const ens = build(
+    {
+      persistentDyspnea: true,
+      ensifentrineSafety: true,
+      ensifentrineDevice: true,
+    },
+    { addon: "ensifentrine" },
+  );
+  assert.equal(ens.selections.addon, "ensifentrine");
+  assert.equal(ens.data.roflumilastSafety, null);
+});
+for (const [drug, findings, required] of [
+  [
+    "roflumilast",
+    {
+      fev1Predicted: 40,
+      chronicBronchitis: true,
+      moderateExac: 1,
+      roflumilastLiver: false,
+      roflumilastWeightConcern: false,
+      roflumilastSafety: true,
+    },
+    ["roflumilastLiver", "roflumilastWeightConcern", "roflumilastSafety"],
+  ],
+  [
+    "azithromycin",
+    {
+      moderateExac: 1,
+      azithromycinQtSafety: true,
+      azithromycinHearingLiverSafety: true,
+      azithromycinInfectionReview: true,
+    },
+    [
+      "azithromycinQtSafety",
+      "azithromycinHearingLiverSafety",
+      "azithromycinInfectionReview",
+    ],
+  ],
+  [
+    "ensifentrine",
+    {
+      persistentDyspnea: true,
+      ensifentrineSafety: true,
+      ensifentrineDevice: true,
+    },
+    ["ensifentrineSafety", "ensifentrineDevice"],
+  ],
+]) {
+  for (const key of required)
+    test(
+      drug + " selection invalidates when " + key + " is not assessed",
+      () => {
+        const r = build({ ...findings, [key]: null }, { addon: drug });
+        assert.equal(r.selections.addon, undefined);
+        assert.ok(opt(r, "addon", drug).blockers.length);
+        assert.doesNotMatch(
+          N.buildNoteText(r),
+          new RegExp("Start " + C.MEDICATIONS[drug].dose.split(" ")[0]),
+        );
+      },
+    );
+}
+test("medication review follows tobacco history and remains specific to available candidates", () => {
+  const d = L.normalizeState({ ...base, moderateExac: 1 }),
+    r = L.buildRecommendation(d),
+    steps = W.steps(d, r);
+  assert.equal(
+    steps.some((s) => s.id === "addon-safety"),
+    false,
+  );
+  assert.ok(
+    steps.findIndex((s) => s.id === "azithromycin-safety") >
+      steps.findIndex((s) => s.id === "smoking"),
+  );
+  assert.deepEqual(steps.find((s) => s.id === "azithromycin-safety").fields, [
+    "azithromycinQtSafety",
+    "azithromycinHearingLiverSafety",
+    "azithromycinInfectionReview",
+  ]);
+  assert.equal(
+    steps.some((s) => s.id === "ensifentrine-safety"),
+    false,
+  );
+  const b = L.normalizeState({ ...base, ...bio }),
+    bioSteps = W.steps(b, L.buildRecommendation(b));
+  assert.deepEqual(bioSteps.find((s) => s.id === "biologic-safety").fields, [
+    "biologicReview",
+    "helminthReview",
+  ]);
+});
+test("mMRC is the first symptom input; vaccine reference is a concise six-vaccine table", () => {
+  const d = L.normalizeState(base),
+    steps = W.steps(d, L.buildRecommendation(d));
+  assert.equal(steps.find((s) => s.id === "symptoms").fields[0], "mmrcScore");
+  assert.equal(C.REFERENCES.vaccines.table.rows.length, 6);
+  assert.ok(C.REFERENCES.vaccines.table.rows.every((row) => row.length === 3));
+  assert.match(
+    steps.find((s) => s.id === "advanced-screen").title,
+    /Lung volume reduction and transplant/,
   );
 });
 for (const [age, pack, expect] of [

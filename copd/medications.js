@@ -109,6 +109,10 @@
       title: "Ohtuvayre U.S. prescribing information",
       url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e6433c98-41a0-4f99-8f7f-d0e9db6e3f40",
     },
+    macrolideSafety: {
+      title: "BTS long-term macrolide safety guidance",
+      url: "https://www.brit-thoracic.org.uk/clinical-resources/guidelines/long-term-macrolide-use/",
+    },
     varenicline: {
       title: "Varenicline U.S. prescribing information",
       url: "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=2f86bb7b-c6a6-4915-8ba1-17251540971c",
@@ -231,8 +235,58 @@
     },
     vaccines: {
       title: "U.S. adult vaccine reference",
-      text: "Pneumococcal: adults 19-49 with COPD and all adults 50 or older; PCV20/PCV21 alone or PCV15 followed ordinarily 1 year later by PPSV23, modified by prior doses and special risks. RSV: one dose Arexvy/Abrysvo/mResvia for adults 50-74 with COPD and all adults 75 or older; not annual. Shingrix: 2 doses at age 50 or older, or age 19 or older with qualifying immunocompromise; usually 2-6 months apart. Tdap when indicated, then Td/Tdap every 10 years; primary-series, pregnancy and wound-care exceptions apply. Influenza is annual. COVID-19 uses current seasonal age-, immune-status- and prior-dose guidance. Unknown history calls for reconciliation, not an assumed completed series or automatic extra dose.",
+      text: "Reconcile prior doses before ordering. Previous vaccination, immunocompromise, pregnancy and wound care can change product choice or timing. Unknown history does not mean a vaccine was completed or is automatically due.",
+      table: {
+        headers: ["Vaccine", "Who / when", "Product and schedule"],
+        rows: [
+          [
+            "Pneumococcal",
+            "Adults 19-49 with COPD; all adults 50+.",
+            "PCV20 or PCV21 alone, or PCV15 then PPSV23 (usually 1 year later). Prior doses change the schedule.",
+          ],
+          [
+            "RSV",
+            "Adults 50-74 with COPD; all adults 75+.",
+            "One dose: Arexvy, Abrysvo or mResvia. Not annual; no routine repeat after a prior dose.",
+          ],
+          [
+            "Zoster",
+            "Adults 50+; adults 19+ with qualifying immunocompromise.",
+            "Shingrix: 2 doses, usually 2-6 months apart. Selected immunocompromised patients: 1-2 months.",
+          ],
+          [
+            "Tdap / Td",
+            "All adults, based on Tdap and primary-series history.",
+            "Tdap if indicated, then Td or Tdap every 10 years. Catch-up, pregnancy and wound-care exceptions apply.",
+          ],
+          [
+            "Influenza",
+            "Every season.",
+            "Age-appropriate influenza vaccine. At age 65+, prefer high-dose, adjuvanted or recombinant when available.",
+          ],
+          [
+            "COVID-19",
+            "Review current CDC age- and risk-based guidance.",
+            "Current vaccine product and timing depend on prior doses, age and immune status.",
+          ],
+        ],
+      },
       sources: ["cdc", "pneumo", "rsv", "zoster", "covid"],
+    },
+    roflumilastReview: {
+      title: "Roflumilast prescribing and monitoring",
+      text: "Contraindicated with Child-Pugh B/C liver impairment. Assess weight loss, mood/suicidality and drug interactions. An optional 250 mcg daily lead-in for 4 weeks may improve tolerability, but 500 mcg daily is the therapeutic dose. Review weight and symptoms after initiation.",
+      sources: ["roflumilast", "gold"],
+    },
+    azithromycinReview: {
+      title: "Maintenance azithromycin safety",
+      text: "This is off-label exacerbation prevention, not an acute antibiotic course. Review ECG/QTc and interactions, hearing/balance, liver tests, sputum/NTM assessment when indicated, and antimicrobial resistance. Monitor response and adverse effects; evidence beyond one year is limited.",
+      sources: ["gold", "macrolideSafety"],
+    },
+    ensifentrineReview: {
+      title: "Ensifentrine delivery and precautions",
+      text: "Maintenance dose: 3 mg by standard jet nebulizer with a mouthpiece twice daily. Review serious hypersensitivity and psychiatric risk, including new or worsening depression/suicidality. Confirm equipment access and technique. Do not use it as rescue treatment or mix it with other medicines in the nebulizer.",
+      sources: ["ensifentrine"],
     },
     oxygen: {
       title: "Oxygen and home ventilation",
