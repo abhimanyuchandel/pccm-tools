@@ -1,1192 +1,788 @@
-const {
-  DEFAULT_NO_RISK_ISSUE,
-  describeFev1FvcEntry,
-  classifySymptoms,
-  classifyExacerbationRisk,
-  assignGoldGroup,
-  isRoflumilastCandidate,
-  isLungCancerScreenEligible,
-  getLungCancerScreeningFootnote
-} = window.copdLogic;
-
-const NUMERIC_FIELD_CONFIG = {
-  age: { id: "age", label: "Age", options: { min: 18, max: 120, integer: true } },
-  fev1fvc: {
-    id: "fev1fvc",
-    label: "Post-BD FEV1/FVC",
-    options: {
-      validate: (value) => describeFev1FvcEntry(value).ratio !== null,
-      ruleText: "a numeric value entered either as a ratio between 0 and 1.2 or as a percent between 0 and 100"
+(function () {
+  "use strict";
+  const L = window.copdLogic,
+    W = window.copdWorkflow,
+    N = window.copdNotes,
+    S = window.copdSchema,
+    C = window.copdMedications;
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, className, text) => {
+    const n = document.createElement(tag);
+    if (className) n.className = className;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  let state = L.createEmptyState(),
+    selections = {},
+    recommendation = L.buildRecommendation(state),
+    stageId = "context",
+    stages = W.steps(state, recommendation),
+    generated = false,
+    stale = true;
+  const calculator = {
+    values: Array(8).fill(""),
+    catOwned: false,
+    mmrcOwned: false,
+  };
+  const answered = (k, value) =>
+    S[k].type === "number"
+      ? value !== null
+      : S[k].boolean
+        ? value !== null
+        : S[k].type === "concern"
+          ? value
+          : value !== "unknown";
+  const display = (k, v) =>
+    v === null || v === "unknown"
+      ? "Not assessed / not available"
+      : S[k].boolean || S[k].type === "concern"
+        ? v
+          ? "Yes"
+          : "No"
+        : S[k].type === "number"
+          ? String(v)
+          : S[k].options.find(([id]) => id === v)?.[1] || String(v);
+  const keepViewport = (fn) => {
+    const x = scrollX,
+      y = scrollY;
+    fn();
+    window.scrollTo({ left: x, top: y, behavior: "instant" });
+  };
+  function updateEngine() {
+    recommendation = L.buildRecommendation(state, selections);
+    selections = { ...recommendation.selections };
+    stages = W.steps(state, recommendation);
+    stageId = W.reconcileStep(stageId, stages);
+    renderUrgent();
+  }
+  function invalidate() {
+    stale = true;
+    $("copy-note-btn").disabled = true;
+    $("note-output").value = "";
+    $("copy-status").textContent = generated
+      ? "Inputs changed. Regenerate before copying."
+      : "";
+    $("output-status").textContent = generated ? "Regeneration required" : "";
+    $("note-output").closest("article").classList.add("stale");
+    const b = $("generate-btn");
+    if (b) {
+      b.classList.remove("success");
+      b.textContent = "Regenerate recommendations";
     }
-  },
-  fev1Predicted: { id: "fev1-predicted", label: "FEV1 % predicted", options: { min: 0, max: 150, integer: true } },
-  restingSpo2: { id: "resting-spo2", label: "Resting SpO2 %", options: { min: 50, max: 100, integer: true } },
-  catScore: { id: "cat-score", label: "CAT or CAAT score", options: { min: 0, max: 40, integer: true } },
-  mmrcScore: { id: "mmrc-score", label: "mMRC dyspnea score", options: { min: 0, max: 4, integer: true } },
-  moderateExac: {
-    id: "moderate-exac",
-    label: "Moderate exacerbation count",
-    options: { min: 0, max: 20, integer: true }
-  },
-  severeExac: {
-    id: "severe-exac",
-    label: "Severe exacerbation count",
-    options: { min: 0, max: 20, integer: true }
-  },
-  eosinophils: { id: "eosinophils", label: "Blood eosinophils", options: { min: 0, max: 5000, integer: true } },
-  packYears: { id: "pack-years", label: "Pack-years", options: { min: 0, max: 200 } },
-  cigarettesPerDay: {
-    id: "cigarettes-per-day",
-    label: "Cigarettes per day",
-    options: { min: 0, max: 100, integer: true }
-  },
-  yearsSinceQuit: { id: "years-since-quit", label: "Years since quit", options: { min: 0, max: 80 } }
-};
-
-function readNumericField(id) {
-  const raw = document.getElementById(id).value.trim();
-  if (raw === "") {
-    return { value: null, invalid: false };
   }
-
-  const value = Number(raw);
-  if (!Number.isFinite(value)) {
-    return { value: null, invalid: true };
-  }
-
-  return { value, invalid: false };
-}
-
-function isNumericValueInvalid(value, options = {}) {
-  if (!Number.isFinite(value)) {
-    return true;
-  }
-
-  if (options.validate) {
-    return !options.validate(value);
-  }
-
-  if (options.integer && !Number.isInteger(value)) {
-    return true;
-  }
-
-  if (options.min !== undefined && value < options.min) {
-    return true;
-  }
-
-  if (options.max !== undefined && value > options.max) {
-    return true;
-  }
-
-  return false;
-}
-
-function describeNumericRule(options = {}) {
-  if (options.ruleText) {
-    return options.ruleText;
-  }
-
-  const parts = [];
-
-  if (options.integer) {
-    parts.push("a whole number");
-  } else {
-    parts.push("a numeric value");
-  }
-
-  if (options.min !== undefined && options.max !== undefined) {
-    parts.push(`between ${options.min} and ${options.max}`);
-  } else if (options.min !== undefined) {
-    parts.push(`at least ${options.min}`);
-  } else if (options.max !== undefined) {
-    parts.push(`no more than ${options.max}`);
-  }
-
-  return parts.join(" ");
-}
-
-function setNumericFieldAlertState(id, isInvalid) {
-  const field = document.getElementById(id);
-  if (!field) {
-    return;
-  }
-
-  field.classList.toggle("numeric-alert", isInvalid);
-
-  const label = field.closest("label");
-  if (label) {
-    label.classList.toggle("numeric-alert-label", isInvalid);
-  }
-
-  if (isInvalid) {
-    field.setAttribute("aria-invalid", "true");
-  } else {
-    field.removeAttribute("aria-invalid");
-  }
-}
-
-function getValidatedNumericValue(configKey, invalidEntries = null) {
-  const config = NUMERIC_FIELD_CONFIG[configKey];
-  const parsed = readNumericField(config.id);
-  const invalid = parsed.value !== null && isNumericValueInvalid(parsed.value, config.options);
-
-  setNumericFieldAlertState(config.id, invalid);
-
-  if (invalid && invalidEntries) {
-    invalidEntries.push(`${config.label} must be ${describeNumericRule(config.options)}.`);
-  }
-
-  return invalid ? null : parsed.value;
-}
-
-function refreshNumericFieldAlerts() {
-  Object.keys(NUMERIC_FIELD_CONFIG).forEach((configKey) => {
-    getValidatedNumericValue(configKey);
-  });
-}
-
-function getCheckboxValue(id) {
-  return document.getElementById(id).checked;
-}
-
-function getSelectValue(id) {
-  return document.getElementById(id).value;
-}
-
-function formatRatio(value) {
-  return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function getFev1FvcStateFromDom() {
-  const input = document.getElementById("fev1fvc");
-  const raw = input.value.trim();
-
-  if (raw === "") {
-    return {
-      hasEntry: false,
-      rawValue: null,
-      ratio: null,
-      entryMode: null
-    };
-  }
-
-  const parsed = Number(raw);
-  const normalized = describeFev1FvcEntry(parsed);
-
-  return {
-    hasEntry: true,
-    rawValue: Number.isFinite(parsed) ? parsed : null,
-    ratio: normalized.ratio,
-    entryMode: normalized.entryMode
-  };
-}
-
-function getInputState() {
-  const fev1fvcState = getFev1FvcStateFromDom();
-
-  return {
-    managementPhase: getSelectValue("management-phase"),
-    age: getValidatedNumericValue("age"),
-    spirometryConfirmed: getCheckboxValue("spirometry-confirmed"),
-    fev1fvc: getValidatedNumericValue("fev1fvc") === null ? null : fev1fvcState.ratio,
-    fev1fvcEntryMode: fev1fvcState.entryMode,
-    fev1fvcRawValue: fev1fvcState.rawValue,
-    fev1Predicted: getValidatedNumericValue("fev1Predicted"),
-    restingSpo2: getValidatedNumericValue("restingSpo2"),
-    catScore: getValidatedNumericValue("catScore"),
-    mmrcScore: getValidatedNumericValue("mmrcScore"),
-    moderateExac: getValidatedNumericValue("moderateExac"),
-    severeExac: getValidatedNumericValue("severeExac"),
-    eosinophils: getValidatedNumericValue("eosinophils"),
-    smokingStatus: getSelectValue("smoking-status"),
-    packYears: getValidatedNumericValue("packYears"),
-    cigarettesPerDay: getValidatedNumericValue("cigarettesPerDay"),
-    yearsSinceQuit: getValidatedNumericValue("yearsSinceQuit"),
-    firstCigarette30: getCheckboxValue("first-cigarette-30"),
-    chronicBronchitis: getCheckboxValue("chronic-bronchitis"),
-    concomitantAsthma: getCheckboxValue("concomitant-asthma"),
-    endemicAreaExposure: getCheckboxValue("endemic-area-exposure"),
-    aatdStatus: getSelectValue("aatd-status"),
-    pneumococcalStatus: getSelectValue("pneumococcal-status"),
-    rsvStatus: getSelectValue("rsv-status"),
-    zosterStatus: getSelectValue("zoster-status"),
-    tdapStatus: getSelectValue("tdap-status"),
-    currentRegimen: getSelectValue("current-regimen"),
-    persistentDyspnea: getCheckboxValue("persistent-dyspnea"),
-    icsSideEffects: getCheckboxValue("ics-side-effects")
-  };
-}
-
-function getCatCalculatorState() {
-  const inputs = Array.from(document.querySelectorAll("[data-cat-item]"));
-  const values = inputs.map((input) => {
-    if (input.value === "") {
-      return null;
+  function change(key, value) {
+    state[key] = value;
+    if (key === "addonContext" && value === "none") {
+      [
+        "currentRoflumilast",
+        "currentAzithromycin",
+        "currentEnsifentrine",
+        "maintenanceOcs",
+      ].forEach((k) => {
+        state[k] = false;
+      });
+      state.currentBiologic = "none";
     }
-
-    const score = Number(input.value);
-    return Number.isFinite(score) ? score : null;
-  });
-
-  const answered = values.filter((value) => value !== null).length;
-  const complete = answered === values.length && values.length > 0;
-  const total = values.reduce((sum, value) => sum + (value === null ? 0 : value), 0);
-
-  return { answered, complete, total, itemCount: values.length, inputs };
-}
-
-function applyCalculatorValue(fieldId, value, source) {
-  const field = document.getElementById(fieldId);
-  const nextValue = String(value);
-
-  if (field.value !== nextValue || field.dataset.autoSource !== source) {
-    field.value = nextValue;
-    field.dataset.autoSource = source;
-    refreshNumericFieldAlerts();
+    if (
+      key === "maintenanceOcs" &&
+      value === true &&
+      state.addonContext === "none"
+    )
+      state.addonContext = "yes";
+    if (key === "catScore") calculator.catOwned = false;
+    if (key === "mmrcScore") calculator.mmrcOwned = false;
+    invalidate();
+    updateEngine();
+    renderProgress();
+    renderFieldWarnings();
   }
-}
-
-function clearCalculatorValue(fieldId, source) {
-  const field = document.getElementById(fieldId);
-
-  if (field.dataset.autoSource === source) {
-    field.value = "";
-    delete field.dataset.autoSource;
-    refreshNumericFieldAlerts();
+  function renderUrgent() {
+    const banner = $("urgent-alert");
+    banner.hidden = !recommendation.emergency;
+    banner.textContent = recommendation.emergency
+      ? recommendation.actions.find((a) => a.kind === "urgent").text +
+        " Previously entered urgent findings remain active even if the encounter context changes."
+      : "";
   }
-}
-
-function clearCalculatorSyncFlag(fieldId, source) {
-  const field = document.getElementById(fieldId);
-
-  if (field.dataset.autoSource === source) {
-    delete field.dataset.autoSource;
+  function reference(key) {
+    const ref = C.REFERENCES[key];
+    if (!ref) return null;
+    const details = el("details", "reference");
+    details.append(
+      el("summary", "", "Reference · " + ref.title),
+      el("p", "", ref.text),
+    );
+    const links = el("div", "reference-links");
+    ref.sources.forEach((id) => {
+      const src = C.SOURCES[id];
+      if (!src) return;
+      const a = el("a", "", src.title);
+      a.href = src.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      links.append(a);
+    });
+    details.append(links);
+    return details;
   }
-}
-
-function updateCatCalculatorDisplay() {
-  const state = getCatCalculatorState();
-  const display = document.getElementById("cat-total-display");
-  const note = document.getElementById("cat-calc-note");
-
-  display.textContent = `CAT total: ${state.total}/40`;
-  if (state.complete) {
-    applyCalculatorValue("cat-score", state.total, "cat");
-    note.textContent = "";
-  } else {
-    clearCalculatorValue("cat-score", "cat");
-    note.textContent = state.answered === 0
-      ? "Complete all CAT items to auto-fill the CAT/CAAT score."
-      : `CAT questionnaire incomplete (${state.answered}/${state.itemCount} items answered).`;
-  }
-}
-
-function clearCatCalculator() {
-  const state = getCatCalculatorState();
-  state.inputs.forEach((input) => {
-    input.value = "";
-  });
-  clearCalculatorValue("cat-score", "cat");
-  updateCatCalculatorDisplay();
-}
-
-function getSelectedMmrc() {
-  const selected = document.querySelector('input[name="mmrc-choice"]:checked');
-  if (!selected) {
-    return null;
-  }
-
-  const score = Number(selected.value);
-  return Number.isFinite(score) ? score : null;
-}
-
-function updateMmrcDisplay() {
-  const selected = getSelectedMmrc();
-  const display = document.getElementById("mmrc-display");
-  const note = document.getElementById("mmrc-note");
-
-  if (selected === null) {
-    display.textContent = "mMRC selected: --/4";
-    clearCalculatorValue("mmrc-score", "mmrc");
-    note.textContent = "Selecting an mMRC statement auto-fills the score field.";
-    return;
-  }
-
-  display.textContent = `mMRC selected: ${selected}/4`;
-  applyCalculatorValue("mmrc-score", selected, "mmrc");
-  note.textContent = "";
-}
-
-function clearMmrcCalculator() {
-  document.querySelectorAll('input[name="mmrc-choice"]').forEach((input) => {
-    input.checked = false;
-  });
-  clearCalculatorValue("mmrc-score", "mmrc");
-  updateMmrcDisplay();
-}
-
-function initSymptomCalculators() {
-  document.querySelectorAll("[data-cat-item]").forEach((input) => {
-    input.addEventListener("change", updateCatCalculatorDisplay);
-  });
-  document.getElementById("clear-cat-btn").addEventListener("click", clearCatCalculator);
-
-  document.querySelectorAll('input[name="mmrc-choice"]').forEach((input) => {
-    input.addEventListener("change", updateMmrcDisplay);
-  });
-  document.getElementById("clear-mmrc-btn").addEventListener("click", clearMmrcCalculator);
-  document.getElementById("cat-score").addEventListener("input", () => clearCalculatorSyncFlag("cat-score", "cat"));
-  document.getElementById("cat-score").addEventListener("change", () => clearCalculatorSyncFlag("cat-score", "cat"));
-  document.getElementById("mmrc-score").addEventListener("input", () => clearCalculatorSyncFlag("mmrc-score", "mmrc"));
-  document.getElementById("mmrc-score").addEventListener("change", () => clearCalculatorSyncFlag("mmrc-score", "mmrc"));
-
-  updateCatCalculatorDisplay();
-  updateMmrcDisplay();
-}
-
-function updateFev1FvcHelperChip() {
-  const display = document.getElementById("fev1fvc-normalized");
-  const state = getFev1FvcStateFromDom();
-
-  if (!state.hasEntry) {
-    display.textContent = "Normalized ratio: --";
-    return state;
-  }
-
-  if (state.ratio === null) {
-    display.textContent = "Normalized ratio: unable to interpret entry";
-    return state;
-  }
-
-  if (state.entryMode === "percent") {
-    display.textContent = `Normalized ratio: ${formatRatio(state.ratio)} (interpreted from ${state.rawValue})`;
-  } else {
-    display.textContent = `Normalized ratio: ${formatRatio(state.ratio)} (entered as ratio)`;
-  }
-
-  return state;
-}
-
-function syncSpirometryConfirmationFromRatio() {
-  const confirmationInput = document.getElementById("spirometry-confirmed");
-  const state = updateFev1FvcHelperChip();
-
-  if (state.ratio === null) {
-    return;
-  }
-
-  confirmationInput.checked = state.ratio < 0.7;
-}
-
-function initSpirometryHelpers() {
-  const ratioInput = document.getElementById("fev1fvc");
-  ["input", "change", "blur"].forEach((eventName) => {
-    ratioInput.addEventListener(eventName, syncSpirometryConfirmationFromRatio);
-  });
-  syncSpirometryConfirmationFromRatio();
-}
-
-function syncSmokingFields() {
-  const smokingStatus = getSelectValue("smoking-status");
-  const yearsSinceQuitWrap = document.getElementById("years-since-quit-wrap");
-  const yearsSinceQuitInput = document.getElementById("years-since-quit");
-
-  if (smokingStatus === "former") {
-    yearsSinceQuitWrap.classList.remove("hidden");
-    yearsSinceQuitInput.disabled = false;
-    refreshNumericFieldAlerts();
-    return;
-  }
-
-  yearsSinceQuitWrap.classList.add("hidden");
-  yearsSinceQuitInput.disabled = true;
-  yearsSinceQuitInput.value = "";
-  refreshNumericFieldAlerts();
-}
-
-function initSmokingFieldHelpers() {
-  document.getElementById("smoking-status").addEventListener("change", syncSmokingFields);
-  syncSmokingFields();
-}
-
-function setNoExacerbationCounts() {
-  document.getElementById("moderate-exac").value = "0";
-  document.getElementById("severe-exac").value = "0";
-  refreshNumericFieldAlerts();
-}
-
-function initExacerbationHelpers() {
-  document.getElementById("set-no-exac-btn").addEventListener("click", setNoExacerbationCounts);
-}
-
-function getPhaseLabel(phase) {
-  return phase === "followup"
-    ? "Follow-up pharmacologic management"
-    : "Initial pharmacologic management";
-}
-
-function getEffectiveManagementPhaseContext(data) {
-  const followupAssumed = data.managementPhase === "initial" && data.currentRegimen !== "naive";
-  return {
-    phase: followupAssumed ? "followup" : data.managementPhase,
-    followupAssumed
-  };
-}
-
-function getRegimenLabel(regimen) {
-  const labels = {
-    naive: "No maintenance inhaler (treatment-naive)",
-    mono: "Single long-acting bronchodilator",
-    "laba-lama": "LABA + LAMA",
-    triple: "LABA + LAMA + ICS",
-    other: "Other / unclear regimen"
-  };
-
-  return labels[regimen] || "Unknown regimen";
-}
-
-function getRoflumilastDetail() {
-  return "Roflumilast option: 250 mcg PO daily x4 weeks, then 500 mcg PO daily. Not rescue therapy; avoid in moderate-severe hepatic impairment and monitor weight, mood, insomnia, and suicidality.";
-}
-
-function getAzithromycinDetail() {
-  return "Azithromycin option: 250 mg PO daily or 500 mg PO three times weekly for 1 year. Review QT risk, hearing impairment, drug interactions, and antimicrobial-resistance concerns; benefit is lower in active smokers.";
-}
-
-function getEnsifentrineDetail() {
-  return "Ensifentrine option: 3 mg by nebulization BID. Do not mix with other nebulized drugs; use as maintenance, not rescue therapy.";
-}
-
-function getDupilumabDetail() {
-  return "Dupilumab option: 300 mg SC every 2 weeks as add-on maintenance therapy. Not for acute bronchospasm; review hypersensitivity history, helminth risk, and live-vaccine plans.";
-}
-
-function getMepolizumabDetail() {
-  return "Mepolizumab option: 100 mg SC every 4 weeks as add-on maintenance therapy. Not for acute bronchospasm; review hypersensitivity history and zoster vaccination status.";
-}
-
-function getAzithromycinRoflumilastInteractionDetail() {
-  return "If azithromycin and roflumilast are used together, review for drug interactions and monitor tolerability/adverse effects.";
-}
-
-function getSmokingCessationDetails(data) {
-  const details = [];
-
-  details.push("Offer smoking-cessation counseling plus pharmacotherapy; refer to a structured program and quit-line.");
-  details.push("Varenicline option: start 1 week before quit date; titrate to 1 mg PO BID for 12 weeks. Review renal dosing and adverse effects (nausea, sleep disturbance, neuropsychiatric symptoms, seizure risk).");
-  details.push("Bupropion SR option: 150 mg PO daily for 3 days, then 150 mg PO BID. Avoid in seizure disorder, eating disorders, abrupt sedative/alcohol withdrawal, MAOI use, or concurrent bupropion use.");
-
-  if (data.cigarettesPerDay !== null) {
-    if (data.cigarettesPerDay > 10) {
-      details.push("Nicotine patch option: 21 mg daily x6 weeks, then 14 mg daily x2 weeks, then 7 mg daily x2 weeks. Do not smoke while patch is on; use caution after recent MI or stroke.");
+  function field(key) {
+    const f = S[key],
+      outer = el("div", "field");
+    outer.dataset.field = key;
+    const id = "field-" + key,
+      hintId = id + "-hint",
+      feedbackId = id + "-feedback";
+    if (f.type === "concern") {
+      const label = el("label", "concern-option"),
+        input = el("input");
+      input.type = "checkbox";
+      input.id = id;
+      input.checked = state[key];
+      input.addEventListener("change", () => change(key, input.checked));
+      label.append(input, el("span", "", f.label));
+      outer.append(label);
+    } else if (f.type === "number") {
+      const label = el("label", "field-label", f.label);
+      label.htmlFor = id;
+      const input = el("input");
+      input.type = "number";
+      input.id = id;
+      input.min = f.min;
+      input.max = f.max;
+      input.step = f.integer ? "1" : "any";
+      input.inputMode = f.integer ? "numeric" : "decimal";
+      input.autocomplete = "off";
+      input.value = state[key] ?? "";
+      input.setAttribute("aria-describedby", hintId + " " + feedbackId);
+      input.addEventListener("input", () =>
+        change(key, input.value === "" ? null : input.valueAsNumber),
+      );
+      outer.append(label, input);
+    } else if (f.options.length <= 5) {
+      const set = el("fieldset");
+      set.append(el("legend", "", f.label));
+      const choices = el("div", "choice-grid");
+      f.options.forEach(([value, text]) => {
+        const label = el("label", "choice-option"),
+          input = el("input");
+        input.type = "radio";
+        input.name = key;
+        input.id = id + "-" + value;
+        input.value = value;
+        input.checked = f.boolean
+          ? (value === "unknown" && state[key] === null) ||
+            (value === "yes" && state[key] === true) ||
+            (value === "no" && state[key] === false)
+          : state[key] === value;
+        input.setAttribute("aria-describedby", hintId);
+        input.addEventListener("change", () =>
+          change(
+            key,
+            f.boolean
+              ? value === "yes"
+                ? true
+                : value === "no"
+                  ? false
+                  : null
+              : value,
+          ),
+        );
+        label.append(input, el("span", "", text));
+        choices.append(label);
+      });
+      set.append(choices);
+      outer.append(set);
     } else {
-      details.push("Nicotine patch option: 14 mg daily x6 weeks, then 7 mg daily x2 weeks. Do not smoke while patch is on; use caution after recent MI or stroke.");
+      const label = el("label", "field-label", f.label);
+      label.htmlFor = id;
+      const select = el("select");
+      select.id = id;
+      select.setAttribute("aria-describedby", hintId);
+      f.options.forEach(([value, text]) => {
+        const option = el("option", "", text);
+        option.value = value;
+        select.append(option);
+      });
+      select.value = state[key];
+      select.addEventListener("change", () => change(key, select.value));
+      outer.append(label, select);
     }
-  } else {
-    details.push("Choose nicotine patch dose based on baseline cigarette consumption; use caution after recent MI or stroke.");
+    const hint = el(
+      "p",
+      "hint",
+      f.hint || (f.type === "number" ? "Leave blank if unavailable." : ""),
+    );
+    hint.id = hintId;
+    if (!hint.textContent) hint.classList.add("sr-only");
+    const feedback = el("p");
+    feedback.id = feedbackId;
+    feedback.setAttribute("aria-live", "polite");
+    outer.append(hint, feedback);
+    return outer;
   }
-
-  if (data.firstCigarette30) {
-    details.push("High nicotine dependence marker: first cigarette within 30 minutes of waking.");
-    details.push("Use 4 mg nicotine gum or lozenge because first cigarette is within 30 minutes of waking; use every 1-2 hours initially.");
-  } else {
-    details.push("Use 2 mg nicotine gum or lozenge because first cigarette is >30 minutes after waking; use every 1-2 hours initially.");
-  }
-
-  return details;
-}
-
-function hasAdvancedCopdFeatures(data) {
-  const severeAirflowObstruction = data.fev1Predicted !== null && data.fev1Predicted < 50;
-  const severeSymptomBurden =
-    (data.catScore !== null && data.catScore >= 20) ||
-    (data.mmrcScore !== null && data.mmrcScore >= 3);
-  const severeEventHistory = data.severeExac !== null && data.severeExac >= 1;
-  const hypoxemiaSignal = data.restingSpo2 !== null && data.restingSpo2 <= 92;
-
-  return severeAirflowObstruction || (severeSymptomBurden && severeEventHistory) || hypoxemiaSignal;
-}
-
-function shouldRecommendParasitePrecaution(data) {
-  return data.eosinophils !== null && data.eosinophils > 300 && data.endemicAreaExposure;
-}
-
-function getParasitePrecautionRecommendation() {
-  return "If eosinophils >300 cells/uL and there is epidemiologic helminth risk, screen for and treat parasitic infection before biologic therapy.";
-}
-
-function buildInitialRecommendations(group, data, symptoms) {
-  const plan = [];
-  const rationale = [];
-  const medicationDetails = [];
-  const followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
-
-  if (group === "A") {
-    plan.push("Start bronchodilator therapy for dyspnea; prefer a long-acting bronchodilator if symptoms are more than occasional.");
-    plan.push("Continue bronchodilator only if symptomatic benefit is documented.");
-  }
-
-  if (group === "B") {
-    plan.push("Initial therapy: start LABA + LAMA.");
-    plan.push("If LABA + LAMA is not feasible, use either LABA or LAMA based on response, cost, and tolerability.");
-  }
-
-  if (group === "E") {
-    plan.push("Initial therapy: start LABA + LAMA (GOLD Group E).");
-    if (data.eosinophils !== null && data.eosinophils >= 300) {
-      plan.push("Eosinophils >=300 cells/uL: consider initial LABA + LAMA + ICS.");
-    }
-    plan.push("Avoid LABA + ICS alone in COPD without asthma; if ICS is indicated, prefer triple therapy.");
-  }
-
-  if (group === "A/B/E (exacerbation history required to classify)") {
-    plan.push("Confirm prior-year moderate and severe exacerbation counts before assigning final GOLD A/B/E group and inhaled therapy.");
-    rationale.push("Final GOLD A/B/E group cannot be assigned when exacerbation history is missing.");
-  }
-
-  if (group === "A/B (symptom score required to distinguish)" || symptoms.high === null) {
-    plan.push("Obtain CAT/CAAT or mMRC score before finalizing symptom-based inhaled therapy intensity.");
-  }
-
-  if (data.concomitantAsthma) {
-    plan.push("Asthma overlap present: use an ICS-containing regimen and avoid LABA without ICS.");
-    if (group === "B" || group === "E") {
-      plan.push("Because higher-intensity therapy is otherwise indicated and asthma overlap is present, consider LABA + LAMA + ICS.");
-    }
-    rationale.push("Asthma overlap changes the initial pathway because ICS-containing therapy is required.");
-  }
-
-  plan.push("Ensure rescue SABA/SAMA is available for breakthrough symptoms.");
-  rationale.push("Initial-treatment logic mapped to GOLD 2026 treatment-naive COPD pathway.");
-
-  return { plan, rationale, medicationDetails, followUpRecommendation };
-}
-
-function buildFollowUpRecommendations(data, exacRisk) {
-  const plan = [];
-  const rationale = [];
-  const medicationDetails = [];
-  const hasExacerbation = exacRisk.high === true;
-  const exacHistoryMissing = exacRisk.high === null;
-  let managementChangeRecommended = false;
-  let followUpRecommendation = "Follow up: Consider clinical follow-up in 6-12 months and annual spirometry.";
-
-  if (data.currentRegimen === "naive") {
-    managementChangeRecommended = true;
-    plan.push("No maintenance regimen documented; apply the initial-treatment pathway, then reassess response.");
-    if (data.concomitantAsthma) {
-      plan.push("Asthma overlap present: the next maintenance regimen should include ICS, not bronchodilator monotherapy alone.");
-    }
-    rationale.push("Follow-up algorithms apply to patients already receiving maintenance therapy.");
-    followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
-    return { plan, rationale, medicationDetails, followUpRecommendation };
-  }
-
-  if (hasExacerbation) {
-    managementChangeRecommended = true;
-    rationale.push("Exacerbation pathway selected because exacerbation prevention takes priority when both dyspnea and exacerbations are present.");
-
-    if (data.currentRegimen === "mono") {
-      plan.push("Escalate bronchodilator monotherapy to LABA + LAMA because exacerbations occurred.");
-    } else if (data.currentRegimen === "laba-lama") {
-      if (data.eosinophils !== null && data.eosinophils >= 100) {
-        plan.push("Escalate LABA + LAMA to triple therapy because exacerbations occurred and eosinophils are >=100 cells/uL.");
-      } else {
-        plan.push("Exacerbations on LABA + LAMA with eosinophils <100 cells/uL or unavailable: consider non-ICS add-on therapy.");
-        if (data.eosinophils === null) {
-          plan.push("Obtain blood eosinophil count; it helps estimate expected ICS benefit.");
-        }
-        if (data.smokingStatus !== "current") {
-          plan.push("Consider add-on azithromycin because the patient is not currently smoking.");
-          medicationDetails.push(getAzithromycinDetail());
-        }
-        if (isRoflumilastCandidate(data)) {
-          plan.push("Consider roflumilast (FEV1 <50%, chronic bronchitis, persistent exacerbations despite maintenance therapy).");
-          medicationDetails.push(getRoflumilastDetail());
-        }
+  function renderFieldWarnings() {
+    document.querySelectorAll("[data-field]").forEach((node) => {
+      const key = node.dataset.field,
+        error = recommendation.errors.find((e) => e.key === key),
+        warning = recommendation.warnings.find((e) => e.key === key);
+      const input = node.querySelector("input[type=number]"),
+        feedback = node.querySelector('[id$="-feedback"]');
+      if (!feedback) return;
+      feedback.textContent = error?.text || warning?.text || "";
+      feedback.className = error ? "field-error" : "field-warning";
+      if (input) {
+        input.classList.toggle("number-error", !!error);
+        input.classList.toggle("number-warning", !!warning);
+        input.setAttribute("aria-invalid", error ? "true" : "false");
       }
-    } else if (data.currentRegimen === "triple") {
-      if (data.eosinophils !== null && data.eosinophils >= 300) {
-        if (data.chronicBronchitis) {
-          plan.push("Consider one add-on biologic (dupilumab or mepolizumab) because eosinophils >=300 cells/uL and chronic bronchitis are present; do not use both together.");
-          medicationDetails.push(getDupilumabDetail());
-        } else {
-          plan.push("Consider add-on mepolizumab (eosinophils >=300 cells/uL).");
-        }
-        if (shouldRecommendParasitePrecaution(data)) {
-          plan.push(getParasitePrecautionRecommendation());
-        }
-        medicationDetails.push(getMepolizumabDetail());
-      }
-      if (data.smokingStatus !== "current") {
-        plan.push("Consider azithromycin prophylaxis because exacerbations persist and the patient is not currently smoking.");
-        medicationDetails.push(getAzithromycinDetail());
-      }
-      if (isRoflumilastCandidate(data)) {
-        plan.push("Consider roflumilast (FEV1 <50%, chronic bronchitis, persistent exacerbations despite optimized inhaled therapy).");
-        medicationDetails.push(getRoflumilastDetail());
-      }
-      if (data.icsSideEffects) {
-        if (data.eosinophils !== null && data.eosinophils >= 300) {
-          plan.push("Use caution with ICS withdrawal; eosinophils >=300 cells/uL may predict higher exacerbation risk after de-escalation.");
-        } else {
-          plan.push("If ICS was ineffective, not indicated, or harmful, consider ICS de-escalation with close follow-up.");
-        }
-      }
-    } else {
-      plan.push("Clarify the current maintenance regimen and align it with a standard pathway before adjusting therapy.");
-    }
-  } else if (data.persistentDyspnea) {
-    managementChangeRecommended = true;
-    rationale.push("Dyspnea pathway selected because persistent breathlessness is the main follow-up issue.");
-
-    if (data.currentRegimen === "mono") {
-      plan.push("Escalate bronchodilator monotherapy to LABA + LAMA for persistent dyspnea or exercise limitation.");
-    } else if (data.currentRegimen === "laba-lama") {
-      plan.push("If dyspnea persists on LABA + LAMA, consider switching device or bronchodilator molecule and intensifying nonpharmacologic therapy (for example pulmonary rehabilitation).");
-      plan.push("Consider ensifentrine if available.");
-      medicationDetails.push(getEnsifentrineDetail());
-    } else if (data.currentRegimen === "triple") {
-      plan.push("Persistent dyspnea on triple therapy warrants reassessment of inhaler technique, device choice, comorbidities, and rehabilitation needs.");
-      plan.push("Consider ensifentrine if symptoms remain limiting despite optimized inhaler use and rehabilitation.");
-      medicationDetails.push(getEnsifentrineDetail());
-    } else {
-      plan.push("Clarify the current maintenance regimen and optimize bronchodilation before further escalation.");
-    }
-
-    plan.push("Evaluate non-COPD contributors to dyspnea (for example cardiac disease, deconditioning, anemia, or anxiety).");
-  } else if (exacHistoryMissing) {
-    plan.push("Exacerbation history is incomplete; confirm prior-year moderate and severe exacerbation counts before deciding that no escalation is needed.");
-    rationale.push("Follow-up recommendations should not assume zero exacerbations when history is missing.");
-    followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
-  } else {
-    plan.push("Symptoms stable and no recent exacerbations: continue current maintenance therapy.");
-    rationale.push("Reassessment did not identify a dominant dyspnea or exacerbation target.");
-  }
-
-  if (data.concomitantAsthma) {
-    rationale.push("Asthma overlap changes follow-up management because ICS-containing therapy is required.");
-
-    if (data.currentRegimen === "mono") {
-      managementChangeRecommended = true;
-      plan.push("Current regimen may lack ICS; with asthma overlap, transition to an ICS-containing regimen.");
-    } else if (data.currentRegimen === "laba-lama") {
-      managementChangeRecommended = true;
-      plan.push("LABA + LAMA lacks ICS; with asthma overlap, step up to LABA + LAMA + ICS unless ICS is contraindicated or the asthma diagnosis is revised.");
-    } else if (data.currentRegimen === "triple") {
-      plan.push("Maintain ICS because asthma overlap is present; consider withdrawal only if harms clearly outweigh benefit.");
-    } else {
-      managementChangeRecommended = true;
-      plan.push("Clarify the current regimen and ensure it includes ICS because asthma overlap is present.");
-    }
-  }
-
-  plan.push("Before escalation, reassess adherence, inhaler technique, device fit, and comorbid contributors.");
-  plan.push("Ensure rescue SABA/SAMA is available for breakthrough symptoms.");
-
-  if (managementChangeRecommended) {
-    followUpRecommendation = "Follow up: Consider clinical follow-up in 3-6 months and annual spirometry.";
-  }
-
-  return { plan, rationale, medicationDetails, followUpRecommendation };
-}
-
-function buildPreventiveCare(data) {
-  const prevention = [];
-  let preventionFootnote = null;
-
-  if (data.aatdStatus === "unknown" || data.aatdStatus === "not-done") {
-    prevention.push("If not previously done, obtain one-time alpha-1 antitrypsin deficiency testing.");
-  } else if (data.aatdStatus === "known-aatd") {
-    prevention.push("Known alpha-1 antitrypsin deficiency: confirm specialist follow-up and discuss family screening.");
-  }
-
-  if (isLungCancerScreenEligible(data)) {
-    prevention.push("Eligible for annual low-dose CT lung cancer screening; review expected benefits, potential harms, downstream testing, and patient preferences before screening, and discontinue screening if the patient can no longer benefit from curative-intent treatment.");
-    preventionFootnote = getLungCancerScreeningFootnote(data);
-  }
-
-  if (data.pneumococcalStatus === "unknown" || data.pneumococcalStatus === "unvaccinated") {
-    prevention.push("Verify pneumococcal vaccine history; if no prior PCV is documented, give PCV20 or PCV21 now (or PCV15 then PPSV23).");
-  }
-
-  if (data.age !== null && data.age >= 50 && data.rsvStatus !== "complete") {
-    prevention.push("Recommend a single RSV vaccine dose because chronic lung disease increases RSV risk.");
-  }
-
-  if (data.age !== null && data.age >= 50 && data.zosterStatus !== "complete") {
-    prevention.push("Recommend recombinant zoster vaccine (Shingrix), 2-dose series.");
-  }
-
-  if (data.tdapStatus === "unknown" || data.tdapStatus === "not-up-to-date") {
-    prevention.push("Review Td/Tdap history; give Tdap once if never documented, otherwise give Td or Tdap booster if due (every 10 years).");
-  }
-
-  prevention.push("Keep influenza and COVID-19 vaccination up to date.");
-
-  if (data.restingSpo2 !== null && data.restingSpo2 <= 92) {
-    prevention.push("Resting SpO2 <=92%: obtain ABG and formally assess oxygen requirement.");
-  }
-
-  if (hasAdvancedCopdFeatures(data)) {
-    prevention.push("Advanced COPD features present: assess for LTOT eligibility, home NIV if hypercapnic, lung volume reduction/LVRS candidacy, and supportive or palliative needs.");
-  }
-
-  if (data.smokingStatus === "current") {
-    prevention.push("Offer smoking-cessation treatment now (counseling plus pharmacotherapy).");
-  }
-
-  return { items: prevention, footnote: preventionFootnote };
-}
-
-function buildNonPharmacologicBundle(data) {
-  const bundle = [
-    "At each review, assess inhaler technique and adherence and correct barriers before escalation.",
-    "Provide written self-management education and an exacerbation action plan.",
-    "Offer pulmonary rehabilitation for dyspnea, reduced exercise tolerance, or advanced disease.",
-    "Actively address multimorbidity, including cardiovascular disease, mood symptoms, osteoporosis, sleep-disordered breathing, and malignancy risk."
-  ];
-
-  if (data.smokingStatus === "current") {
-    bundle.push("Advise smoking cessation at every visit and document readiness to quit.");
-  }
-
-  return bundle;
-}
-
-function getSmokingSummary(data) {
-  const labels = {
-    current: "Current smoker",
-    former: "Former smoker",
-    never: "Never smoker"
-  };
-  const parts = [labels[data.smokingStatus] || "Smoking status unknown"];
-
-  if (data.packYears !== null) {
-    parts.push(`${data.packYears} pack-years`);
-  }
-
-  if (data.smokingStatus === "current" && data.cigarettesPerDay !== null) {
-    parts.push(`${data.cigarettesPerDay} cigarettes/day`);
-  }
-
-  if (data.smokingStatus === "former" && data.yearsSinceQuit !== null) {
-    parts.push(`quit ${data.yearsSinceQuit} years ago`);
-  }
-
-  return parts.join(", ");
-}
-
-function buildCautions(data, exacRisk, followupAssumed = false) {
-  const cautions = [];
-
-  if (data.fev1fvcRawValue !== null && data.fev1fvc === null) {
-    cautions.push("FEV1/FVC entry could not be interpreted; enter either a ratio (for example 0.65) or a percent (for example 65).");
-  }
-  if (!data.spirometryConfirmed) {
-    cautions.push("Confirm airflow obstruction with post-bronchodilator spirometry before long-term treatment decisions.");
-  }
-  if (data.fev1fvc !== null && data.fev1fvc >= 0.7) {
-    cautions.push("Entered FEV1/FVC is >=0.70; recheck diagnosis and differential before applying COPD-specific recommendations.");
-  }
-  if (exacRisk.high === null) {
-    cautions.push("Exacerbation history missing; GOLD grouping and escalation logic are provisional until prior-year counts are confirmed.");
-  } else if (exacRisk.missing) {
-    cautions.push(`${exacRisk.missing[0].toUpperCase() + exacRisk.missing.slice(1)} exacerbation count missing and provisionally treated as 0; confirm full prior-year exacerbation history.`);
-  }
-  if (data.concomitantAsthma) {
-    cautions.push("Asthma overlap present: include asthma treatment principles, avoid LABA without ICS, and use caution with ICS withdrawal.");
-  }
-  if (followupAssumed) {
-    cautions.push("Initial-treatment mode was selected, but maintenance therapy is already documented; the follow-up pathway was used.");
-  }
-  if (data.managementPhase === "followup" && data.currentRegimen === "naive") {
-    cautions.push("Follow-up mode selected, but no maintenance regimen is documented; output defaults to an initial-treatment style recommendation.");
-  }
-  if ((data.smokingStatus === "current" || data.smokingStatus === "former") && data.packYears === null) {
-    cautions.push("Pack-year history missing; lung cancer screening eligibility cannot be fully assessed.");
-  }
-  if (data.age === null) {
-    cautions.push("Age missing; age-based vaccine and lung cancer screening recommendations may be incomplete.");
-  }
-
-  if (cautions.length === 0) {
-    cautions.push(DEFAULT_NO_RISK_ISSUE);
-  }
-
-  return cautions;
-}
-
-function buildRecommendation(data) {
-  const phaseContext = getEffectiveManagementPhaseContext(data);
-  const symptoms = classifySymptoms(data);
-  const exacRisk = classifyExacerbationRisk(data);
-  const group = assignGoldGroup(symptoms, exacRisk);
-  const prevention = buildPreventiveCare(data);
-  const nonPharm = buildNonPharmacologicBundle(data);
-  const cautions = buildCautions(data, exacRisk, phaseContext.followupAssumed);
-
-  let therapy;
-  if (phaseContext.phase === "followup") {
-    therapy = buildFollowUpRecommendations(data, exacRisk);
-  } else {
-    therapy = buildInitialRecommendations(group, data, symptoms);
-  }
-
-  const medicationDetails = [...therapy.medicationDetails];
-  if (data.smokingStatus === "current") {
-    medicationDetails.push(...getSmokingCessationDetails(data));
-  }
-
-  const hasAzithromycin = medicationDetails.some((item) => item.includes("Azithromycin option"));
-  const hasRoflumilast = medicationDetails.some((item) => item.includes("Roflumilast option"));
-  if (hasAzithromycin && hasRoflumilast) {
-    medicationDetails.push(getAzithromycinRoflumilastInteractionDetail());
-  }
-
-  return {
-    phaseLabel: getPhaseLabel(phaseContext.phase),
-    effectiveManagementPhase: phaseContext.phase,
-    followupAssumed: phaseContext.followupAssumed,
-    group,
-    symptomSummary: symptoms.summary,
-    symptomNoteLine: symptoms.noteLine,
-    riskSummary: exacRisk.summary,
-    riskNoteLine: exacRisk.noteLine,
-    followUpRecommendation: therapy.followUpRecommendation,
-    plan: therapy.plan,
-    rationale: therapy.rationale,
-    medicationDetails,
-    prevention: prevention.items,
-    preventionFootnote: prevention.footnote,
-    cautions,
-    nonPharm
-  };
-}
-
-function fillList(elementId, items, emptyText) {
-  const container = document.getElementById(elementId);
-  container.innerHTML = "";
-
-  const sourceItems = items.length > 0 ? items : [emptyText];
-  sourceItems.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    container.appendChild(li);
-  });
-}
-
-function sanitizeForClinicalNote(text) {
-  return String(text || "").replace(/\s+/g, " ").trim();
-}
-
-function joinClinicalList(items) {
-  if (items.length === 0) {
-    return "";
-  }
-  if (items.length === 1) {
-    return items[0];
-  }
-  if (items.length === 2) {
-    return `${items[0]} and ${items[1]}`;
-  }
-  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-}
-
-function buildCopdSubjectiveNarrative(data, rec, symptoms, exacRisk) {
-  const sentences = [];
-  const managementPhase = rec.effectiveManagementPhase || data.managementPhase;
-
-  sentences.push(managementPhase === "followup"
-    ? "Seen for follow-up COPD pharmacologic management."
-    : "Seen for initial COPD pharmacologic management.");
-
-  if (symptoms.high === null) {
-    sentences.push("Symptom scoring is incompletely documented because CAT/CAAT and mMRC are missing.");
-  } else {
-    const symptomParts = [];
-    if (data.catScore !== null) {
-      symptomParts.push(`CAT ${data.catScore}/40`);
-    }
-    if (data.mmrcScore !== null) {
-      symptomParts.push(`mMRC ${data.mmrcScore}/4`);
-    }
-    sentences.push(`Symptom burden is characterized by ${joinClinicalList(symptomParts)} and is overall ${symptoms.high ? "high" : "lower"} based on available scores.`);
-  }
-
-  if (managementPhase === "followup") {
-    sentences.push(data.persistentDyspnea
-      ? "Persistent dyspnea or activity limitation despite current therapy is reported."
-      : "Persistent dyspnea despite current therapy is not specifically documented.");
-  }
-
-  if (exacRisk.high === null) {
-    sentences.push("Prior-year exacerbation history is incompletely documented.");
-  } else if (exacRisk.total === 0) {
-    sentences.push("No moderate or severe exacerbation was documented in the previous 12 months.");
-  } else {
-    sentences.push(`Prior-year exacerbation history includes ${data.moderateExac} moderate and ${data.severeExac} severe events.`);
-  }
-
-  if (data.chronicBronchitis) {
-    sentences.push("Chronic bronchitis phenotype is present.");
-  }
-
-  sentences.push(`${getSmokingSummary(data)}.`);
-
-  return sentences.join(" ");
-}
-
-function buildCopdObjectiveBullets(data, rec, symptoms, exacRisk) {
-  const bullets = [];
-  const managementPhase = rec.effectiveManagementPhase || data.managementPhase;
-
-  bullets.push(`Visit context: ${managementPhase === "followup" ? "follow-up COPD pharmacologic management" : "initial COPD pharmacologic management"}; ${data.age !== null ? `age ${data.age} years` : "age not documented"}; current regimen ${getRegimenLabel(data.currentRegimen)}.`);
-
-  if (data.spirometryConfirmed) {
-    const spirometryParts = [];
-    if (data.fev1fvc !== null) {
-      spirometryParts.push(`post-bronchodilator FEV1/FVC ${formatRatio(data.fev1fvc)}`);
-    }
-    if (data.fev1Predicted !== null) {
-      spirometryParts.push(`FEV1 ${data.fev1Predicted}% predicted`);
-    }
-    bullets.push(`Diagnostic support: COPD confirmed by post-bronchodilator spirometry${spirometryParts.length > 0 ? ` (${joinClinicalList(spirometryParts)})` : ""}.`);
-  } else {
-    bullets.push("Diagnostic support: post-bronchodilator spirometric confirmation of airflow obstruction is not documented.");
-  }
-
-  bullets.push(`Symptoms: ${sanitizeForClinicalNote(rec.symptomNoteLine)}`);
-  bullets.push(`Exacerbation history and risk: ${sanitizeForClinicalNote(rec.riskNoteLine)}`);
-  bullets.push(`GOLD group: ${rec.group}.`);
-  bullets.push(data.eosinophils !== null
-    ? `Blood eosinophils: ${data.eosinophils} cells/uL.`
-    : "Blood eosinophils: not documented.");
-
-  if (data.restingSpo2 !== null) {
-    bullets.push(`Resting oxygenation: SpO2 ${data.restingSpo2}%.`);
-  }
-
-  const phenotypeParts = [];
-  if (data.chronicBronchitis) {
-    phenotypeParts.push("chronic bronchitis phenotype present");
-  }
-  if (data.concomitantAsthma) {
-    phenotypeParts.push("concomitant asthma overlap present");
-  }
-  if (data.endemicAreaExposure) {
-    phenotypeParts.push("history of living or residing in an endemic area for parasitic infection");
-  }
-  if (phenotypeParts.length > 0) {
-    bullets.push(`Clinical phenotype/modifiers: ${joinClinicalList(phenotypeParts)}.`);
-  }
-
-  return bullets;
-}
-
-function buildCopdAssessmentNarrative(data, rec, symptoms, exacRisk) {
-  const ageDescriptor = data.age !== null ? `${data.age}-year-old` : "Adult";
-  const parts = [];
-
-  if (data.spirometryConfirmed) {
-    const spirometryParts = [];
-    if (data.fev1fvc !== null) {
-      spirometryParts.push(`post-bronchodilator FEV1/FVC ${formatRatio(data.fev1fvc)}`);
-    }
-    if (data.fev1Predicted !== null) {
-      spirometryParts.push(`FEV1 ${data.fev1Predicted}% predicted`);
-    }
-    parts.push(`${ageDescriptor} patient with COPD confirmed by post-bronchodilator spirometry${spirometryParts.length > 0 ? ` (${joinClinicalList(spirometryParts)})` : ""}.`);
-  } else {
-    parts.push(`${ageDescriptor} patient with clinically suspected COPD; post-bronchodilator spirometric confirmation is not documented.`);
-  }
-
-  if (symptoms.high === null) {
-    parts.push("Symptom burden cannot be fully staged because CAT/CAAT and mMRC data are incomplete.");
-  } else {
-    const symptomDescriptors = [];
-    if (data.catScore !== null) {
-      symptomDescriptors.push(`CAT ${data.catScore}/40`);
-    }
-    if (data.mmrcScore !== null) {
-      symptomDescriptors.push(`mMRC ${data.mmrcScore}/4`);
-    }
-    parts.push(`Symptom burden is ${symptoms.high ? "higher" : "lower"} by available scoring (${joinClinicalList(symptomDescriptors)}), and the current GOLD grouping is ${rec.group}.`);
-  }
-
-  if (exacRisk.high === null) {
-    parts.push("Prior-year exacerbation history is incomplete, so exacerbation-directed risk stratification remains provisional.");
-  } else if (exacRisk.total === 0) {
-    parts.push("No moderate or severe exacerbation was documented in the previous 12 months.");
-  } else {
-    parts.push(`Prior-year exacerbation history includes ${data.moderateExac} moderate and ${data.severeExac} severe events, which supports ${exacRisk.high ? "an exacerbation-priority management approach" : "continued symptom-focused management"}.`);
-  }
-
-  parts.push(`Current maintenance therapy is ${getRegimenLabel(data.currentRegimen).toLowerCase()}.`);
-
-  const phenotypeParts = [];
-  if (data.chronicBronchitis) {
-    phenotypeParts.push("chronic bronchitis phenotype");
-  }
-  if (data.eosinophils !== null) {
-    phenotypeParts.push(`blood eosinophils ${data.eosinophils} cells/uL`);
-  }
-  if (data.concomitantAsthma) {
-    phenotypeParts.push("concomitant asthma overlap");
-  }
-  if (phenotypeParts.length > 0) {
-    parts.push(`Relevant phenotype considerations include ${joinClinicalList(phenotypeParts)}.`);
-  }
-
-  return parts.join(" ");
-}
-
-function buildCopdPlanItems(rec) {
-  return [...rec.plan, rec.followUpRecommendation]
-    .map((item) => sanitizeForClinicalNote(item))
-    .filter(Boolean);
-}
-
-function buildCopdMedicationItems(rec) {
-  return rec.medicationDetails.map((item) => sanitizeForClinicalNote(item)).filter(Boolean);
-}
-
-function buildCopdPreventionMonitoringItems(rec) {
-  return [...rec.prevention, ...rec.nonPharm]
-    .map((item) => sanitizeForClinicalNote(item))
-    .filter(Boolean);
-}
-
-function buildCopdClinicalCautionItems(rec) {
-  return rec.cautions
-    .filter((item) => item !== DEFAULT_NO_RISK_ISSUE)
-    .map((item) => sanitizeForClinicalNote(item))
-    .filter(Boolean);
-}
-
-function buildNoteText(data, rec) {
-  const symptoms = classifySymptoms(data);
-  const exacRisk = classifyExacerbationRisk(data);
-  const objectiveBullets = buildCopdObjectiveBullets(data, rec, symptoms, exacRisk);
-  const planItems = buildCopdPlanItems(rec);
-  const medicationItems = buildCopdMedicationItems(rec);
-  const preventionMonitoringItems = buildCopdPreventionMonitoringItems(rec);
-  const cautionItems = buildCopdClinicalCautionItems(rec);
-  const lines = [];
-
-  lines.push("Subjective:");
-  lines.push(buildCopdSubjectiveNarrative(data, rec, symptoms, exacRisk));
-  lines.push("");
-  lines.push("Objective:");
-  objectiveBullets.forEach((item) => {
-    lines.push(`- ${item}`);
-  });
-  lines.push("");
-  lines.push("Assessment:");
-  lines.push(buildCopdAssessmentNarrative(data, rec, symptoms, exacRisk));
-  lines.push("");
-  lines.push("Plan:");
-  planItems.forEach((item, index) => {
-    lines.push(`${index + 1}. ${item}`);
-  });
-
-  if (medicationItems.length > 0) {
-    lines.push("");
-    lines.push("Medication details:");
-    medicationItems.forEach((item) => {
-      lines.push(`- ${item}`);
     });
   }
-
-  if (preventionMonitoringItems.length > 0) {
-    lines.push("");
-    lines.push("Prevention and monitoring:");
-    preventionMonitoringItems.forEach((item) => {
-      lines.push(`- ${item}`);
+  function renderProgress() {
+    const index = stages.findIndex((s) => s.id === stageId),
+      stage = stages[index];
+    $("chapter-label").textContent =
+      stage.chapter +
+      (stage.optional ? " · available data" : " · patient inputs");
+    $("step-count").textContent =
+      index + 1 + " / " + stages.length + " applicable steps";
+    $("progress").max = stages.length;
+    $("progress").value = index + 1;
+    $("back-btn").disabled = index === 0;
+    $("next-btn").hidden = !!stage.review;
+    $("review-btn").hidden = !!stage.review;
+    const nav = $("chapter-nav");
+    nav.replaceChildren();
+    [...new Set(stages.map((s) => s.chapter))].forEach((chapter) => {
+      const b = el(
+        "button",
+        "chapter-link" + (chapter === stage.chapter ? " active" : ""),
+      );
+      b.type = "button";
+      if (chapter === stage.chapter) b.setAttribute("aria-current", "step");
+      b.append(el("span", "chapter-dot"), el("span", "", chapter));
+      b.addEventListener("click", () =>
+        navigate(stages.find((s) => s.chapter === chapter).id),
+      );
+      nav.append(b);
     });
   }
-
-  if (cautionItems.length > 0) {
-    lines.push("");
-    lines.push("Clinical cautions:");
-    cautionItems.forEach((item) => {
-      lines.push(`- ${item}`);
-    });
+  function navigate(id) {
+    stageId = id;
+    renderStep();
+    $("step-title").focus({ preventScroll: true });
+    $("encounter").scrollIntoView({ block: "start", behavior: "instant" });
   }
-
-  return lines.join("\n");
-}
-
-function renderRecommendation(rec, data) {
-  document.getElementById("group-output").textContent = `Management phase: ${rec.phaseLabel}. Assigned GOLD category: ${rec.group}`;
-  document.getElementById("symptom-output").textContent = rec.symptomSummary;
-  document.getElementById("risk-output").textContent = rec.riskSummary;
-
-  const preventionItems = rec.prevention.map((item, index) => {
-    if (rec.preventionFootnote && item.startsWith("Eligible for annual low-dose CT lung cancer screening")) {
-      return `${item}¹`;
+  function renderStep() {
+    const stage = stages.find((s) => s.id === stageId);
+    renderProgress();
+    $("step-title").textContent = stage.title;
+    $("step-hint").hidden = !stage.hint;
+    $("step-hint").textContent = stage.hint || "";
+    const host = $("step-content");
+    host.replaceChildren();
+    stage.fields.forEach((key) => host.append(field(key)));
+    if (stage.zero) {
+      const b = el(
+        "button",
+        "secondary",
+        "Confirm no treated exacerbations or hospitalizations",
+      );
+      b.type = "button";
+      b.addEventListener("click", () => {
+        state.moderateExac = state.severeExac = 0;
+        invalidate();
+        updateEngine();
+        renderStep();
+      });
+      host.append(b);
     }
-    return item;
+    if (stage.calculators) host.append(catCalculator(), mmrcCalculator());
+    if (stage.reference) host.append(reference(stage.reference));
+    if (stage.plans) {
+      host.append(
+        el(
+          "p",
+          "review-help",
+          "Choose one controller strategy and compatible additional plans. Blocked prescriptions show the outstanding safety review. Unresolved decisions remain *** in the clinical draft.",
+        ),
+      );
+      renderPlanChoices(host, "step");
+    }
+    if (stage.review) renderReview(host);
+    renderFieldWarnings();
+  }
+  function renderReview(host) {
+    host.append(
+      el(
+        "p",
+        "review-help",
+        "Review available answers or edit a section. Unknown entries remain unknown; you may generate a draft without completing every optional assessment.",
+      ),
+    );
+    const quality = [...recommendation.errors, ...recommendation.warnings];
+    if (quality.length) {
+      const box = el(
+        "div",
+        "alert " + (recommendation.invalid ? "danger" : "warning"),
+      );
+      quality.forEach((q) => box.append(el("p", "", q.text)));
+      host.append(box);
+    }
+    const grid = el("div", "summary-grid");
+    stages
+      .filter((s) => s.fields.length)
+      .forEach((stage) => {
+        const card = el("section", "review-section"),
+          header = el("div", "review-heading");
+        header.append(el("h3", "", stage.title));
+        const edit = el("button", "quiet", "Edit");
+        edit.type = "button";
+        edit.setAttribute("aria-label", "Edit " + stage.title);
+        edit.addEventListener("click", () => navigate(stage.id));
+        header.append(edit);
+        const list = el("dl", "answer-list");
+        stage.fields.forEach((k) => {
+          const row = el("div");
+          row.append(
+            el("dt", "", S[k].label),
+            el("dd", "", display(k, state[k])),
+          );
+          list.append(row);
+        });
+        card.append(header, list);
+        grid.append(card);
+      });
+    const plans = el("section", "review-section");
+    plans.append(el("h3", "", "Encounter plan selections"));
+    recommendation.groups.forEach((g) =>
+      plans.append(
+        el(
+          "p",
+          "hint",
+          g.title +
+            ": " +
+            (g.options.find((o) => o.id === g.selected)?.label || "***"),
+        ),
+      ),
+    );
+    const editPlans = el("button", "quiet", "Edit encounter plan");
+    editPlans.type = "button";
+    editPlans.addEventListener("click", () =>
+      navigate(stages.find((s) => s.plans).id),
+    );
+    plans.append(editPlans);
+    grid.append(plans);
+    host.append(grid);
+    const wrap = el("div", "generate-wrap"),
+      button = el(
+        "button",
+        "primary",
+        generated && !stale
+          ? "✓ Recommendations regenerated"
+          : generated
+            ? "Regenerate recommendations"
+            : "Generate recommendations and SOAP note",
+      );
+    button.id = "generate-btn";
+    button.type = "button";
+    if (generated && !stale) button.classList.add("success");
+    button.addEventListener("click", () => keepViewport(generate));
+    wrap.append(
+      button,
+      el(
+        "p",
+        "hint",
+        "Clinical recommendations and the editable draft will appear below. Inputs are not stored.",
+      ),
+    );
+    host.append(wrap);
+  }
+  function renderPlanChoices(host, prefix) {
+    if (recommendation.emergency) {
+      host.append(
+        el(
+          "div",
+          "alert danger",
+          "Urgent care takes precedence. Routine prescribing and referral selections are not available.",
+        ),
+      );
+      return;
+    }
+    if (recommendation.invalid) {
+      host.append(
+        el(
+          "div",
+          "alert warning",
+          "Correct invalid numeric entries to see applicable treatment choices.",
+        ),
+      );
+      return;
+    }
+    const choices = el("div", "plan-choices");
+    recommendation.groups.forEach((g) => {
+      const set = el("fieldset", "plan-group");
+      set.append(el("legend", "", g.title));
+      const options = el("div", "plan-options");
+      const all = [
+        {
+          id: "",
+          label: "Not decided / complete in EMR",
+          text: g.placeholder || "No product preset selected.",
+          blockers: [],
+        },
+        ...g.options,
+      ];
+      all.forEach((o) => {
+        const label = el("label", "plan-option"),
+          input = el("input"),
+          body = el("span");
+        input.type = "radio";
+        input.name = prefix + "-plan-" + g.id;
+        input.value = o.id;
+        input.id = prefix + "-plan-" + g.id + "-" + (o.id || "unknown");
+        input.checked = g.selected === o.id;
+        input.disabled = o.blockers.length > 0;
+        body.append(el("strong", "", o.label));
+        if (o.text) body.append(el("p", "", o.text));
+        if (o.blockers.length)
+          body.append(el("p", "blocked", "Needed: " + o.blockers.join(" ")));
+        input.addEventListener("change", () =>
+          keepViewport(() => {
+            selections[g.id] = o.id;
+            updateEngine();
+            if (generated && !stale) {
+              renderResults();
+              $("copy-status").textContent =
+                "Clinical draft updated from the selected plan.";
+            }
+            if (stages.find((s) => s.id === stageId)?.plans) renderStep();
+            document.getElementById(input.id)?.focus({ preventScroll: true });
+          }),
+        );
+        label.append(input, body);
+        options.append(label);
+      });
+      set.append(options);
+      choices.append(set);
+    });
+    host.append(choices);
+    if (recommendation.addonCandidates.length) {
+      const info = el("details", "reference");
+      info.append(
+        el(
+          "summary",
+          "",
+          "Reference · Add-on rationale and prescribing prerequisites",
+        ),
+      );
+      recommendation.addonCandidates.forEach((c) => {
+        const med = C.MEDICATIONS[c.id],
+          card = el("div", "med-card");
+        card.append(
+          el("h3", "", med.name),
+          el("p", "", c.why),
+          el("p", "", med.detail),
+        );
+        if (c.blockers.length)
+          card.append(
+            el("p", "blocked", "Outstanding: " + c.blockers.join(" ")),
+          );
+        const a = el("a", "", "U.S. prescribing reference");
+        a.href = C.SOURCES[med.source].url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        card.append(a);
+        info.append(card);
+      });
+      host.append(info);
+    }
+  }
+  function generate() {
+    updateEngine();
+    generated = true;
+    stale = recommendation.invalid;
+    $("results").hidden = false;
+    renderResults();
+    const b = $("generate-btn");
+    if (b) {
+      b.textContent = stale
+        ? "Correct inputs and regenerate"
+        : "✓ Recommendations regenerated";
+      b.classList.toggle("success", !stale);
+    }
+    $("output-status").textContent = stale
+      ? "Numeric corrections required"
+      : "✓ Up to date";
+  }
+  function renderResults() {
+    const r = recommendation,
+      host = $("results-content");
+    host.replaceChildren();
+    if (r.invalid) {
+      const box = el("div", "alert danger");
+      r.errors.forEach((q) => box.append(el("p", "", q.text)));
+      host.append(box);
+    }
+    const card = el("article", "result-card");
+    card.append(el("h3", "", "Assessment summary"));
+    const findings = el("div", "finding-grid");
+    [
+      ["Diagnosis", r.findings.diagnosis.label],
+      ["Symptoms", r.findings.symptoms.label],
+      [
+        "Exacerbation risk",
+        r.findings.risk.high === true
+          ? "Recent event documented"
+          : r.findings.risk.high === false
+            ? "No events confirmed"
+            : "History incomplete",
+      ],
+      [
+        "Treatment pathway",
+        r.findings.therapy.phase === "followup"
+          ? "Follow-up"
+          : r.findings.therapy.phase === "initial"
+            ? "Initial"
+            : "Not specified",
+      ],
+      ["Initial GOLD profile", r.group || "Not classified"],
+      [
+        "Advanced assessment",
+        r.findings.advanced.bode === null
+          ? "BODE not calculated without complete components"
+          : "BODE " + r.findings.advanced.bode + "/10",
+      ],
+    ].forEach(([name, text]) => {
+      const item = el("div", "finding");
+      item.append(el("strong", "", name), el("span", "", text));
+      findings.append(item);
+    });
+    card.append(findings);
+    host.append(card);
+    const management = el("article", "result-card");
+    management.append(el("h3", "", "Recommended management steps"));
+    const list = el("ol");
+    r.actions
+      .filter((a) => !["prevention", "screening", "cessation"].includes(a.kind))
+      .forEach((a) => list.append(el("li", "", a.text)));
+    management.append(list);
+    host.append(management);
+    const grouped = [
+      ["Tobacco cessation", ["cessation"]],
+      ["Preventive care and screening", ["prevention", "screening"]],
+    ];
+    grouped.forEach(([title, kinds]) => {
+      const actions = r.actions.filter((a) => kinds.includes(a.kind));
+      if (!actions.length) return;
+      const section = el("article", "result-card");
+      section.append(el("h3", "", title));
+      const ul = el("ul");
+      actions.forEach((a) => ul.append(el("li", "", a.text)));
+      section.append(ul);
+      if (
+        kinds.includes("screening") &&
+        actions.some((a) => a.kind === "screening")
+      )
+        section.append(el("p", "hint", r.preventionFootnote));
+      host.append(section);
+    });
+    const selectionCard = el("article", "result-card");
+    selectionCard.append(
+      el("h3", "", "Encounter treatment plan"),
+      el(
+        "p",
+        "hint",
+        "Selections below update the clinical draft while the generated findings remain current.",
+      ),
+    );
+    renderPlanChoices(selectionCard, "result");
+    host.append(selectionCard);
+    if (r.medications.length) {
+      const medicationCard = el("article", "result-card");
+      medicationCard.append(el("h3", "", "Selected medication details"));
+      r.medications.forEach((id) => {
+        const m = C.MEDICATIONS[id],
+          block = el("div", "med-card");
+        block.append(
+          el("h3", "", m.name),
+          el("p", "", m.dose),
+          el("p", "", m.detail),
+        );
+        medicationCard.append(block);
+      });
+      host.append(medicationCard);
+    }
+    if (r.cautions.length || r.warnings.length) {
+      const caution = el("article", "result-card");
+      caution.append(el("h3", "", "Safety checks"));
+      const ul = el("ul");
+      [...r.cautions, ...r.warnings.map((w) => w.text)].forEach((t) =>
+        ul.append(el("li", "", t)),
+      );
+      caution.append(ul);
+      host.append(caution);
+    }
+    const refs = el("details", "reference");
+    refs.append(el("summary", "", "Clinical references and rationale"));
+    [...new Set(r.references)].forEach((key) => {
+      const ref = reference(key);
+      if (ref) refs.append(ref);
+    });
+    const sources = el("div", "reference-links");
+    r.sources.forEach((id) => {
+      const src = C.SOURCES[id];
+      if (!src) return;
+      const a = el("a", "", src.title);
+      a.href = src.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      sources.append(a);
+    });
+    refs.append(sources);
+    host.append(refs);
+    $("note-output").value = stale ? "" : N.buildNoteText(r);
+    $("copy-note-btn").disabled = stale || !N.buildNoteText(r);
+    $("note-output").closest("article").classList.toggle("stale", stale);
+  }
+  function catCalculator() {
+    const details = el("details", "calculator");
+    details.append(el("summary", "", "Optional CAT / CAAT item-score entry"));
+    details.append(
+      el(
+        "p",
+        "hint",
+        "Use the validated questionnaire and its item-specific anchors. Completing all eight item scores updates the total automatically. This score-entry aid does not replace the official questionnaire.",
+      ),
+    );
+    const a = el("a", "hint", "Open the official questionnaire");
+    a.href = C.SOURCES.cat.url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    details.append(a);
+    const anchors = [
+      ["Cough", "0: never cough · 5: cough all the time"],
+      ["Phlegm", "0: no phlegm · 5: chest full of phlegm"],
+      ["Chest tightness", "0: not tight · 5: very tight"],
+      [
+        "Breathlessness on hills or stairs",
+        "0: not breathless · 5: very breathless",
+      ],
+      ["Activity at home", "0: not limited · 5: very limited"],
+      ["Confidence leaving home", "0: confident · 5: not confident"],
+      ["Sleep", "0: sound sleep · 5: sleep disrupted by lung condition"],
+      ["Energy", "0: lots of energy · 5: no energy"],
+    ];
+    const rows = el("div", "calc-items");
+    anchors.forEach(([name, anchor], i) => {
+      const row = el("div", "calc-row"),
+        label = el("label", "", name);
+      label.htmlFor = "cat-item-" + i;
+      label.append(el("small", "", anchor));
+      const select = el("select");
+      select.id = "cat-item-" + i;
+      ["", "0", "1", "2", "3", "4", "5"].forEach((v) => {
+        const option = el("option", "", v === "" ? "—" : v);
+        option.value = v;
+        select.append(option);
+      });
+      select.value = calculator.values[i];
+      select.addEventListener("change", () => {
+        calculator.values[i] = select.value;
+        if (calculator.values.every((v) => v !== "")) {
+          state.catScore = calculator.values.reduce((sum, v) => sum + +v, 0);
+          calculator.catOwned = true;
+        } else if (calculator.catOwned) {
+          state.catScore = null;
+          calculator.catOwned = false;
+        }
+        const input = $("field-catScore");
+        if (input) input.value = state.catScore ?? "";
+        invalidate();
+        updateEngine();
+        renderProgress();
+        renderFieldWarnings();
+      });
+      row.append(label, select);
+      rows.append(row);
+    });
+    details.append(rows);
+    return details;
+  }
+  function mmrcCalculator() {
+    const details = el("details", "calculator");
+    details.append(el("summary", "", "Optional mMRC descriptor selection"));
+    const options = [
+      "Breathless only with strenuous exercise.",
+      "Short of breath when hurrying on level ground or walking up a slight hill.",
+      "Walks slower than peers because of breathlessness, or stops for breath at own pace on level ground.",
+      "Stops for breath after about 100 m or a few minutes on level ground.",
+      "Too breathless to leave home, or breathless when dressing or undressing.",
+    ];
+    const list = el("div", "mmrc-list");
+    options.forEach((text, i) => {
+      const label = el("label", "choice-option"),
+        input = el("input");
+      input.type = "radio";
+      input.name = "mmrc-descriptor";
+      input.id = "mmrc-item-" + i;
+      input.value = i;
+      input.checked = state.mmrcScore === i && calculator.mmrcOwned;
+      input.addEventListener("change", () => {
+        state.mmrcScore = i;
+        calculator.mmrcOwned = true;
+        $("field-mmrcScore").value = i;
+        invalidate();
+        updateEngine();
+        renderProgress();
+        renderFieldWarnings();
+      });
+      label.append(input, el("span", "", i + " · " + text));
+      list.append(label);
+    });
+    details.append(list);
+    return details;
+  }
+  $("back-btn").addEventListener("click", () => {
+    const i = stages.findIndex((s) => s.id === stageId);
+    if (i > 0) navigate(stages[i - 1].id);
   });
-
-  fillList("plan-list", rec.plan, "No treatment changes were triggered.");
-  fillList("medication-list", rec.medicationDetails, "No medication-specific dosing instructions were triggered by the current scenario.");
-  fillList("prevention-list", preventionItems, "No additional preventive care gaps were triggered from the entered fields.");
-  fillList("rationale-list", rec.rationale, "No extra rationale notes were needed.");
-  fillList("caution-list", rec.cautions, "No cautions identified.");
-  fillList("nonpharm-list", rec.nonPharm, "No additional non-pharmacologic recommendations were triggered.");
-
-  const preventionFootnote = document.getElementById("prevention-footnote");
-  if (rec.preventionFootnote) {
-    preventionFootnote.textContent = `1. ${rec.preventionFootnote}`;
-    preventionFootnote.classList.remove("hidden");
-  } else {
-    preventionFootnote.textContent = "";
-    preventionFootnote.classList.add("hidden");
-  }
-
-  document.getElementById("note-output").value = buildNoteText(data, rec);
-  document.getElementById("copy-note-status").textContent = "";
-
-  document.getElementById("results").classList.remove("hidden");
-  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-async function copyNoteOutput() {
-  const noteOutput = document.getElementById("note-output");
-  const status = document.getElementById("copy-note-status");
-
-  if (!noteOutput.value.trim()) {
-    status.textContent = "Generate a recommendation before copying the note.";
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(noteOutput.value);
-    status.textContent = "Note copied to clipboard.";
-  } catch (error) {
-    noteOutput.select();
-    document.execCommand("copy");
-    status.textContent = "Note copied using fallback copy.";
-  }
-}
-
-document.getElementById("copd-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = getInputState();
-  const recommendation = buildRecommendation(data);
-  renderRecommendation(recommendation, data);
-});
-
-document.getElementById("copy-note-btn").addEventListener("click", copyNoteOutput);
-
-initSymptomCalculators();
-initSpirometryHelpers();
-initSmokingFieldHelpers();
-initExacerbationHelpers();
-Object.values(NUMERIC_FIELD_CONFIG).forEach(({ id }) => {
-  const element = document.getElementById(id);
-  element.addEventListener("input", refreshNumericFieldAlerts);
-  element.addEventListener("change", refreshNumericFieldAlerts);
-});
-refreshNumericFieldAlerts();
+  $("next-btn").addEventListener("click", () => {
+    const i = stages.findIndex((s) => s.id === stageId);
+    if (i < stages.length - 1) navigate(stages[i + 1].id);
+  });
+  $("review-btn").addEventListener("click", () => navigate("review"));
+  $("reset-btn").addEventListener("click", () => {
+    if (
+      !window.confirm("Clear this encounter and its generated clinical draft?")
+    )
+      return;
+    state = L.createEmptyState();
+    selections = {};
+    calculator.values.fill("");
+    calculator.catOwned = calculator.mmrcOwned = false;
+    generated = false;
+    stale = true;
+    stageId = "context";
+    $("results").hidden = true;
+    $("note-output").value = "";
+    $("copy-status").textContent = "";
+    updateEngine();
+    renderStep();
+  });
+  $("copy-note-btn").addEventListener("click", async () => {
+    if (stale || recommendation.invalid) return;
+    const note = N.buildNoteText(recommendation);
+    try {
+      await navigator.clipboard.writeText(note);
+      $("copy-status").textContent =
+        "Clinical draft copied. Complete *** placeholders and verify before signing.";
+    } catch {
+      $("note-output").focus({ preventScroll: true });
+      $("note-output").select();
+      $("copy-status").textContent =
+        "Clipboard access was unavailable. The note is selected for manual copying.";
+    }
+  });
+  updateEngine();
+  renderStep();
+})();

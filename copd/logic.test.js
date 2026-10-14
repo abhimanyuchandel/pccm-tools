@@ -1,135 +1,772 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
+const L = require("./logic.js");
+const N = require("./notes.js");
+const W = require("./workflow.js");
+const C = require("./medications.js");
+const base = {
+  age: 65,
+  encounter: "routine",
+  managementPhase: "followup",
+  redFlags: false,
+  diagnosisContext: "established",
+  historicalObstruction: true,
+  currentRegimen: "laba-lama",
+  reliever: "albuterol",
+  addonContext: "none",
+  asthma: "no",
+  catScore: 14,
+  moderateExac: 0,
+  severeExac: 0,
+  smokingStatus: "former",
+};
+const build = (changes = {}, selections = {}) =>
+  L.buildRecommendation({ ...base, ...changes }, selections);
+const group = (r, id) => r.groups.find((g) => g.id === id);
+const opt = (r, id, value) => group(r, id)?.options.find((o) => o.id === value);
+const text = (r) => r.actions.map((a) => a.text).join("\n");
 
-const {
-  normalizeFev1FvcHeuristic,
-  classifySymptoms,
-  classifyExacerbationRisk,
-  assignGoldGroup,
-  isRoflumilastCandidate,
-  isLungCancerScreenEligible,
-  getLungCancerScreeningFootnote
-} = require("./logic.js");
-
-test("normalizes FEV1/FVC percent-style entry without rounding across threshold", () => {
-  assert.equal(normalizeFev1FvcHeuristic(65), 0.65);
-  assert.equal(normalizeFev1FvcHeuristic(25), 0.25);
-  assert.equal(normalizeFev1FvcHeuristic(0.699), 0.699);
-  assert.equal(normalizeFev1FvcHeuristic(250), null);
-});
-
-test("assigns GOLD Group E for a single moderate exacerbation", () => {
-  const data = { catScore: 8, mmrcScore: 1, moderateExac: 1, severeExac: 0 };
-  const symptoms = classifySymptoms(data);
-  const exacRisk = classifyExacerbationRisk(data);
-
-  assert.equal(symptoms.high, false);
-  assert.equal(exacRisk.high, true);
-  assert.equal(assignGoldGroup(symptoms, exacRisk), "E");
-});
-
-test("assigns GOLD Group B with high symptoms and zero exacerbations", () => {
-  const data = { catScore: 12, mmrcScore: 1, moderateExac: 0, severeExac: 0 };
-  const symptoms = classifySymptoms(data);
-  const exacRisk = classifyExacerbationRisk(data);
-
-  assert.equal(symptoms.high, true);
-  assert.equal(exacRisk.high, false);
-  assert.equal(assignGoldGroup(symptoms, exacRisk), "B");
-});
-
-test("blocks definite GOLD grouping when exacerbation history is missing", () => {
-  const data = { catScore: 12, mmrcScore: 2, moderateExac: null, severeExac: null };
-  const symptoms = classifySymptoms(data);
-  const exacRisk = classifyExacerbationRisk(data);
-
-  assert.equal(exacRisk.high, null);
-  assert.match(assignGoldGroup(symptoms, exacRisk), /exacerbation history required/i);
-});
-
-test("aligns roflumilast candidacy with chronic bronchitis, low FEV1, and any exacerbation history", () => {
+test("explicit unknowns and blank numbers remain unknown; only routine barriers default absent", () => {
+  const d = L.createEmptyState();
+  assert.equal(d.encounter, "routine");
+  assert.equal(d.redFlags, null);
+  assert.equal(d.moderateExac, null);
+  assert.equal(d.currentBiologic, "unknown");
+  assert.equal(d.adherenceConcern, false);
+  assert.equal(L.normalizeState({ age: "" }).age, null);
   assert.equal(
-    isRoflumilastCandidate({
-      fev1Predicted: 45,
-      chronicBronchitis: true,
-      moderateExac: 1,
-      severeExac: 0
-    }),
-    true
-  );
-
-  assert.equal(
-    isRoflumilastCandidate({
-      fev1Predicted: 60,
-      chronicBronchitis: true,
-      moderateExac: 1,
-      severeExac: 0
-    }),
-    false
-  );
-
-  assert.equal(
-    isRoflumilastCandidate({
-      fev1Predicted: 45,
-      chronicBronchitis: false,
-      moderateExac: 1,
-      severeExac: 0
-    }),
-    false
+    L.normalizeState({ addonContext: "none" }).maintenanceOcs,
+    false,
   );
 });
-
-test("adds the NCCN screening footnote when lung cancer screening is recommended", () => {
-  const footnote = getLungCancerScreeningFootnote({
-    age: 60,
-    smokingStatus: "former",
-    packYears: 30,
-    yearsSinceQuit: 20
+test("a general no-add-ons answer cannot erase a known positive systemic-steroid exposure", () => {
+  assert.equal(
+    L.normalizeState({ addonContext: "none", maintenanceOcs: true })
+      .maintenanceOcs,
+    true,
+  );
+  assert.equal(
+    L.normalizeState({ addonContext: "none", currentBiologic: "dupilumab" })
+      .currentBiologic,
+    "dupilumab",
+  );
+});
+for (const [input, result] of [
+  [65, 0.65],
+  [0.699, 0.699],
+  [0.7, 0.7],
+  [70, 0.7],
+  [250, null],
+  ["", null],
+])
+  test("FEV1/FVC exact threshold " + input, () =>
+    assert.equal(L.normalizeFev1FvcHeuristic(input), result),
+  );
+for (const [m, s, high, expected] of [
+  [1, 0, true, "E"],
+  [null, 1, true, "E"],
+  [1, null, true, "E"],
+  [0, null, null, null],
+  [null, 0, null, null],
+  [0, 0, false, "B"],
+  [null, null, null, null],
+]) {
+  test("exacerbation history " + JSON.stringify([m, s]), () => {
+    const r = build({ moderateExac: m, severeExac: s });
+    assert.equal(r.findings.risk.high, high);
+    assert.equal(r.group, expected);
+    if (m === null || s === null) assert.equal(r.findings.risk.total, null);
   });
-
-  assert.match(footnote, /National Comprehensive Cancer Network/i);
-  assert.match(footnote, /2026 revision/i);
-});
-
-test("nccn lung cancer screening eligibility has no years-since-quit cutoff or upper age limit", () => {
+}
+test("either symptom instrument suffices; no instrument does not establish low symptoms", () => {
   assert.equal(
-    isLungCancerScreenEligible({
-      age: 82,
-      smokingStatus: "former",
-      packYears: 25,
-      yearsSinceQuit: 20
+    L.assignGoldGroup({
+      catScore: 9,
+      mmrcScore: null,
+      moderateExac: 0,
+      severeExac: 0,
     }),
-    true
+    "A",
   );
-
   assert.equal(
-    isLungCancerScreenEligible({
-      age: 49,
-      smokingStatus: "former",
-      packYears: 25,
-      yearsSinceQuit: 20
+    L.assignGoldGroup({
+      catScore: null,
+      mmrcScore: 2,
+      moderateExac: 0,
+      severeExac: 0,
     }),
-    false
+    "B",
+  );
+  assert.equal(
+    L.assignGoldGroup({
+      catScore: null,
+      mmrcScore: null,
+      moderateExac: 0,
+      severeExac: 0,
+    }),
+    null,
+  );
+  assert.equal(
+    L.assignGoldGroup(
+      L.classifySymptoms(base),
+      L.classifyExacerbationRisk(base),
+    ),
+    "B",
   );
 });
-
-test("copd app includes endemic-area exposure field and biologic parasite precaution text", () => {
-  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-  const app = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
-
-  assert.ok(html.includes('id="endemic-area-exposure"'));
-  assert.ok(html.includes("Patient has lived or resided in an endemic area for parasitic infection"));
-  assert.ok(app.includes("If eosinophils >300 cells/uL and there is epidemiologic helminth risk, screen for and treat parasitic infection before biologic therapy."));
+test("established diagnosis does not require repeat spirometry at every encounter", () => {
+  const r = build({ historicalObstruction: null });
+  assert.equal(r.findings.diagnosis.supported, true);
+  assert.equal(r.findings.diagnosis.objective, false);
+  assert.match(text(r), /Retrieve prior/);
+  assert.equal(
+    build({ diagnosisContext: "suspected", historicalObstruction: null })
+      .findings.diagnosis.supported,
+    false,
+  );
 });
-
-test("copd symptom calculators auto-apply totals without dedicated apply buttons", () => {
-  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-  const app = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
-
-  assert.ok(!html.includes('id="calc-cat-btn"'));
-  assert.ok(!html.includes('id="apply-mmrc-btn"'));
-  assert.ok(app.includes('applyCalculatorValue("cat-score", state.total, "cat")'));
-  assert.ok(app.includes('applyCalculatorValue("mmrc-score", selected, "mmrc")'));
+test("current normal ratio and historical obstruction are reconciled, not erased", () => {
+  const r = build({ fev1fvc: 0.72 });
+  assert.equal(r.findings.diagnosis.supported, true);
+  assert.ok(r.cautions.some((t) => /does not show/.test(t)));
+});
+test("existing maintenance activates follow-up; assumption never copied into SOAP", () => {
+  const r = build({ managementPhase: "initial" });
+  assert.equal(r.findings.therapy.phase, "followup");
+  assert.match(r.cautions.join(" "), /follow-up management logic/);
+  assert.doesNotMatch(N.buildNoteText(r), /logic was used|Initial mode/);
+});
+test("initial Group B offers dual therapy; Group E high eosinophils offers triple", () => {
+  assert.ok(
+    opt(
+      build({ currentRegimen: "naive", managementPhase: "initial" }),
+      "controller",
+      "dual",
+    ),
+  );
+  assert.ok(
+    opt(
+      build({
+        currentRegimen: "naive",
+        managementPhase: "initial",
+        moderateExac: 1,
+        eosinophils: 300,
+      }),
+      "controller",
+      "triple",
+    ),
+  );
+});
+test("follow-up uses dyspnea and exacerbation pathways simultaneously", () => {
+  const r = build({
+    currentRegimen: "lama",
+    persistentDyspnea: true,
+    moderateExac: 1,
+  });
+  assert.ok(opt(r, "controller", "dual"));
+  assert.ok(
+    opt(build({ moderateExac: 1, eosinophils: 100 }), "controller", "triple"),
+  );
+  assert.equal(
+    opt(build({ moderateExac: 1, eosinophils: 99 }), "controller", "triple"),
+    undefined,
+  );
+});
+test("barriers block routine escalation without erasing positive risk", () => {
+  const r = build(
+    { adherenceConcern: true, moderateExac: 1, eosinophils: 300 },
+    { controller: "triple" },
+  );
+  assert.equal(r.group, "E");
+  assert.ok(opt(r, "controller", "triple").blockers.length);
+  assert.equal(r.selections.controller, undefined);
+});
+for (const asthma of ["unknown", "suspected", "confirmed"])
+  test("non-ICS change is blocked when asthma is " + asthma, () => {
+    const r = build({
+      currentRegimen: "lama",
+      persistentDyspnea: true,
+      asthma,
+    });
+    assert.ok(opt(r, "controller", "dual").blockers.length);
+  });
+for (const [key, val] of [
+  ["asthma", "confirmed"],
+  ["asthma", "unknown"],
+  ["eosinophils", 300],
+  ["eosinophils", null],
+  ["historicalEosinophils", 300],
+  ["moderateExac", 1],
+  ["severeExac", null],
+]) {
+  test("ICS withdrawal safeguard " + key + "=" + val, () => {
+    const r = build(
+      {
+        currentRegimen: "triple",
+        icsSideEffects: true,
+        eosinophils: 100,
+        ...{ [key]: val },
+      },
+      { controller: "withdraw" },
+    );
+    assert.ok(opt(r, "controller", "withdraw").blockers.length);
+    assert.equal(r.selections.controller, undefined);
+  });
+}
+test("selected ICS withdrawal and product retain withdrawal monitoring and no duplicate controller", () => {
+  const r = build(
+    { currentRegimen: "triple", icsSideEffects: true, eosinophils: 100 },
+    { controller: "withdraw", product: "anoro" },
+  );
+  assert.equal(r.selections.product, "anoro");
+  assert.match(text(r), /Withdraw the previous ICS/);
+  assert.match(text(r), /62.5\/25/);
+  assert.equal(
+    r.actions.filter((a) => a.id === "selected-controller").length,
+    0,
+  );
+});
+test("controller changes invalidate an incompatible product; note contains only the selected product", () => {
+  const r = build(
+    { moderateExac: 1, eosinophils: 300 },
+    { controller: "triple", product: "anoro" },
+  );
+  assert.equal(r.selections.product, undefined);
+  const good = build(
+    { moderateExac: 1, eosinophils: 300 },
+    { controller: "triple", product: "trelegy" },
+  );
+  const note = N.buildNoteText(good);
+  assert.match(note, /100\/62.5\/25/);
+  assert.doesNotMatch(note, /Breztri|160\/9\/4.8|200\/62.5/);
+});
+test("COPD product catalog uses COPD doses, not asthma SMART or biologic loading doses", () => {
+  assert.match(C.MEDICATIONS.spiriva.dose, /2.5 mcg.*2 inhalations/);
+  assert.match(
+    C.MEDICATIONS.breztri.dose,
+    /160\/9\/4.8.*2 inhalations twice daily/,
+  );
+  assert.match(C.MEDICATIONS.mepolizumab.dose, /100 mg.*4 weeks/);
+  assert.match(C.MEDICATIONS.dupilumab.dose, /300 mg.*2 weeks/);
+  assert.doesNotMatch(C.MEDICATIONS.dupilumab.dose, /600|loading/);
+});
+test("roflumilast requires low FEV1, chronic bronchitis, events and appropriate maintenance context", () => {
+  assert.equal(
+    L.isRoflumilastCandidate({
+      fev1Predicted: 49,
+      chronicBronchitis: true,
+      moderateExac: 1,
+    }),
+    true,
+  );
+  assert.equal(
+    L.isRoflumilastCandidate({
+      fev1Predicted: 50,
+      chronicBronchitis: true,
+      moderateExac: 1,
+    }),
+    false,
+  );
+  assert.equal(
+    build({
+      currentRegimen: "lama",
+      fev1Predicted: 40,
+      chronicBronchitis: true,
+      moderateExac: 1,
+    }).addonCandidates.some((c) => c.id === "roflumilast"),
+    false,
+  );
+  const r = build(
+    {
+      fev1Predicted: 40,
+      chronicBronchitis: true,
+      moderateExac: 1,
+      addonSafety: true,
+      roflumilastLiver: false,
+      lowWeightConcern: false,
+    },
+    { addon: "roflumilast" },
+  );
+  assert.equal(r.selections.addon, "roflumilast");
+  assert.equal(
+    build(
+      {
+        fev1Predicted: 40,
+        chronicBronchitis: true,
+        moderateExac: 1,
+        roflumilastLiver: true,
+      },
+      { addon: "roflumilast" },
+    ).selections.addon,
+    undefined,
+  );
+});
+const bio = {
+  currentRegimen: "triple",
+  moderateExac: 2,
+  eosinophils: 300,
+  chronicBronchitis: true,
+  addonSafety: true,
+  biologicReview: true,
+  endemicAreaExposure: false,
+};
+test("biologics remain provisional until optimization and agent-specific prerequisites are verified", () => {
+  const provisional = build(
+    { ...bio, biologicReview: null },
+    { addon: "dupilumab" },
+  );
+  assert.ok(provisional.addonCandidates.some((c) => c.id === "dupilumab"));
+  assert.equal(provisional.selections.addon, undefined);
+  assert.equal(
+    build(bio, { controller: "continue", addon: "dupilumab" }).selections.addon,
+    "dupilumab",
+  );
+  assert.equal(
+    build({ ...bio, moderateExac: 1 }, { addon: "dupilumab" }).selections.addon,
+    undefined,
+  );
+});
+test("mepolizumab evidence profile is not copied from dupilumab or a universal payer threshold", () => {
+  const r = build({ ...bio, eosinophils: 150, chronicBronchitis: false });
+  assert.ok(opt(r, "addon", "mepolizumab"));
+  assert.equal(opt(r, "addon", "dupilumab"), undefined);
+  assert.match(
+    r.addonCandidates.find((c) => c.id === "mepolizumab").why,
+    /does not impose a universal/,
+  );
+});
+test("helminth risk, current biologic exposure and positive safety concerns block definitive biologic initiation", () => {
+  for (const x of [
+    { endemicAreaExposure: null },
+    { endemicAreaExposure: true, parasiteAssessment: null },
+    { addonContext: "yes", currentBiologic: "mepolizumab" },
+    { adherenceConcern: true },
+  ]) {
+    assert.equal(
+      build({ ...bio, ...x }, { addon: "dupilumab" }).selections.addon,
+      undefined,
+    );
+  }
+  assert.equal(
+    build(
+      { ...bio, endemicAreaExposure: true, parasiteAssessment: true },
+      { addon: "dupilumab" },
+    ).selections.addon,
+    "dupilumab",
+  );
+});
+test("ensifentrine and azithromycin use relevant contexts without duplicate current treatment", () => {
+  assert.ok(opt(build({ persistentDyspnea: true }), "addon", "ensifentrine"));
+  assert.equal(
+    opt(
+      build({ moderateExac: 1, smokingStatus: "current" }),
+      "addon",
+      "azithromycin",
+    ),
+    undefined,
+  );
+  assert.ok(opt(build({ moderateExac: 1 }), "addon", "azithromycin"));
+  assert.equal(
+    build(
+      {
+        persistentDyspnea: true,
+        addonContext: "yes",
+        currentEnsifentrine: true,
+        addonSafety: true,
+      },
+      { addon: "ensifentrine" },
+    ).selections.addon,
+    undefined,
+  );
+});
+for (const [age, pack, expect] of [
+  [49, 30, false],
+  [50, 20, true],
+  [85, 20, true],
+  [70, 19, false],
+])
+  test("NCCN age/exposure " + age + "/" + pack, () =>
+    assert.equal(
+      L.isLungCancerScreenEligible({
+        age,
+        packYears: pack,
+        yearsSinceQuit: 40,
+      }),
+      expect,
+    ),
+  );
+test("screening requires asymptomatic context and curative benefit, separate from diagnosis/surveillance", () => {
+  const due = {
+    age: 80,
+    packYears: 30,
+    yearsSinceQuit: 30,
+    screeningContext: "screening",
+    curativeBenefit: true,
+    ldctStatus: "due",
+  };
+  assert.match(text(build(due)), /Arrange annual screening/);
+  assert.doesNotMatch(
+    N.buildNoteText(build(due)),
+    /Screening reference|NCCN.*2026 revision/,
+  );
+  assert.match(
+    text(build({ ...due, curativeBenefit: false })),
+    /Do not initiate or continue/,
+  );
+  assert.doesNotMatch(
+    text(build({ ...due, screeningContext: "symptoms" })),
+    /Arrange annual screening/,
+  );
+  assert.match(
+    text(build({ ...due, screeningContext: "surveillance" })),
+    /individualized.*surveillance/,
+  );
+});
+test("AAT status produces testing or family/liver review, never automatic augmentation", () => {
+  assert.match(text(build({ aatdStatus: "not-done" })), /S\/Z genotyping/);
+  assert.match(
+    text(build({ aatdStatus: "known-aatd" })),
+    /family-testing and liver-care/,
+  );
+  assert.doesNotMatch(
+    text(build({ aatdStatus: "known-aatd" })),
+    /Start augmentation/,
+  );
+});
+test("vaccines distinguish due, unknown, completed, contraindicated and age eligibility", () => {
+  assert.ok(
+    opt(build({ pneumococcalStatus: "due" }), "pneumococcalPlan", "pcv20"),
+  );
+  assert.match(
+    text(build({ pneumococcalStatus: "due" }, { pneumococcalPlan: "pcv20" })),
+    /Recommend PCV20/,
+  );
+  assert.match(text(build({ rsvStatus: "due" })), /one RSV vaccine dose/);
+  assert.doesNotMatch(
+    text(build({ age: 49, rsvStatus: "due" })),
+    /Recommend one RSV/,
+  );
+  assert.match(
+    text(build({ rsvStatus: "contraindicated" })),
+    /precaution\/contraindication/,
+  );
+  assert.doesNotMatch(
+    text(build({ rsvStatus: "complete" })),
+    /Recommend one RSV/,
+  );
+  assert.match(text(build()), /Reconcile vaccination records/);
+  assert.doesNotMatch(
+    N.buildNoteText(build({ pneumococcalStatus: "due" })),
+    /was administered|vaccination completed/,
+  );
+});
+test("rehabilitation supports selected remote programs and recovery follow-up", () => {
+  assert.match(
+    text(build({ rehabPreference: "remote" })),
+    /Refer to an appropriate remote/,
+  );
+  assert.match(text(build({ encounter: "recovery" })), /1-4 weeks/);
+});
+test("stable oxygen thresholds require measurement conditions and never invent flow prescription", () => {
+  assert.doesNotMatch(
+    text(build({ restingSpo2: 87 })),
+    /formal long-term oxygen/,
+  );
+  assert.match(
+    text(build({ restingSpo2: 88, oxygenConditions: "roomair" })),
+    /formal long-term oxygen/,
+  );
+  assert.doesNotMatch(
+    text(build({ restingSpo2: 91, oxygenConditions: "roomair" })),
+    /formal long-term oxygen/,
+  );
+  assert.match(
+    text(
+      build({
+        restingSpo2: 89,
+        oxygenConditions: "roomair",
+        hypoxemiaComplication: true,
+      }),
+    ),
+    /formal long-term oxygen/,
+  );
+  assert.match(
+    text(build({ exertionalSpo2: 86, exertionalRoomAir: null })),
+    /Clarify oxygen conditions during/,
+  );
+});
+test("home NIV requires stable arterial assessment and appropriate timing, not a venous value", () => {
+  assert.doesNotMatch(text(build({ paco2: 55 })), /nocturnal NIV/);
+  assert.match(
+    text(
+      build({ abgAvailable: true, paco2: 55, hypercapniaContext: "stable" }),
+    ),
+    /nocturnal NIV/,
+  );
+  assert.match(
+    text(build({ abgAvailable: true, paco2: 55, hypercapniaContext: "acute" })),
+    /2-4 weeks/,
+  );
+});
+test("BODE requires all components and uses standard boundaries", () => {
+  assert.equal(
+    L.calculateBode({
+      bmi: 21,
+      fev1Predicted: 35,
+      mmrcScore: 4,
+      walkDistance: 149,
+    }),
+    10,
+  );
+  assert.equal(
+    L.calculateBode({
+      bmi: 22,
+      fev1Predicted: 65,
+      mmrcScore: 1,
+      walkDistance: 350,
+    }),
+    0,
+  );
+  assert.equal(
+    L.calculateBode({
+      bmi: 21,
+      fev1Predicted: 35,
+      mmrcScore: null,
+      walkDistance: 149,
+    }),
+    null,
+  );
+  assert.equal(
+    L.calculateBode({
+      bmi: 21,
+      fev1Predicted: 35,
+      mmrcScore: 5,
+      walkDistance: 149,
+    }),
+    null,
+  );
+});
+test("valve and surgical pathways remain distinct; high-risk profile is not universal valve exclusion", () => {
+  const r = build({
+    emphysema: true,
+    persistentDyspnea: true,
+    rv: 200,
+    collateralVentilation: "present",
+    fev1Predicted: 20,
+    dlco: 20,
+    ctDistribution: "homogeneous",
+  });
+  assert.ok(opt(r, "lvr", "valve").blockers.length);
+  assert.equal(opt(r, "lvr", "surgery").blockers.length, 0);
+  assert.ok(r.cautions.some((t) => /not a universal valve exclusion/.test(t)));
+});
+test("advanced workup identifies referral opportunities, never automatic eligibility or listing", () => {
+  const r = build(
+    { emphysema: true, progression: true, fev1Predicted: 24 },
+    { lvr: "refer", transplant: "refer" },
+  );
+  assert.equal(r.findings.advanced.bode, null);
+  assert.equal(r.selections.transplant, "refer");
+  assert.equal(r.selections.lvr, "refer");
+  assert.match(text(r), /does not establish listing eligibility/);
+  assert.equal(
+    group(
+      build({ emphysema: true, progression: true, advancedInterest: "defer" }),
+      "lvr",
+    ),
+    undefined,
+  );
+});
+test("cessation doses depend on prerequisites; selected therapy replaces alternatives in SOAP", () => {
+  const smoking = {
+    smokingStatus: "current",
+    cessationSafety: true,
+    renalStatus: "normal",
+    cigarettesPerDay: 20,
+    firstCigarette: "within30",
+    bupropionContra: false,
+  };
+  const note = N.buildNoteText(build(smoking, { cessation: "nrt" }));
+  assert.match(note, /21 mg daily plus 4 mg/);
+  assert.doesNotMatch(note, /Start varenicline|Start bupropion/);
+  assert.match(
+    text(
+      build(
+        { ...smoking, renalStatus: "severe" },
+        { cessation: "varenicline" },
+      ),
+    ),
+    /at most 0.5 mg twice daily/,
+  );
+  assert.equal(
+    build({ ...smoking, bupropionContra: true }, { cessation: "bupropion" })
+      .selections.cessation,
+    undefined,
+  );
+  assert.equal(
+    build({ ...smoking, renalStatus: "unknown" }, { cessation: "varenicline" })
+      .selections.cessation,
+    undefined,
+  );
+});
+const acute = {
+  encounter: "active",
+  acuteDyspnea: true,
+  acuteSputumVolume: true,
+  acutePurulence: true,
+  acuteProgression: "stable",
+  respiratoryRate: 20,
+  heartRate: 90,
+  acuteSpo2: 93,
+  acuteOxygen: "roomair",
+  acuteMentalStatus: "baseline",
+  mimicConcern: false,
+  outpatientSupport: true,
+  outpatientAppropriate: true,
+  maintenanceOcs: false,
+  antibioticSafety: true,
+  resistantOrganisms: false,
+  bronchiectasis: false,
+};
+test("incomplete acute assessment allows guidance but not safety clearance or routine prescriptions", () => {
+  const r = build({ encounter: "active" }, { acuteSteroid: "burst" });
+  assert.equal(r.findings.acute.outpatient, false);
+  assert.equal(r.selections.acuteSteroid, undefined);
+  assert.match(text(r), /Missing observations/);
+  assert.doesNotMatch(
+    N.buildNoteText(r),
+    /safe for discharge|mild exacerbation/,
+  );
+});
+test("outpatient acute selected treatments share exact actions and do not invent administration", () => {
+  const r = build(acute, {
+    acuteBronchodilator: "mdi",
+    acuteSteroid: "burst",
+    acuteAntibiotic: "doxy",
+  });
+  assert.equal(r.findings.acute.outpatient, true);
+  assert.equal(r.selections.acuteSteroid, "burst");
+  const n = N.buildNoteText(r);
+  assert.match(n, /prednisone 40 mg orally daily for 5 days/);
+  assert.match(n, /doxycycline 100 mg/);
+  assert.match(n, /Treatment actually administered.*\*\*\*/);
+  assert.doesNotMatch(
+    n,
+    /received prednisone|improved after|safe for discharge/,
+  );
+});
+for (const urgent of [
+  { redFlags: true },
+  { acuteSpo2: 85 },
+  { respiratoryRate: 30 },
+  { heartRate: 130 },
+  { systolicBp: 89 },
+  { acuteMentalStatus: "altered" },
+  { acuteProgression: "worsening" },
+  { acuteResponse: "worse" },
+  { acutePh: 7.34, acutePaco2: 50 },
+]) {
+  test(
+    "known urgent finding overrides routine plans " + JSON.stringify(urgent),
+    () => {
+      const r = build(
+        { ...acute, ...urgent },
+        { controller: "continue", acuteSteroid: "burst" },
+      );
+      assert.equal(r.emergency, true);
+      assert.equal(r.groups.length, 0);
+      assert.match(text(r), /urgent emergency-level/);
+      assert.doesNotMatch(text(r), /Start prednisone/);
+      assert.equal(
+        build({ ...acute, ...urgent, encounter: "routine" }).emergency,
+        true,
+      );
+    },
+  );
+}
+test("Rome features are explicit and missing values do not establish mild severity", () => {
+  assert.equal(
+    build({
+      ...acute,
+      respiratoryRate: 24,
+      heartRate: 95,
+      acuteDyspneaScore: 5,
+    }).findings.acute.romeCount,
+    3,
+  );
+  assert.doesNotMatch(
+    build({ encounter: "active" }).findings.acute.label,
+    /mild/,
+  );
+});
+test("acute improvement does not imply discharge readiness; OCS and antibiotic cautions persist", () => {
+  const r = build(
+    {
+      ...acute,
+      acuteReassessed: true,
+      acuteResponse: "improved",
+      maintenanceOcs: true,
+      addonContext: "yes",
+    },
+    { acuteSteroid: "burst" },
+  );
+  assert.equal(r.selections.acuteSteroid, undefined);
+  assert.match(text(r), /Do not infer discharge readiness/);
+  assert.equal(
+    build({ ...acute, acutePurulence: false }, { acuteAntibiotic: "doxy" })
+      .selections.acuteAntibiotic,
+    undefined,
+  );
+});
+test("invalid numeric entries block the note without hiding known urgent findings", () => {
+  const r = build({ ...acute, acuteSpo2: 120, redFlags: true });
+  assert.equal(r.invalid, true);
+  assert.equal(r.emergency, true);
+  assert.equal(N.buildNoteText(r), "");
+});
+test("SOAP includes placeholders and only actual available findings with direct selected actions", () => {
+  const r = build({}, { controller: "continue", rescue: "albuterol" }),
+    n = N.buildNoteText(r);
+  for (const h of ["Subjective", "Objective", "Assessment", "Plan"])
+    assert.ok(n.includes(h));
+  assert.equal((n.match(/Examination: \*\*\*/g) || []).length, 1);
+  assert.doesNotMatch(
+    n,
+    /normal examination|denies|not entered|selected|Rationale|Safety Checks|NCCN|Not assessed/i,
+  );
+  assert.match(n, /Continue the current LABA\/LAMA/);
+  assert.match(n, /albuterol 90 mcg/);
+});
+test("workflow branches without clearing useful measurements or hiding urgent findings", () => {
+  const d = L.normalizeState({ ...base, fev1Predicted: 40 }),
+    r = L.buildRecommendation(d);
+  const routine = W.steps(d, r);
+  assert.ok(!routine.some((s) => s.id === "acute-observations"));
+  const activeData = L.normalizeState({ ...d, encounter: "active" }),
+    activeSteps = W.steps(activeData, L.buildRecommendation(activeData));
+  assert.ok(activeSteps.some((s) => s.id === "acute-observations"));
+  assert.ok(!activeSteps.some((s) => s.id === "acute-response"));
+  assert.equal(activeData.fev1Predicted, 40);
+  assert.ok(
+    W.steps(
+      { ...activeData, acuteReassessed: true },
+      L.buildRecommendation(activeData),
+    ).some((s) => s.id === "acute-response"),
+  );
+  assert.ok(
+    !W.steps({ ...d, encounter: "recovery" }, r).some(
+      (s) => s.id === "acute-observations",
+    ),
+  );
+  assert.equal(W.reconcileStep("removed", routine), "context");
+});
+test("advanced data are optional and screen-level until explicitly requested", () => {
+  const d = L.normalizeState(base),
+    r = build();
+  assert.ok(!W.steps(d, r).some((s) => s.id === "advanced-pft"));
+  assert.ok(
+    W.steps({ ...d, advancedInterest: "detail" }, r).some(
+      (s) => s.id === "advanced-pft",
+    ),
+  );
 });
