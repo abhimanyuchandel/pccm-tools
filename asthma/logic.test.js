@@ -70,6 +70,31 @@ test("missing control answers cannot establish good control", () => {
   assert.equal(L.classifyControl(base({ activityLimitation: null })).classification, "not fully assessed");
   assert.equal(L.classifyControl(base({ reliever: "unknown" })).classification, "not fully assessed");
 });
+test("control assessment identifies each missing applicable field without inferring negatives", () => {
+  assert.deepEqual(L.classifyControl(base()).missingFields, []);
+  for (const key of ["symptomDays", "nightWaking", "activityLimitation", "reliever"]) {
+    const assessment = L.classifyControl(base({ [key]: key === "activityLimitation" ? null : "unknown" }));
+    assert.deepEqual(assessment.missingFields, [key]);
+    assert.equal(assessment.complete, false);
+    assert.equal(assessment.classification, "not fully assessed");
+  }
+  assert.deepEqual(L.classifyControl(base({ reliever: "none" })).missingFields, []);
+  assert.deepEqual(L.classifyControl(base({ reliever: "saba", sabaFrequency: "unknown" })).missingFields, ["sabaFrequency"]);
+  assert.deepEqual(L.classifyControl(base({ reliever: "ics-saba", sabaFrequency: "unknown" })).missingFields, []);
+  const incomplete = L.classifyControl(poor({ reliever: "saba", sabaFrequency: "unknown" }));
+  assert.equal(incomplete.classification, "uncontrolled");
+  assert.deepEqual(incomplete.missingFields, ["sabaFrequency"]);
+});
+test("documented absence of a reliever does not turn answered symptom history into missing data", () => {
+  const d = base({ controller: "none", reliever: "none", icsDose: "unknown" });
+  const assessment = L.classifyControl(d);
+  assert.equal(assessment.complete, true);
+  assert.equal(assessment.classification, "well controlled");
+  assert.equal(assessment.sabaApplicable, false);
+  const rec = L.buildRecommendation(d);
+  assert.ok(rec.findings.risk.factors.some(factor => /ICS/.test(factor)));
+  assert.ok(rec.actions.some(action => /ICS-containing/.test(action.text)));
+});
 test("three positive documented control items remain uncontrolled despite missing history", () => {
   const control = L.classifyControl(poor({ reliever: "saba", sabaFrequency: "unknown" }));
   assert.equal(control.classification, "uncontrolled"); assert.equal(control.complete, false);
@@ -735,7 +760,7 @@ test("none and SABA shortcuts record current treatment without treating it as gu
     assert.ok(ids(rec).includes("start-controller"));
     assert.equal(rec.findings.proposedMedicationId, null);
     assert.ok(rec.plan.groups.find(group => group.id === "controller").options.some(option => option.id === "air"));
-    assert.equal(rec.findings.control.complete, false);
+    assert.equal(rec.findings.control.complete, id === "none");
     assert.equal(data.sabaFrequency, "unknown");
     const text = note(data);
     assert.doesNotMatch(text, /reliever was no reliever|Recommended continuation of.*SABA-only/);

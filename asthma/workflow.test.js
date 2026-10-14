@@ -59,7 +59,9 @@ test("a historical severe diagnosis does not make a low-dose foundation ready fo
 });
 test("unknown risks produce targeted confirmations, not reassuring note statements", () => {
   const rec = build(routine({ activityLimitation: null, stableMonths: 4, lungFunctionStable: true }));
-  for (const key of ["activityLimitation", "recentExacerbation", "priorIcu", "respiratoryInfection", "travelling"]) assert.ok(rec.plan.confirmations.some(item => item.key === key), key);
+  for (const key of ["recentExacerbation", "priorIcu", "respiratoryInfection", "travelling"]) assert.ok(rec.plan.confirmations.some(item => item.key === key), key);
+  assert.deepEqual(rec.findings.control.missingFields, ["activityLimitation"]);
+  assert.equal(rec.plan.confirmations.some(item => item.key === "activityLimitation"), false);
   assert.doesNotMatch(text(rec), /No prior ICU|no activity limitation|well controlled/);
   assert.equal(group(rec, "controller").options.some(item => item.id === "stepdown"), false);
 });

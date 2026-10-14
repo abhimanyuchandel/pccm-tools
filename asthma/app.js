@@ -18,6 +18,10 @@
   let copying = false;
   let revision = 0;
   let routineRedFlagsDefaulted = true;
+  const controlLabels = {
+    symptomDays: "daytime symptoms", nightWaking: "night waking", activityLimitation: "activity limitation",
+    sabaFrequency: "SABA use for symptoms", reliever: "current reliever"
+  };
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -249,9 +253,8 @@
   }
 
   function updateInputSummaries() {
-    const symptomKeys = ["symptomDays", "nightWaking", "activityLimitation"];
-    if (value("reliever") === "saba") symptomKeys.push("sabaFrequency");
     const state = window.asthmaLogic.normalizeState(rawClinicalState());
+    const assessment = window.asthmaLogic.classifyControl(state);
     Object.keys(schema).filter(key => schema[key].type === "exception").forEach(key => {
       const wrapper = control(key).closest(".clinical-field");
       let badge = wrapper.querySelector(".confirmed-finding");
@@ -265,10 +268,9 @@
       const selected = controllerMatches && state.reliever === preset.reliever && (preset.icsDose === "unknown" || state.icsDose === preset.icsDose);
       button.setAttribute("aria-pressed", String(selected));
     });
-    const documented = symptomKeys.filter((key) => state[key] !== "unknown" && state[key] !== null).length;
-    document.getElementById("control-input-summary").textContent = documented
-      ? `${documented} of ${symptomKeys.length} applicable symptom inputs documented. Control and risk will be assessed separately when recommendations are generated.`
-      : "Symptom control is not yet assessed.";
+    document.getElementById("control-input-summary").textContent = `${assessment.answered} of ${assessment.total} applicable symptom inputs documented. ${assessment.complete
+      ? "Symptom-control history complete. Exacerbation risk is assessed separately."
+      : `To complete the assessment, review: ${assessment.missingFields.map(key => controlLabels[key]).join(", ")}.`}`;
     const evidence = ["dxBd", "dxIcsObjective", "dxChallenge", "dxPef"].filter((key) => control(key).checked).length;
     document.getElementById("diagnostic-input-summary").textContent = evidence
       ? `${evidence} historical evidence item${evidence === 1 ? "" : "s"} documented. New testing can be entered during initial or follow-up care.`
@@ -277,6 +279,7 @@
 
   function markStale() {
     revision += 1;
+    clearGenerationConfirmation();
     if (!snapshot) return;
     if (!stale) {
       stale = true;
@@ -304,7 +307,7 @@
     field.focus();
   }
 
-  function showErrors(errors, urgent = false) {
+  function showErrors(errors, urgent = false, moveFocus = true) {
     const box = document.getElementById("form-errors");
     box.replaceChildren();
     box.append(element("p", "", urgent
@@ -329,7 +332,7 @@
     status.textContent = urgent
       ? "Urgent escalation is recommended despite the form errors. The clinical note remains unavailable."
       : "Recommendations were not generated. Review the entries listed above.";
-    if (!urgent && errors[0].field) openAndFocus(errors[0].field);
+    if (moveFocus && !urgent && errors[0].field) openAndFocus(errors[0].field);
   }
 
   function renderList(id, items) {
@@ -471,6 +474,19 @@
     const summary = document.getElementById("assessment-summary");
     summary.replaceChildren();
     rec.summary.forEach((text) => summary.append(element("p", "", text)));
+    if (rec.findings.control.missingFields.length) {
+      const missing = element("p", "input-summary");
+      missing.append(document.createTextNode("Remaining symptom-control assessment: "));
+      rec.findings.control.missingFields.forEach((key, index) => {
+        if (index) missing.append(document.createTextNode(", "));
+        const field = control(key), link = element("a", "", controlLabels[key]);
+        link.href = `#${field.id}`;
+        link.addEventListener("click", event => { event.preventDefault(); openAndFocus(field); });
+        missing.append(link);
+      });
+      missing.append(document.createTextNode(". Choose an explicit answer if assessed; missing information is not assumed negative."));
+      summary.append(missing);
+    }
     renderActions(rec.actions);
     const medications = document.getElementById("medication-list");
     medications.replaceChildren();
@@ -592,16 +608,26 @@
       fieldset.append(choices); container.append(fieldset);
     });
     const confirmations = document.getElementById("plan-confirmation-fields");
+    const panel = document.getElementById("plan-confirmations");
+    const displayedConfirmations = [...plan.confirmations];
+    // Keep reviewed answers and the regeneration button in an open drawer, including after completion.
+    if (panel.open && !panel.classList.contains("hidden") && !rec.invalid && !rec.emergency && !rec.findings.acute.active) {
+      confirmations.querySelectorAll("[data-confirm-field]").forEach(input => {
+        const key = input.dataset.confirmField;
+        if (!displayedConfirmations.some(item => item.key === key)) displayedConfirmations.push({ key, label: input.closest("fieldset").querySelector("legend").textContent });
+      });
+    }
     confirmations.replaceChildren();
-    show("plan-confirmations", plan.confirmations.length > 0);
-    plan.confirmations.forEach(({ key, label }) => {
+    show("plan-confirmations", displayedConfirmations.length > 0);
+    displayedConfirmations.forEach(({ key, label }) => {
       const group = element("fieldset", "clinical-field choice-field");
       group.append(element("legend", "field-label", label));
       const choices = element("div", "choice-options");
       [["unknown", "Not assessed"], ["yes", "Present"], ["no", "Absent"]].forEach(([value, title]) => {
         const label = element("label", "choice-option"), input = element("input");
         input.type = "radio"; input.name = `confirm-${key}`; input.value = value;
-        input.dataset.confirmField = key; input.checked = value === "unknown";
+        const finding = rec.findings.data[key];
+        input.dataset.confirmField = key; input.checked = value === (finding === true ? "yes" : finding === false ? "no" : "unknown");
         label.append(input, element("span", "", title)); choices.append(label);
       });
       group.append(choices); confirmations.append(group);
@@ -625,7 +651,14 @@
     return { rec, selected, smokingPlan, note, planSelections: rec.plan.selections };
   }
 
-  function publishRecommendation(data, output, warnings) {
+  function clearGenerationConfirmation() {
+    document.querySelectorAll("[data-generation-button]").forEach(button => {
+      button.classList.remove("is-current");
+      button.querySelector(".generation-confirmation").classList.add("hidden");
+    });
+  }
+
+  function publishRecommendation(data, output, warnings, submitter, regenerating) {
     snapshot = data;
     recommendation = output.rec;
     selectedBiologicId = output.selected;
@@ -642,14 +675,19 @@
       ? recommendation.emergency
         ? "Urgent escalation is recommended. Do not delay care for form correction; the SOAP note remains unavailable."
         : "Data-quality errors were identified. Review Safety Checks, correct the inputs, and generate again."
-      : "Recommendations and SOAP note generated.";
-    const heading = document.getElementById("results-heading");
-    heading.focus({ preventScroll: true });
-    heading.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      : regenerating ? "Recommendations and SOAP note regenerated. Results are current." : "Recommendations and SOAP note generated below. Results are current.";
+    if (!recommendation.invalid && submitter?.matches("[data-generation-button]")) {
+      submitter.classList.add("is-current");
+      submitter.querySelector(".generation-confirmation").classList.remove("hidden");
+    }
   }
 
   function generate(event) {
     event.preventDefault();
+    const submitter = event.submitter || document.getElementById("generate-btn");
+    const regenerating = snapshot !== null;
+    const position = { left: window.scrollX, top: window.scrollY, behavior: "instant" };
+    clearGenerationConfirmation();
     document.getElementById("form-errors").classList.add("hidden");
     try {
       assertClinicalModules();
@@ -661,19 +699,24 @@
         const assessed = window.asthmaLogic.buildRecommendation(input.data, { selectedBiologicId: null });
         if (assessed.emergency) {
           const rec = { ...assessed, invalid: true, cautions: [...input.errors.map((error) => error.text), ...assessed.cautions] };
-          showErrors(input.errors, true);
-          publishRecommendation(Object.freeze({ ...input.data }), { rec, selected: null, note: "" }, input.warnings);
+          showErrors(input.errors, true, false);
+          publishRecommendation(Object.freeze({ ...input.data }), { rec, selected: null, note: "" }, input.warnings, submitter, regenerating);
           return;
         }
-        showErrors(input.errors);
+        showErrors(input.errors, false, false);
         return;
       }
       const data = Object.freeze({ ...input.data });
       const output = buildForSnapshot(data, selectedBiologicId);
-      publishRecommendation(data, output, input.warnings);
+      publishRecommendation(data, output, input.warnings, submitter, regenerating);
     } catch (error) {
       markStale();
-      showErrors([{ text: error.message || "Recommendations could not be generated. Please try again." }]);
+      showErrors([{ text: error.message || "Recommendations could not be generated. Please try again." }], false, false);
+    } finally {
+      // Rendering may change layout; generation must not navigate away from the clinician's position.
+      const focusTarget = submitter.getClientRects().length ? submitter : document.getElementById("generate-btn");
+      focusTarget.focus({ preventScroll: true });
+      window.scrollTo(position);
     }
   }
 

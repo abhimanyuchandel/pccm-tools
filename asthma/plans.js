@@ -8,7 +8,7 @@
 
   const CONTROLLER_ACTIONS = ["start-controller", "stepup", "step5-review", "continue", "stepdown", "stepdown-conditional", "track2-alternative", "ics-protection", "resolve-reliever"];
   const CONFIRMATION_LABELS = {
-    activityLimitation: "Activity limitation due to asthma", recentExacerbation: "Recent asthma exacerbation",
+    recentExacerbation: "Recent asthma exacerbation",
     priorIcu: "Prior ICU admission or life-threatening asthma", pregnant: "Pregnant",
     respiratoryInfection: "Current respiratory infection", travelling: "Upcoming travel or limited follow-up access",
     lamaAddon: "Already using a separate LAMA add-on"
@@ -33,7 +33,6 @@
     const confirm = key => {
       if (d[key] === null && !plan.confirmations.some(item => item.key === key)) plan.confirmations.push({ key, label: CONFIRMATION_LABELS[key] });
     };
-    if (d.symptomDays !== "unknown" && d.nightWaking !== "unknown") confirm("activityLimitation");
     if (d.smoking === "current" || rec.biologicCandidates.length) confirm("pregnant");
 
     const options = [];

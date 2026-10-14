@@ -40,6 +40,32 @@ async function main() {
   await page.route("**/*google-analytics.com/**", route => route.abort());
   const load = async () => { await page.goto(baseUrl); await page.waitForSelector("#age"); };
   const generate = async () => { await page.locator("#generate-btn").click(); };
+  const generateWithoutMoving = async (selector, { success = true, keyboard = false } = {}) => {
+    const button = page.locator(selector);
+    await button.scrollIntoViewIfNeeded();
+    await button.focus();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const position = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+    await page.evaluate(() => {
+      window.lastSubmissionPosition = null;
+      // Playwright may scroll a pointer target into view. Capture the real submission position before app rendering.
+      document.getElementById("asthma-form").addEventListener("submit", () => {
+        window.lastSubmissionPosition = { x: scrollX, y: scrollY };
+      }, { once: true, capture: true });
+    });
+    if (keyboard) await page.keyboard.press("Enter");
+    else await button.click();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const after = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+    const submitted = await page.evaluate(() => window.lastSubmissionPosition);
+    assert.ok(submitted, "button did not submit the form");
+    assert.ok(Math.abs(after.y - submitted.y) <= 1 && Math.abs(after.x - submitted.x) <= 1, `generation moved viewport: ${JSON.stringify({ position, submitted, after })}`);
+    if (keyboard) assert.deepEqual(submitted, position, "keyboard submission moved viewport before rendering");
+    assert.equal(await button.evaluate(node => document.activeElement === node), true, "generation moved keyboard focus");
+    assert.equal(await button.evaluate(node => node.classList.contains("is-current")), success);
+    assert.equal(await button.locator(".generation-check").evaluate(node => getComputedStyle(node).opacity), success ? "1" : "0");
+    assert.equal(await button.locator(".generation-confirmation").evaluate(node => node.classList.contains("hidden")), !success);
+  };
   const text = async () => page.locator("#note-output").inputValue();
   const openDetails = async () => page.evaluate(() => document.querySelectorAll("details").forEach(item => { item.open = true; }));
   const capture = async (locator, name) => {
@@ -57,6 +83,8 @@ async function main() {
     assert.equal(await page.locator('[name="acutePresentation"][value="none"]').isChecked(), true);
     assert.equal(await page.locator('[name="urgentRedFlags"][value="no"]').isChecked(), true);
     assert.equal(await page.locator('[name="phenotypeReviewed"]').count(), 0);
+    assert.equal(await page.locator('[name="activityLimitation"]').count(), 3);
+    assert.equal(await page.locator('[name="activityLimitation"][value="unknown"]').isChecked(), true);
     for (const key of ["allergenDriven", "nasalPolyps", "atopicDermatitis", "endemicExposure"]) {
       assert.equal(await page.locator(`[name="${key}"][value="unknown"]`).isChecked(), true);
     }
@@ -103,7 +131,18 @@ async function main() {
     assert.match(await text(), /No urgent red-flag features were documented/);
     assert.doesNotMatch(await text(), /Examination: normal|No exacerbations requiring/);
 
-    await setInputs(page, state); await generate();
+    await setInputs(page, { ...state, activityLimitation: null });
+    assert.match(await page.locator("#control-input-summary").textContent(), /2 of 3.*review: activity limitation/);
+    await generateWithoutMoving("#generate-btn", { keyboard: true });
+    assert.match(await text(), /could not be fully classified/);
+    const missingActivity = page.locator('#assessment-summary a[href="#activity-limitation-unknown"]');
+    assert.equal(await missingActivity.count(), 1);
+    await missingActivity.click();
+    assert.equal(await page.evaluate(() => document.activeElement.id), "activity-limitation-unknown");
+    await page.locator('[name="activityLimitation"][value="no"]').check();
+    assert.equal(await page.locator(".generation-button.is-current").count(), 0);
+    assert.match(await page.locator("#control-input-summary").textContent(), /3 of 3.*history complete/);
+    await generateWithoutMoving("#generate-btn");
     assert.match(await text(), /GINA Track 1 Step 4/); assert.match(await text(), /was well controlled/);
     assert.equal(await page.locator('[data-treatment-preset="smartMedium"]').getAttribute("aria-pressed"), "true");
     assert.equal((await text()).match(/\*\*\*/g).length, 4);
@@ -193,7 +232,11 @@ async function main() {
     assert.equal(await page.locator('[name="biologic-selection"][value="reslizumab"]').isDisabled(), true);
     assert.equal(await page.locator("#weight-kg").isEnabled(), true);
     assert.equal(await text(), "");
-    await page.locator("#biologic-dosing button").click();
+    await generateWithoutMoving("#biologic-dosing button");
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await generateWithoutMoving("#biologic-dosing button");
+    }
     await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
     assert.match(await text(), /217.5 mg IV every 4 weeks/);
     await setInputs(page, { allergenDriven: true, perennialSensitization: true }); await generate();
@@ -202,7 +245,8 @@ async function main() {
     assert.doesNotMatch(await text(), /adult asthma-table dose was/);
     await setInputs(page, { weightKg: 50, totalIge: 100, igePretreatment: true });
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
-    await generate();
+    assert.equal(await page.locator(".generation-button.is-current").count(), 0);
+    await generateWithoutMoving("#biologic-dosing button", { keyboard: true });
     await page.locator('[name="plan-controller"][value="continue-biologic"]').check();
     assert.match(await text(), /150 mg SC every 4 weeks/);
     await setInputs(page, { totalIge: 700, weightKg: 100 }); await generate();
@@ -348,14 +392,21 @@ async function main() {
     await setInputs(page, { ...state, symptomDays: "one-two", activityLimitation: null, stableMonths: 4, lungFunctionStable: true, pregnant: null });
     await generate();
     assert.doesNotMatch(await text(), /was well controlled|No prior ICU/);
+    await page.locator('[name="activityLimitation"][value="no"]').check();
     await page.locator("#plan-confirmations > summary").click();
-    for (const key of ["activityLimitation", "recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling"]) {
+    assert.equal(await page.locator('[name="confirm-activityLimitation"]').count(), 0);
+    for (const key of ["recentExacerbation", "priorIcu", "pregnant", "respiratoryInfection", "travelling"]) {
       await page.locator(`[name="confirm-${key}"][value="no"]`).check();
     }
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
     assert.equal(await text(), "");
-    assert.match(await page.locator("#activity-limitation").locator("..").locator("..").textContent(), /Individually documented as absent/);
-    await generate();
+    assert.equal(await page.locator('[name="activityLimitation"][value="no"]').isChecked(), true);
+    await generateWithoutMoving("#plan-confirmations button", { keyboard: true });
+    assert.equal(await page.locator('[name="confirm-priorIcu"][value="no"]').isChecked(), true);
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await generateWithoutMoving("#plan-confirmations button");
+    }
     assert.match(await text(), /was well controlled/);
     await page.locator('[name="plan-controller"][value="stepdown"]').check();
     assert.match(await text(), /1 inhalation twice daily/);
@@ -420,8 +471,42 @@ async function main() {
     assert.equal(await page.locator('[name="plan-controller"][value="assess-biologic"]').isChecked(), true);
     assert.match(await text(), /Assess response to Mepolizumab/);
     assert.doesNotMatch(await text(), /Benralizumab.*has been recommended|30 mg SC every/);
+
+    await load(); await setInputs(page, state);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await generateWithoutMoving("#generate-btn");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `generation overflow at ${width}`);
+      if ([390, 1280].includes(width)) {
+        await capture(page.locator(".generate-bar"), `generation-success-${width}`);
+        await capture(page.locator('#symptoms-heading').locator('..'), `explicit-control-${width}`);
+      }
+    }
+    await setInputs(page, { reliever: "saba", sabaFrequency: "unknown" });
+    assert.match(await page.locator("#control-input-summary").textContent(), /3 of 4.*SABA use for symptoms/);
+    await generateWithoutMoving("#generate-btn");
+    assert.match(await text(), /could not be fully classified/);
+    assert.equal(await page.locator('#assessment-summary a[href="#saba-frequency-unknown"]').count(), 1);
+    await setInputs(page, { sabaFrequency: "one-two" });
+    await generateWithoutMoving("#generate-btn");
+    assert.match(await text(), /was well controlled/);
+    await page.locator('[data-treatment-preset="none"]').click();
+    await generateWithoutMoving("#generate-btn");
+    assert.match(await text(), /was well controlled/);
+    assert.doesNotMatch(await text(), /could not be fully classified/);
+    assert.equal(await page.locator("#assessment-summary a").count(), 0);
+    await setInputs(page, { age: 17 });
+    await generateWithoutMoving("#generate-btn", { success: false });
+    assert.equal(await page.locator("#form-errors").isVisible(), true);
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    assert.equal(await page.locator(".generation-button.is-current").count(), 0);
+    await setInputs(page, { urgentRedFlags: true });
+    await generateWithoutMoving("#generate-btn", { success: false });
+    assert.equal(await page.locator("#emergency-output").isVisible(), true);
+    assert.equal(await text(), "");
     assert.deepEqual(errors, []);
-    console.log("Browser scenarios passed: combined biologic plan, eligibility instructions without retired checkboxes, assessment downgrade, dosing and current-biologic safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
+    console.log("Browser scenarios passed: explicit symptom-control answers and missing-field links, generation checkmarks and stable viewport/focus, failed/urgent generation, combined biologic plans, dosing safeguards, clipboard/stale behavior, keyboard access, and widths 320/390/768/1280.");
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

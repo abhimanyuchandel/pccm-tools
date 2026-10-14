@@ -1259,6 +1259,37 @@ input.numeric-alert:focus {
   min-height: 52px;
 }
 
+.asthma-page .generation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.asthma-page .generation-button > span {
+  min-width: 0;
+}
+
+.asthma-page .generation-check {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border-radius: 50%;
+  background: #dcfce7;
+  fill: none;
+  stroke: #166534;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.asthma-page .generation-button.is-current .generation-check {
+  opacity: 1;
+}
+
 .asthma-page .workflow-status {
   margin: 0;
   color: var(--muted);

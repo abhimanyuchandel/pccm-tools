@@ -124,13 +124,19 @@
 
   function classifyControl(input) {
     const d = normalizeState(input);
+    const keys = ["symptomDays", "nightWaking", "activityLimitation"];
     const items = [d.symptomDays === "unknown" ? null : ["three", "four-six", "daily"].includes(d.symptomDays), d.nightWaking === "unknown" ? null : d.nightWaking !== "none", d.activityLimitation];
     const sabaApplicable = d.reliever === "saba";
-    if (sabaApplicable) items.push(d.sabaFrequency === "unknown" ? null : d.sabaFrequency === "more-two");
+    if (sabaApplicable) {
+      keys.push("sabaFrequency");
+      items.push(d.sabaFrequency === "unknown" ? null : d.sabaFrequency === "more-two");
+    }
     const count = items.filter(value => value === true).length, answered = items.filter(value => value !== null).length;
-    const complete = answered === items.length && !["unknown", "none"].includes(d.reliever);
+    const missingFields = keys.filter((key, index) => items[index] === null);
+    if (d.reliever === "unknown") missingFields.push("reliever");
+    const complete = missingFields.length === 0;
     const classification = count >= 3 ? "uncontrolled" : !complete ? "not fully assessed" : count > 0 ? "partly controlled" : "well controlled";
-    return { count, answered, total: items.length, complete, sabaApplicable, classification, poor: count > 0,
+    return { count, answered, total: items.length, complete, missingFields, sabaApplicable, classification, poor: count > 0,
       summary: `GINA symptom control: ${classification}; ${count} positive of ${answered} documented items${complete ? "" : "; assessment incomplete"}. ${sabaApplicable ? "SABA use excludes pre-exercise doses." : "The SABA-frequency question is not applied to an ICS-containing reliever."}` };
   }
 

@@ -14,14 +14,14 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-5">
-  <script src="/asthma/input-schema.js?v=20261013-5" defer></script>
-  <script src="/asthma/medications.js?v=20261013-5" defer></script>
-  <script src="/asthma/smoking.js?v=20261013-5" defer></script>
-  <script src="/asthma/plans.js?v=20261013-5" defer></script>
-  <script src="/asthma/logic.js?v=20261013-5" defer></script>
-  <script src="/asthma/notes.js?v=20261013-5" defer></script>
-  <script src="/asthma/app.js?v=20261013-5" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261013-6">
+  <script src="/asthma/input-schema.js?v=20261013-6" defer></script>
+  <script src="/asthma/medications.js?v=20261013-6" defer></script>
+  <script src="/asthma/smoking.js?v=20261013-6" defer></script>
+  <script src="/asthma/plans.js?v=20261013-6" defer></script>
+  <script src="/asthma/logic.js?v=20261013-6" defer></script>
+  <script src="/asthma/notes.js?v=20261013-6" defer></script>
+  <script src="/asthma/app.js?v=20261013-6" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -58,7 +58,7 @@
         </div>
       </nav>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off" aria-describedby="form-instructions">
-        <p id="form-instructions" class="form-instructions">Enter current treatment and findings. Check symptoms and risks that are present; unchecked items and blank numbers remain undocumented. Treatment and cessation safety reviews have their own confirmations. Select the encounter plan after generating recommendations, or complete its *** placeholders in your EMR.</p>
+        <p id="form-instructions" class="form-instructions">Enter current treatment and findings. Answer the symptom questions explicitly and check risks that are present; unchecked risk boxes and blank numbers remain undocumented. Treatment and cessation safety reviews have their own confirmations. Select the encounter plan after generating recommendations, or complete its *** placeholders in your EMR.</p>
 
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
@@ -211,7 +211,7 @@
               <div class="grid" data-fields="stableMonths lungFunctionStable pregnant respiratoryInfection travelling"></div>
             </div>
           </details>
-          <p class="hint">Unchecked symptoms and risks remain undocumented. Use the symptom shortcut only for confirmed negative symptoms; blank exacerbation counts do not mean zero. Individual confirmations are offered below when a treatment decision needs them.</p>
+          <p class="hint">Unchecked risk boxes remain undocumented. Use the symptom shortcut only for confirmed negative symptoms; blank exacerbation counts do not mean zero. Individual confirmations are offered below when a treatment decision needs them.</p>
         </section>
 
         <section class="panel" aria-labelledby="acute-heading">
@@ -286,7 +286,10 @@
 
         <div id="form-errors" class="form-errors hidden" role="alert" aria-atomic="true"></div>
         <div class="generate-bar">
-          <button type="submit" id="generate-btn" class="primary-btn">Generate Management Recommendations and SOAP Note</button>
+          <button type="submit" id="generate-btn" class="primary-btn generation-button" data-generation-button aria-describedby="recommendation-status">
+            <span>Generate Management Recommendations and SOAP Note<span class="generation-confirmation sr-only hidden">. Recommendations current</span></span>
+            <svg class="generation-check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 12 4 4 8-8"/></svg>
+          </button>
           <p id="recommendation-status" class="workflow-status" role="status" aria-live="polite" aria-atomic="true">Ready for clinical inputs.</p>
         </div>
       </form>
@@ -328,7 +331,10 @@
             <div class="drawer-body">
               <p class="hint">Confirm individual findings only if assessed. Changes require regeneration; unchecked risks are never assumed absent.</p>
               <div id="plan-confirmation-fields" class="grid"></div>
-              <button type="submit" form="asthma-form" class="secondary-btn">Regenerate With Confirmed Findings</button>
+              <button type="submit" form="asthma-form" class="secondary-btn generation-button" data-generation-button aria-describedby="recommendation-status">
+                <span>Regenerate With Confirmed Findings<span class="generation-confirmation sr-only hidden">. Recommendations current</span></span>
+                <svg class="generation-check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 12 4 4 8-8"/></svg>
+              </button>
             </div>
           </details>
         </article>
@@ -352,7 +358,10 @@
             <p class="hint">These measurements are not required to discuss an option, but must be verified before finalizing its dose. After editing them, regenerate the recommendations and note. Patient inputs remain only in this open page.</p>
             <div class="grid" data-fields="weightKg"></div>
             <div id="omalizumab-dosing-fields" class="grid hidden" data-fields="totalIge igePretreatment"></div>
-            <button type="submit" form="asthma-form" class="secondary-btn">Regenerate With Dosing Inputs</button>
+            <button type="submit" form="asthma-form" class="secondary-btn generation-button" data-generation-button aria-describedby="recommendation-status">
+              <span>Regenerate With Dosing Inputs<span class="generation-confirmation sr-only hidden">. Recommendations current</span></span>
+              <svg class="generation-check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 12 4 4 8-8"/></svg>
+            </button>
           </div>
         </article>
         <article id="prevention-card" class="result-card hidden">

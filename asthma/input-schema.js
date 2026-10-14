@@ -69,7 +69,7 @@
     nightWaking: choice("Night waking due to asthma (last 4 weeks)", [
       ["none", "None"], ["less-weekly", "Less than once/week"], ["weekly-plus", "Once/week or more"]
     ], { compact: true, quickChoices: true }),
-    activityLimitation: exception("Activity limitation due to asthma (last 4 weeks)"),
+    activityLimitation: yesNo("Activity limitation due to asthma (last 4 weeks)", "Choose No if assessed and absent. Not assessed leaves symptom control incomplete."),
     sabaFrequency: choice("SABA use for symptoms (last 4 weeks)", [
       ["none", "None"], ["one-two", "1-2 times/week"], ["more-two", "More than twice/week"]
     ], { hint: "Exclude use before exercise. This control question applies to a SABA reliever.", compact: true, quickChoices: true }),

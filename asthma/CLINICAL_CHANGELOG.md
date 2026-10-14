@@ -1,8 +1,16 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review: October 13, 2026. Asset version: `20261013-5`.
+Clinical reference review: October 13, 2026. Asset version: `20261013-6`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Symptom-Control Completion and Regeneration Feedback
+
+- Changed activity limitation from a positive-only checkbox to explicit **Not assessed / Yes / No** choices beside daytime symptoms and night waking. Previously, an unmarked checkbox remained unknown, so an apparently completed encounter could still have incomplete symptom control. The negative-symptom shortcut still records an intentional negative answer. Removed the duplicate activity-limitation question from the post-generation confirmations.
+- Shared control findings now identify the exact unanswered fields. The input summary names missing answers, and Assessment Summary provides direct links to them. These interface reminders are not appended to the copied SOAP note. An unknown reliever still prevents treatment-aware completion; documented **No reliever** is no longer mistaken for missing history. No-reliever / no-ICS treatment risks and ICS-containing treatment recommendations remain effective independently of symptom control. No SABA-frequency answer is required for an ICS-containing reliever or a documented absence of a reliever. The symptom thresholds, explicit-negative safeguards, and priority of known uncontrolled symptoms remain intact. [GINA 2026 Summary Guide, Table 2, symptom control and separate exacerbation risk](https://ginasthma.org/wp-content/uploads/2026/07/GINA-Summary-Guide-2026-WEB-WMS.pdf).
+- Successful generation or regeneration displays a green checkmark on the submitted button, with an accessible current-results description and live confirmation. The icon's space is reserved to avoid layout shift. Clinical edits clear the indicator and retain the existing stale-output / clipboard safeguards. Invalid output and failed generation never receive a success indicator. These are usability changes, not assurances of clinical safety.
+- Generation no longer scrolls to the results, moves focus to the results heading, or automatically navigates to invalid entries. The clinician's viewport and button focus are preserved, while explicit error links still allow navigation. Open individual-confirmation drawers retain reviewed answers and their regeneration button after completion; their answers continue to reflect shared clinical state and can be revised.
+- Verification: 153 clinical/note/site regression tests; browser scenarios for complete and incomplete history, reliever-specific missing answers, no-reliever encounters, successful and failed/urgent generation, all three generation buttons with stable viewport/focus, clearing indicators after edits, dosing and plan selections, clipboard, keyboard use, and 320/390/768/1280 px layouts. No persistence, backend, API, or production changes.
 
 ## Explicit Inhaled-Regimen Plus Biologic Plan
 
