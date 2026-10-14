@@ -228,7 +228,9 @@
         urgentReasons.push("clinical deterioration");
       if (
         (known(d.acuteSpo2) && d.acuteSpo2 <= 85) ||
-        (known(d.postSpo2) && d.postSpo2 <= 85)
+        (known(d.postSpo2) && d.postSpo2 <= 85) ||
+        (known(d.restingSpo2) && d.restingSpo2 <= 85) ||
+        (d.abgAvailable === true && known(d.pao2) && d.pao2 <= 40)
       )
         urgentReasons.push("marked hypoxemia");
       if (
@@ -1520,8 +1522,8 @@
                 " mg nicotine gum or lozenge every 1-2 hours as needed for cravings (maximum 24 gum pieces or 20 lozenges per day). Review product technique and a step-down course, generally over 8-12 weeks, with behavioral support.",
               [
                 ...safety,
-                !known(d.cigarettesPerDay) &&
-                  "Document daily cigarette consumption.",
+                (!known(d.cigarettesPerDay) || d.cigarettesPerDay <= 0) &&
+                  "Document current positive daily cigarette consumption or individualize intermittent-use dosing.",
                 d.firstCigarette === "unknown" &&
                   "Document time to first cigarette.",
               ],

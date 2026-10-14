@@ -1,6 +1,6 @@
 # COPD guided encounter revision
 
-Clinical review date: October 14, 2026. Asset version: 20261014-1.
+Clinical review date: October 14, 2026. Asset version: 20261014-2.
 Delivery: preview branch `codex/copd-guided-soap`; production promotion requires clinical review.
 
 ## Architecture and documentation
@@ -54,6 +54,7 @@ Product presets use COPD-specific U.S. labeling:
 
 - Acute context exposes trajectory, sputum changes, observations, oxygen setting, differential assessment and actual reassessment. Recovery context uses routine risk review instead.
 - Known severe distress, altered mentation, rapid deterioration, marked hypoxemia, major vital-sign abnormalities or hypercapnic acidosis override routine prescriptions. The conservative urgent thresholds are triage safeguards, not a validated discharge rule.
+- Marked resting hypoxemia entered in the routine section also triggers urgent assessment (SpO2 at most 85% or confirmed arterial PaO2 at most 40 mmHg). These conservative workflow alerts do not replace evaluation of a concerning value above those boundaries.
 - Rome moderate-severity features are counted separately. Incomplete data never classify an episode as mild or establish outpatient safety.
 - Outpatient prescription choices require the key observations, explicit clinician judgment and support/access review. Even a complete screen does not assert safe discharge or improvement.
 - Prednisone 40 mg for five days is an option after oral-steroid exposure review; chronic OCS requires individualized dosing. Short-acting bronchodilator and antibiotic decisions are separate.

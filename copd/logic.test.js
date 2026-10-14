@@ -495,6 +495,14 @@ test("stable oxygen thresholds require measurement conditions and never invent f
     /Clarify oxygen conditions during/,
   );
 });
+test("marked routine hypoxemia triggers urgent review instead of only routine oxygen planning", () => {
+  for (const input of [{ restingSpo2: 85 }, { abgAvailable: true, pao2: 40 }]) {
+    const r = build(input);
+    assert.equal(r.emergency, true);
+    assert.equal(r.groups.length, 0);
+    assert.match(text(r), /urgent emergency-level/);
+  }
+});
 test("home NIV requires stable arterial assessment and appropriate timing, not a venous value", () => {
   assert.doesNotMatch(text(build({ paco2: 55 })), /nocturnal NIV/);
   assert.match(
