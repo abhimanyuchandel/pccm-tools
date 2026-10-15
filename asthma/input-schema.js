@@ -17,6 +17,11 @@
       options: [["initial", "Initial asthma management"], ["followup", "Follow-up asthma management"]]
     },
     age: number("Age (years)", { min: 18, max: 120, step: 1, integer: true }),
+    gender: choice("Gender (optional, for documentation)", [["male", "Male"], ["female", "Female"], ["nonbinary", "Nonbinary"]]),
+    treatmentEntry: { type: "enum", label: "Record current inhaled treatment by", defaultValue: "class", compact: true, options: [["class", "Category / current-treatment shortcut"], ["product", "Product and verified schedule"]] },
+    currentControllerProduct: choice("Current controller product", [["none", "No scheduled controller"], ...Object.values(root.asthmaInhalers.PRODUCTS).filter(p => p.category !== "lama").map(p => [p.id, p.name])]),
+    currentControllerPreset: choice("Verified strength, schedule, and role", Object.values(root.asthmaInhalers.PRESETS).filter(p => p.productId !== "spiriva").map(p => [p.id, `${p.strength} mcg: ${p.schedule}`]), { hint: "Select the actual regimen. Choosing a brand alone does not establish AIR or SMART. If it is not listed, use category-based entry and complete medication details in the note." }),
+    currentRelieverProduct: choice("Current reliever product", [["none", "No reliever"], ...Object.values(root.asthmaInhalers.RELIEVERS).map(r => [r.id, `${r.name} ${r.strength} mcg`])]),
     controller: choice("Current controller category", [
       ["none", "No maintenance controller"], ["saba-only", "SABA-only regimen"],
       ["ics", "Maintenance ICS alone"], ["ics-formoterol", "Maintenance ICS-formoterol"],

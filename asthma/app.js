@@ -18,6 +18,12 @@
   let copying = false;
   let revision = 0;
   let routineRedFlagsDefaulted = true;
+  let guidedSteps = [];
+  let activeStepId = "context";
+  let renderedStepSignature = "";
+  const workflowOptions = { testing: false, phenotype: false, stability: false, inhalers: window.asthmaInhalers };
+  const fieldNodes = new Map();
+  const guideResources = new Map();
   const controlLabels = {
     symptomDays: "daytime symptoms", nightWaking: "night waking", activityLimitation: "activity limitation",
     sabaFrequency: "SABA use for symptoms", reliever: "current reliever"
@@ -124,7 +130,9 @@
       fields.forEach((key) => {
         if (rendered.has(key)) throw new Error(`Duplicate form field: ${key}`);
         rendered.add(key);
-        container.append(createField(key));
+        const node = createField(key);
+        fieldNodes.set(key, node);
+        container.append(node);
       });
     });
     const omitted = Object.keys(schema).filter((key) => !rendered.has(key));
@@ -151,10 +159,6 @@
     } else form.elements.namedItem(key).value = typeof next === "boolean" ? next ? "yes" : "no" : next;
   }
 
-  function retainedField(key) {
-    return ["weightKg", "totalIge", "igePretreatment", "respiratoryRate", "spo2", "roomAir", "observationMinutes", "homeSupport"].includes(key) || key.startsWith("acute") || key.startsWith("postTreatment");
-  }
-
   function rawClinicalState() {
     const data = window.asthmaLogic.createEmptyState();
     Object.entries(schema).forEach(([key, definition]) => {
@@ -169,23 +173,150 @@
   }
 
   function updateConditionalFields() {
-    const controller = value("controller");
-    const reliever = value("reliever");
-    show("ics-dose-fields", ["ics", "ics-formoterol", "ics-laba", "triple"].includes(controller));
-    show("laba-type-fields", ["ics-laba", "triple"].includes(controller));
-    show("biologic-duration-fields", !["unknown", "none"].includes(value("currentBiologic")));
-    show("ocs-dose-fields", value("maintenanceOcs") === true);
-    show("saba-control-fields", reliever === "saba");
-    show("air-use-fields", ["ics-formoterol", "ics-saba"].includes(reliever));
-    const acute = value("acutePresentation") === "active";
-    const retainedUrgency = !acute && window.asthmaLogic.assessAcutePresentation(rawClinicalState()).emergency;
-    show("acute-fields", acute || retainedUrgency);
-    show("acute-retained-warning", retainedUrgency);
-    show("acute-reassessment-fields", value("acuteReassessmentAvailable") === true);
     show("biologic-dosing", ["omalizumab", "reslizumab"].includes(selectedBiologicId));
     show("omalizumab-dosing-fields", selectedBiologicId === "omalizumab");
-    show("smoking-fields", value("smoking") === "current");
+    updateProductFields();
     Object.keys(schema).filter((key) => schema[key].type === "number").forEach(validateNumber);
+  }
+
+  function updateProductFields() {
+    const field = control("currentControllerPreset"), product = value("currentControllerProduct");
+    const choices = [["unknown", "Strength / schedule not verified"], ...window.asthmaInhalers.presetOptions(product)];
+    const signature = choices.map(([id]) => id).join("|");
+    if (field.dataset.options !== signature) {
+      const previous = field.value;
+      field.replaceChildren(...choices.map(([id, title]) => { const option = element("option", "", title); option.value = id; return option; }));
+      field.value = choices.some(([id]) => id === previous) ? previous : "unknown";
+      field.dataset.options = signature;
+    }
+    if (value("treatmentEntry") === "product") {
+      const data = window.asthmaInhalers.resolveCurrent(rawClinicalState());
+      for (const key of ["controller", "icsDose", "labaType", "reliever"]) setValue(key, data[key]);
+    }
+  }
+
+  function initWorkflow() {
+    for (const [id, selector] of [["shortcuts", ".treatment-shortcuts"], ["symptom-shortcut", "#set-symptoms-negative-btn"], ["symptom-help", "#symptom-shortcut-help"], ["zero-shortcut", "#set-exac-zero-btn"], ["control-summary", "#control-input-summary"], ["air-smart-reference", "#air-smart-reference"], ["ics-dose-reference", "#ics-dose-reference"], ["washout-reference", "#washout-reference"], ["vaccine-reference", "#vaccine-reference"]]) {
+      const node = document.querySelector(selector);
+      if (node) { guideResources.set(id, node); node.dataset.reusable = "true"; }
+    }
+    document.getElementById("previous-step-btn").addEventListener("click", () => navigateStep(-1));
+    document.getElementById("next-step-btn").addEventListener("click", () => navigateStep(1));
+    document.getElementById("review-answers-btn").addEventListener("click", () => { activeStepId = "review"; renderWorkflow(true); });
+    form.addEventListener("keydown", event => {
+      if (event.key === "Enter" && event.target.matches("input[type=number], select") && activeStepId !== "review") { event.preventDefault(); navigateStep(1); }
+    });
+    renderWorkflow();
+  }
+
+  function navigateStep(delta) {
+    const index = guidedSteps.findIndex(step => step.id === activeStepId);
+    if (delta > 0) {
+      const invalid = guidedSteps[index].fields.map(key => schema[key].type === "number" ? validateNumber(key) : null).find(result => result?.error);
+      if (invalid) { showErrors([{ text: invalid.error, field: invalid.field }]); return; }
+    }
+    activeStepId = guidedSteps[Math.min(guidedSteps.length - 1, Math.max(0, index + delta))].id;
+    renderWorkflow(true);
+  }
+
+  function renderWorkflow(moveFocus = false) {
+    const previousFocus = document.activeElement;
+    const d = window.asthmaLogic.normalizeState(readInputState().data);
+    const rec = window.asthmaLogic.buildRecommendation(d);
+    const next = window.asthmaWorkflow.steps(d, rec, workflowOptions);
+    activeStepId = window.asthmaWorkflow.reconcileStep(guidedSteps, next, activeStepId);
+    guidedSteps = next;
+    const index = guidedSteps.findIndex(s => s.id === activeStepId), step = guidedSteps[index];
+    document.getElementById("guided-encounter").dataset.stepId = step.id;
+    const signature = `${step.id}:${step.fields.join(",")}`;
+    document.getElementById("step-heading").textContent = step.title;
+    document.getElementById("step-hint").textContent = step.hint || (step.optional ? "Use available information. Leave unassessed findings blank or choose Not assessed." : "");
+    document.getElementById("step-counter").textContent = `Step ${index + 1} of ${guidedSteps.length}${step.optional ? " · Optional details" : ""}`;
+    document.getElementById("step-chapter").textContent = step.chapter;
+    const progress = document.getElementById("encounter-progress"); progress.max = guidedSteps.length; progress.value = index + 1;
+    const chapters = [...new Set(guidedSteps.map(s => s.chapter))], chapterNav = document.getElementById("guide-chapters");
+    if (chapterNav.dataset.signature !== `${chapters.join()}|${step.chapter}`) {
+      chapterNav.replaceChildren(...chapters.map(chapter => {
+        const button = element("button", `chapter-button${chapter === step.chapter ? " is-active" : ""}`, chapter);
+        button.type = "button";
+        if (chapter === step.chapter) button.setAttribute("aria-current", "step");
+        button.addEventListener("click", () => { activeStepId = guidedSteps.find(s => s.chapter === chapter).id; renderWorkflow(true); });
+        return button;
+      }));
+      chapterNav.dataset.signature = `${chapters.join()}|${step.chapter}`;
+    }
+    const alert = document.getElementById("urgent-input-alert");
+    alert.textContent = rec.emergency ? "Urgent findings require immediate assessment or higher-level care. Do not delay care to complete this form. Previously entered urgent findings remain active when other answers change." : "";
+    alert.classList.toggle("hidden", !rec.emergency);
+    if (signature !== renderedStepSignature || step.review) {
+      const bank = document.getElementById("input-bank"), fields = document.getElementById("step-fields"), extras = document.getElementById("step-extras");
+      Array.from(fields.children).forEach(node => bank.append(node));
+      Array.from(extras.children).forEach(node => node.dataset.reusable === "true" ? bank.append(node) : node.remove());
+      step.fields.forEach(key => fields.append(fieldNodes.get(key)));
+      const attach = key => { const node = guideResources.get(key); if (node) extras.append(node); };
+      if (step.shortcuts) attach("shortcuts");
+      if (step.negativeShortcut) { attach("symptom-shortcut"); attach("symptom-help"); }
+      if (step.zeroShortcut) attach("zero-shortcut");
+      if (step.controlSummary) attach("control-summary");
+      if (step.reference) attach(step.reference);
+      const toggle = (key, label, hint) => {
+        const wrapper = element("label", "guide-toggle checkbox-row"), input = element("input");
+        input.type = "checkbox"; input.checked = workflowOptions[key]; input.id = `show-${key}-inputs`;
+        input.addEventListener("change", () => { workflowOptions[key] = input.checked; renderWorkflow(); });
+        const body = element("span"); body.append(element("strong", "", label), element("span", "hint", hint));
+        wrapper.append(input, body); extras.append(wrapper);
+      };
+      if (step.testingToggle) toggle("testing", "Review spirometry or additional diagnostic testing", "Available during initial or follow-up encounters. Existing measurements are preserved.");
+      if (step.phenotypeToggle) toggle("phenotype", "Add or review biomarkers and phenotype", "Relevant for difficult-to-treat asthma and add-on decisions. Known phenotype findings remain effective even if these questions are hidden.");
+      if (step.currentProduct) {
+        const reference = element("details", "clinical-drawer reference-disclosure current-product-reference");
+        reference.id = "current-product-reference";
+        reference.append(element("summary", "", "Product dosing and administration"), element("div", "drawer-body")); extras.append(reference);
+      }
+      if (step.review) renderAnswerReview(extras, d);
+      renderedStepSignature = signature;
+      decorateDisclosures();
+    }
+    const productRef = document.querySelector("#current-product-reference .drawer-body");
+    if (productRef) {
+      productRef.replaceChildren();
+      const p = window.asthmaInhalers.getPreset(d.currentControllerPreset), product = window.asthmaInhalers.PRODUCTS[d.currentControllerProduct];
+      if (product) {
+        productRef.append(element("p", "", p?.productId === product.id ? window.asthmaInhalers.toMedication(p).detail : product.administration));
+        const link = safeSourceLink(product.source); if (link) productRef.append(link);
+      } else productRef.append(element("p", "hint", "Choose a product to view its reference. Use category-based entry if the actual regimen is not listed."));
+    }
+    document.getElementById("previous-step-btn").disabled = index === 0;
+    document.getElementById("next-step-btn").classList.toggle("hidden", step.review === true);
+    if (moveFocus) {
+      const heading = document.getElementById("step-heading"); heading.focus({ preventScroll: true });
+      document.getElementById("guided-encounter").scrollIntoView({ block: "start", behavior: "instant" });
+      document.getElementById("guide-announcement").textContent = `${step.chapter}. ${step.title}. Step ${index + 1} of ${guidedSteps.length}.`;
+    } else if (previousFocus?.isConnected && previousFocus.getClientRects().length && document.activeElement !== previousFocus) previousFocus.focus({ preventScroll: true });
+  }
+
+  function renderAnswerReview(container, d) {
+    container.append(element("p", "hint", "Review the answers below, then generate recommendations and select the encounter treatment plan. Missing information remains undocumented."));
+    const summary = element("div", "answer-review");
+    guidedSteps.filter(step => !step.review && step.fields.length).forEach(step => {
+      const section = element("section", "answer-review-section"), header = element("div", "answer-review-header");
+      const edit = element("button", "text-btn", "Edit"); edit.type = "button"; edit.setAttribute("aria-label", `Edit ${step.title.toLowerCase()}`);
+      edit.addEventListener("click", () => { activeStepId = step.id; renderWorkflow(true); });
+      header.append(element("h3", "subsection-title", step.title), edit); section.append(header);
+      const list = element("dl");
+      for (const key of step.fields) {
+        const def = schema[key], answer = d[key];
+        let text = "Not documented";
+        if (def.type === "number" && answer !== null) text = String(answer);
+        else if (def.type === "enum") text = def.options.find(([value]) => value === answer)?.[1] || text;
+        else if (typeof answer === "boolean") text = answer ? "Yes" : "No";
+        else if (answer !== null) text = String(answer);
+        if (["history", "confirmation"].includes(def.type) && answer !== true) text = "Not documented";
+        const row = element("div"); row.append(element("dt", "", def.label), element("dd", "", text)); list.append(row);
+      }
+      section.append(list); summary.append(section);
+    });
+    container.append(summary);
   }
 
   function validateNumber(key) {
@@ -196,9 +327,7 @@
     let error = "";
     let warning = "";
     let parsed = raw === "" ? null : Number(raw);
-    const inactive = Boolean(field.closest(".hidden")) && !retainedField(key);
-    if (inactive) parsed = null;
-    else if (field.validity.badInput || (raw !== "" && !Number.isFinite(parsed))) {
+    if (field.validity.badInput || (raw !== "" && !Number.isFinite(parsed))) {
       error = "Enter a valid numeric value or leave blank if unavailable.";
     } else if (parsed !== null) {
       if (definition.integer && !Number.isInteger(parsed)) error = "Enter a whole number.";
@@ -244,8 +373,6 @@
         data[key] = result.value;
         if (result.error) errors.push({ text: result.error, field });
         if (result.warning) warnings.push(result.warning);
-      } else if (field.closest(".hidden") && !retainedField(key)) {
-        data[key] = emptyFieldValue(definition);
       } else if (definition.type === "boolean") {
         data[key] = value(key) === "yes" ? true : value(key) === "no" ? false : null;
       } else if (["history", "exception", "confirmation", "review"].includes(definition.type)) {
@@ -291,7 +418,10 @@
   function markStale() {
     revision += 1;
     clearGenerationConfirmation();
-    if (!snapshot) return;
+    if (!snapshot) {
+      status.textContent = "Clinical inputs updated. Generate recommendations when ready.";
+      return;
+    }
     if (!stale) {
       stale = true;
       results.classList.add("is-stale");
@@ -309,8 +439,16 @@
   }
 
   function openAndFocus(field) {
+    const key = field.name;
+    let step = guidedSteps.find(s => s.fields.includes(key));
+    if (!step && schema[key] && !["weightKg", "totalIge", "igePretreatment"].includes(key)) {
+      workflowOptions.testing = true; workflowOptions.phenotype = true; workflowOptions.stability = true;
+      renderWorkflow(); step = guidedSteps.find(s => s.fields.includes(key));
+    }
+    if (step) { activeStepId = step.id; renderWorkflow(); }
     let parent = field.parentElement;
     while (parent) {
+      if (parent.id === "input-bank") break;
       if (parent.tagName === "DETAILS") parent.open = true;
       if (parent.classList.contains("hidden")) parent.classList.remove("hidden");
       parent = parent.parentElement;
@@ -601,6 +739,7 @@
     container.replaceChildren();
     show("plan-card", plan.groups.length > 0 || plan.confirmations.length > 0);
     plan.groups.forEach(group => {
+      if (group.id === "reliever" && plan.groups.some(item => item.id === "relieverProduct")) return;
       const fieldset = element("fieldset", "plan-choice-group");
       fieldset.dataset.planGroup = group.id;
       fieldset.disabled = stale || rec.invalid;
@@ -615,6 +754,15 @@
         fieldset.append(help);
       }
       const choices = element("div", "plan-choice-grid");
+      if (["controllerProduct", "relieverProduct"].includes(group.id)) {
+        const label = element("label", "clinical-field"); label.append(element("span", "field-label", group.title));
+        const select = element("select"); select.name = `plan-${group.id}`;
+        const empty = element("option", "", group.optional ? "Keep documented product / complete details in EMR" : "Product / dose to be completed in EMR (***)"); empty.value = ""; select.append(empty);
+        group.options.forEach(option => { const node = element("option", "", option.label); node.value = option.id; node.disabled = option.blockers.length > 0; select.append(node); });
+        select.value = group.selected?.id || ""; label.append(select); choices.append(label);
+        if (group.selected) choices.append(element("p", "input-summary", group.selected.text));
+        fieldset.append(choices); container.append(fieldset); return;
+      }
       [{ id: "", label: "Complete in EMR (***)", blockers: [] }, ...group.options].forEach(option => {
         const label = element("label", "biologic-option plan-option");
         const radio = element("input");
@@ -816,7 +964,7 @@
         heading.focus({ preventScroll: true });
         heading.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
       }
-      if (!revealBiologic) Array.from(document.getElementById("plan-options").querySelectorAll("input")).find(input => input.name === name && input.value === value)?.focus({ preventScroll: true });
+      if (!revealBiologic) Array.from(document.getElementById("plan-options").querySelectorAll("input, select")).find(input => input.name === name && input.value === value)?.focus({ preventScroll: true });
       copyStatus.textContent = "SOAP note updated with the selected encounter plan.";
     } catch (error) { planSelections = previous; markStale(); status.textContent = error.message || "Regenerate before choosing a treatment plan."; }
   }
@@ -851,8 +999,12 @@
     decorateDisclosures();
     updateConditionalFields();
     updateInputSummaries();
+    initWorkflow();
     const onInput = (event) => {
       if (!event.target.name || !schema[event.target.name]) return;
+      if (["currentControllerProduct", "currentControllerPreset"].includes(event.target.name)) setValue("icsDose", "unknown");
+      if (event.target.name === "currentControllerProduct") setValue("currentControllerPreset", "unknown");
+      if (event.target.name === "reliever" && value("treatmentEntry") === "product") setValue("currentRelieverProduct", "unknown");
       delete event.target.dataset.explicitNo;
       if (event.target.name === "urgentRedFlags") routineRedFlagsDefaulted = false;
       if (event.target.name === "acutePresentation") {
@@ -872,6 +1024,7 @@
       updateConditionalFields();
       if (event.target.name === "diagnosisContext" && value("diagnosisContext") === "suspected") document.getElementById("testing-details").open = true;
       updateInputSummaries();
+      renderWorkflow();
     };
     // Dosing controls are associated with the form but sit beside the biologic selection.
     document.querySelector(".app-shell").addEventListener("input", onInput);
@@ -883,6 +1036,7 @@
       if (value("reliever") === "saba") setValue("sabaFrequency", "none");
       markStale();
       updateInputSummaries();
+      renderWorkflow();
       if (!stale) status.textContent = "No current symptoms documented using the shortcut. Other findings remain as entered.";
     });
     document.getElementById("set-exac-zero-btn").addEventListener("click", () => {
@@ -891,6 +1045,7 @@
       validateNumber("ocsExacerbations");
       validateNumber("hospitalExacerbations");
       markStale();
+      renderWorkflow();
       if (!stale) status.textContent = "Both 12-month exacerbation counts documented as zero. Other risk findings remain as entered.";
     });
     document.getElementById("biologic-options").addEventListener("change", chooseBiologic);
@@ -901,13 +1056,17 @@
       if (!key) return;
       setValue(key, event.target.value === "yes" ? true : event.target.value === "no" ? false : null);
       markStale(); updateConditionalFields(); updateInputSummaries();
+      renderWorkflow();
     });
     document.querySelectorAll("[data-treatment-preset]").forEach(button => button.addEventListener("click", () => {
       const preset = window.asthmaLogic.TREATMENT_PRESETS[button.dataset.treatmentPreset];
-      const changed = Object.entries(preset).some(([key, next]) => value(key) !== next);
+      setValue("treatmentEntry", "class");
+      setValue("currentControllerProduct", "unknown"); setValue("currentControllerPreset", "unknown"); setValue("currentRelieverProduct", "unknown");
+      const changed = snapshot && snapshot.treatmentEntry === "product" || Object.entries(preset).some(([key, next]) => value(key) !== next);
       Object.entries(preset).forEach(([key, next]) => setValue(key, next));
       if (changed) markStale();
       updateConditionalFields(); updateInputSummaries();
+      renderWorkflow();
       if (!stale) status.textContent = `${button.querySelector(".preset-label").textContent} recorded as current treatment. Other clinical findings were preserved.`;
     }));
     copyButton.addEventListener("click", copyNote);

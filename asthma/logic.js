@@ -2,11 +2,14 @@
   const catalog = typeof module !== "undefined" && module.exports ? require("./medications.js") : root.asthmaMedications;
   const smoking = typeof module !== "undefined" && module.exports ? require("./smoking.js") : root.asthmaSmoking;
   const plans = typeof module !== "undefined" && module.exports ? require("./plans.js") : root.asthmaPlans;
-  const logic = factory(catalog, smoking, plans);
+  const inhalers = typeof module !== "undefined" && module.exports ? require("./inhalers.js") : root.asthmaInhalers;
+  const logic = factory(catalog, smoking, plans, inhalers);
   if (typeof module !== "undefined" && module.exports) module.exports = logic;
   if (root) root.asthmaLogic = logic;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, smoking, plans) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, smoking, plans, inhalers) {
   "use strict";
+
+  const SOURCES = { ...inhalers.SOURCES, ...catalog.SOURCES };
 
   const NUMBERS = "age biologicMonths maintenanceOcsDose fev1Pre fev1Post fvcPre fvcPost fev1Predicted fvcPredicted pefVariability airUsesPerWeek sabaCanisters ocsExacerbations hospitalExacerbations stableMonths eosinophils historicalEosinophils feno totalIge weightKg respiratoryRate spo2 acuteLungFunctionPercent postTreatmentSpo2 postTreatmentRespiratoryRate postTreatmentLungFunctionPercent observationMinutes".split(" ");
   const BOOLEANS = "lamaAddon maintenanceOcs accessBarrier icsSideEffects typicalSymptoms icsObjectiveResponse clinicalIcsResponse bronchodilatorHeld activityLimitation recentExacerbation priorIcu persistentExacerbations lungFunctionStable pregnant respiratoryInfection travelling allergenDriven perennialSensitization igePretreatment nasalPolyps atopicDermatitis endemicExposure urgentRedFlags acuteCanLieDown acuteCannotDrink acuteUnableToLieDown acuteCyanosis roomAir postTreatmentRoomAir postTreatmentMildFeatures homeSupport".split(" ");
@@ -26,6 +29,11 @@
     smartMedium: { controller: "ics-formoterol", reliever: "ics-formoterol", icsDose: "medium", labaType: "formoterol" }
   };
   const ENUMS = {
+    gender: ["unknown", "male", "female", "nonbinary"],
+    treatmentEntry: ["class", "product"],
+    currentControllerProduct: ["unknown", "none", ...Object.keys(inhalers.PRODUCTS).filter(id => id !== "spiriva")],
+    currentControllerPreset: ["unknown", ...Object.keys(inhalers.PRESETS).filter(id => inhalers.PRESETS[id].productId !== "spiriva")],
+    currentRelieverProduct: ["unknown", "none", ...Object.keys(inhalers.RELIEVERS)],
     managementPhase: ["initial", "followup"], controller: ["unknown", "none", "saba-only", "ics", "ics-formoterol", "ics-laba", "triple"],
     icsDose: ["unknown", "low", "medium", "high"], labaType: ["unknown", "formoterol", "non-formoterol"],
     reliever: ["unknown", "ics-formoterol", "ics-saba", "saba", "none"], adherence: ["unknown", "adequate", "suboptimal"], technique: ["unknown", "correct", "incorrect"],
@@ -76,7 +84,7 @@
       });
     });
     if (data.acutePresentation === "recent") data.recentExacerbation = true;
-    return data;
+    return inhalers.resolveCurrent(data);
   }
 
   function assessDataQuality(input) {
@@ -171,7 +179,9 @@
     const effectivePhase = d.managementPhase === "initial" && maintenance ? "followup" : d.managementPhase;
     const combination = ["ics-formoterol", "ics-laba", "triple"].includes(d.controller);
     const formoterol = d.controller === "ics-formoterol" || combination && d.labaType === "formoterol";
-    const incompatible = d.reliever === "ics-formoterol" && combination && !formoterol;
+    const currentPreset = inhalers.getPreset(d.currentControllerPreset);
+    const unsupportedSmart = d.treatmentEntry === "product" && d.reliever === "ics-formoterol" && (d.currentControllerProduct === "dulera" || currentPreset?.productId === d.currentControllerProduct && currentPreset.strength === "80/4.5");
+    const incompatible = d.reliever === "ics-formoterol" && combination && (!formoterol || unsupportedSmart);
     const airOnly = ["none", "saba-only"].includes(d.controller) && d.reliever === "ics-formoterol";
     let track = null, step = null, description = "Current treatment category / intensity is not fully documented";
     if (airOnly) { track = 1; step = "1-2"; description = "GINA Track 1 Step 1-2, as-needed ICS-formoterol without maintenance controller"; }
@@ -364,8 +374,11 @@
       medIds.clear();
       result.actions.forEach(item => { item.medicationIds.forEach(id => medIds.add(id)); item.sourceIds.forEach(id => sourceIds.add(id)); });
       result.medications = [...medIds].map(id => catalog.MEDICATIONS[id]).filter(Boolean);
+      const chosenInhalers = [...new Map(result.plan.groups.flatMap(group => group.selected?.inhalerMedications || []).map(med => [med.id, med])).values()];
+      result.medications.push(...chosenInhalers);
       result.medications.forEach(med => med.sourceIds.forEach(id => sourceIds.add(id)));
-      result.sources = [...sourceIds].map(id => catalog.SOURCES[id]).filter(Boolean);
+      result.sources = [...sourceIds].map(id => SOURCES[id]).filter(Boolean);
+      chosenInhalers.forEach(med => { if (med.source && !result.sources.some(source => source.url === med.source.url)) result.sources.push(med.source); });
       return result;
     };
     if (treatment.effectivePhase !== d.managementPhase) result.cautions.push("Initial mode was entered with existing maintenance treatment; follow-up management logic was used.");
@@ -377,7 +390,11 @@
     }
     result.summary.push(diagnosis.summary, treatment.description + `; reliever: ${treatment.relieverName}.`, control.summary, risk.summary);
     if (d.age === null) result.cautions.push("Age is not documented. Verify adult eligibility and age-dependent preventive care before prescribing.");
-    if (treatment.incompatible) result.cautions.push("ICS-formoterol should not be used as a reliever with a controller containing a different LABA or an unidentified LABA. Resolve the combination before prescribing; use a compatible SABA / ICS-SABA reliever or change the entire controller regimen.");
+    if (treatment.incompatible) result.cautions.push(d.treatmentEntry === "product" && d.currentControllerProduct === "dulera"
+      ? "Dulera is recorded as maintenance treatment, not an established budesonide-formoterol SMART schedule. Review the controller/reliever plan before continuation or escalation."
+      : d.treatmentEntry === "product" && inhalers.getPreset(d.currentControllerPreset)?.strength === "80/4.5"
+        ? "The recorded budesonide-formoterol 80/4.5 maintenance schedule is not this tool's supported adult AIR/SMART regimen. Verify the complete schedule rather than applying the adult 160/4.5 SMART dosing automatically."
+        : "ICS-formoterol should not be used as a reliever with a controller containing a different or unidentified LABA. Use a compatible SABA / ICS-SABA reliever or change the complete controller regimen; do not duplicate LABA therapy.");
     if (d.controller === "ics-formoterol" && d.icsDose === "high") result.cautions.push("Verify product-specific high-dose ICS exposure. Standard budesonide-formoterol 160/4.5 mcg, 2 inhalations twice daily is medium-dose MART, not high-dose ICS; do not exceed MART limits to establish higher treatment intensity.");
     if (d.controller === "ics" && d.reliever === "ics-formoterol") result.cautions.push("Maintenance ICS alone with a separate ICS-formoterol reliever is not a standard SMART regimen. Review the full inhaler strategy rather than labeling it maintenance-and-reliever therapy.");
     if (d.urgentRedFlags === null) result.cautions.push("Urgent red-flag symptoms have not been assessed; do not assume their absence.");
@@ -395,6 +412,7 @@
       return finish();
     }
     if (d.controller === "triple") medIds.add("triple");
+    if (d.controller === "triple" && d.lamaAddon === true) result.cautions.push("The current triple inhaler already contains a LAMA. Reconcile the separate LAMA to avoid duplicate exposure.");
     if (d.reliever === "ics-saba") medIds.add("airsupra");
     if (treatment.airOnly) medIds.add("air");
     if (acute.active) {
@@ -501,5 +519,5 @@
     return finish();
   }
 
-  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getRoutineVisitDefaults, getVaccineGuidance, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, smokingPlanText: smoking.planText, REVIEW_DEFAULTS, TREATMENT_BARRIER_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES: catalog.SOURCES };
+  return { createEmptyState, normalizeState, assessDataQuality, getBronchodilatorAssessment, assessDiagnosis, classifyControl, classifyExacerbationRisk, getTreatmentContext, classifySevereAsthmaState, assessAcutePresentation, getRoutineVisitDefaults, getVaccineGuidance, getDupilumabEvidenceFlag, getOmalizumabFeasibility, getBiologicCandidates, pickInitialTreatment, buildRecommendation, smokingPlanText: smoking.planText, REVIEW_DEFAULTS, TREATMENT_BARRIER_DEFAULTS, TREATMENT_PRESETS, MEDICATIONS: catalog.MEDICATIONS, SOURCES };
 });

@@ -28,7 +28,7 @@ test("a retired risk review flag cannot fill in negative findings", () => {
 });
 test("language cleanup and disclosure types retain clear clinical input and reference structure", () => {
   const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-  const schemaContext = { window: {} };
+  const schemaContext = { window: { asthmaInhalers: require("./inhalers.js") } };
   require("node:vm").runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), schemaContext);
   const schema = schemaContext.window.asthmaInputSchema;
   assert.match(html, /Structured decision support for the typical encounter for an adult patient with asthma\./);

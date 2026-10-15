@@ -1,9 +1,10 @@
 (function (root, factory) {
   const logic = typeof module !== "undefined" && module.exports ? require("./logic.js") : root.asthmaLogic;
-  const notes = factory(logic);
+  const inhalers = typeof module !== "undefined" && module.exports ? require("./inhalers.js") : root.asthmaInhalers;
+  const notes = factory(logic, inhalers);
   if (typeof module !== "undefined" && module.exports) module.exports = notes;
   if (root) root.asthmaNotes = notes;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (logic) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (logic, inhalers) {
   "use strict";
 
   const unique = lines => [...new Set(lines.filter(Boolean))];
@@ -13,7 +14,7 @@
 
   function subjective(d, f) {
     const lines = [], symptoms = [days[d.symptomDays], nights[d.nightWaking], d.activityLimitation === true ? "activity limitation due to asthma" : d.activityLimitation === false ? "no activity limitation due to asthma" : null].filter(Boolean);
-    if (symptoms.length) lines.push(`During the preceding 4 weeks, the patient had ${symptoms.join("; ")}.`);
+    if (symptoms.length) lines.push(`During the preceding 4 weeks, the patient had ${proseList(symptoms)}.`);
     if (f.control.sabaApplicable && d.sabaFrequency !== "unknown") lines.push({ none: "No symptomatic SABA use was reported.", "one-two": "Symptomatic SABA use was reported 1-2 times/week.", "more-two": "Symptomatic SABA use was reported more than twice/week." }[d.sabaFrequency] + " Pre-exercise use was excluded.");
     if (!f.control.sabaApplicable && d.airUsesPerWeek !== null) lines.push(`ICS-containing reliever use was reported ${d.airUsesPerWeek} times/week.`);
     if (d.urgentRedFlags === false && !f.acute.emergency) lines.push("No urgent red-flag features were documented.");
@@ -23,7 +24,7 @@
       const counts = [];
       if (d.ocsExacerbations !== null) counts.push(`${d.ocsExacerbations} exacerbation${d.ocsExacerbations === 1 ? "" : "s"} requiring oral corticosteroids`);
       if (d.hospitalExacerbations !== null) counts.push(`${d.hospitalExacerbations} asthma hospitalization${d.hospitalExacerbations === 1 ? "" : "s"}`);
-      if (counts.length) lines.push(`The preceding 12-month history included ${counts.join("; ")}.`);
+      if (counts.length) lines.push(`The preceding 12-month history included ${proseList(counts)}.`);
     }
     if (d.recentExacerbation === true) lines.push(f.acute.recentResolved ? "The patient was seen after a recent resolved exacerbation." : "A recent exacerbation was reported.");
     if (d.priorIcu === true) lines.push("The history included ICU admission, intubation, or life-threatening asthma.");
@@ -37,8 +38,14 @@
     const vaccines = { flu: "influenza", covid: "COVID-19", pneumococcal: "pneumococcal", rsv: "RSV", zoster: "zoster", tdap: "Tdap / Td" };
     const history = Object.entries(vaccines).filter(([key]) => d[key] !== "unknown").map(([key, name]) => `${name} ${d[key] === "complete" ? "current / complete" : "due / incomplete"}`);
     if (history.length) lines.push(`Recorded vaccination status was: ${history.join("; ")}.`);
-    let text = `Additional interval history: ***\nCurrent medications, strengths, and schedule: ***`;
-    if (lines.length) text += `\n${unique(lines).join(" ")}`;
+    const person = { male: "man", female: "woman", nonbinary: "nonbinary patient" }[d.gender] || "patient";
+    const intro = `This ${d.age === null ? "" : `${d.age}-year-old `}${person} was seen for ${f.acute.active ? "an active asthma exacerbation" : f.acute.recentResolved ? "follow-up after a resolved asthma exacerbation" : f.treatment.effectivePhase === "initial" ? "initial asthma management" : "asthma follow-up"}.`;
+    let text = `${intro}\nAdditional interval history: ***`;
+    // Short paragraphs separate symptoms from risk, exposures, and medication history.
+    const historyParagraphs = unique(lines);
+    for (let index = 0; index < historyParagraphs.length; index += 4) text += `\n\n${historyParagraphs.slice(index, index + 4).join(" ")}`;
+    const current = inhalers.currentDescriptions(d);
+    text += `\n\nCurrent controller and rescue medications are: ${current.length ? `${current.join("; ")}. Additional medication details: ***.` : "***."}`;
     if (f.acute.active) text += "\nAcute symptom progression: ***\nTreatment administered, dose, and timing: ***";
     return text;
   }
@@ -228,6 +235,9 @@
     const f = rec.findings, groups = new Map(), medicationIds = new Set();
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
     for (const group of rec.plan?.groups || []) {
+      if (group.id === "controllerProduct") continue;
+      if (group.id === "reliever" && rec.plan.selections.relieverProduct) continue;
+      if (group.id === "relieverProduct" && (rec.plan.groups.some(g => g.id === "reliever") || group.optional)) continue;
       if (group.id === "lama" && rec.plan.selections.controller === "continue-biologic" && !group.selected) continue;
       if (!group.selected) append("Medication / management", group.placeholder + ".");
     }
