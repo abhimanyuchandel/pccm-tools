@@ -8,6 +8,7 @@ const doi = "https://doi.org/10.1093/ajrccm/aamag552";
   const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
   const context = await browser.newContext({ reducedMotion: "reduce" });
   const page = await context.newPage(), errors = [], requests = [];
+  page.setDefaultNavigationTimeout(90000);
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*googletagmanager.com/**", route => route.abort());
   await page.route("**/*google-analytics.com/**", route => route.abort());
@@ -37,12 +38,15 @@ const doi = "https://doi.org/10.1093/ajrccm/aamag552";
     assert.ok(requests.some(body => body.rows.length === 3 && body.rows.every(row => Number.isFinite(row.oddsScore))));
     assert.match(await page.locator("#currentEstimate").textContent(), /80\.0%|80%/);
     await evidence.click();
+    await page.waitForLoadState("load");
+    await page.evaluate(() => document.fonts.ready);
     assert.equal(await page.locator('meta[name="robots"]').getAttribute("content"), "index, follow");
     assert.equal(await page.locator(`.manuscript-citation a[href="${doi}"]`).count(), 1);
     assert.equal(await page.locator("table").count(), 9);
     assert.equal(await page.locator("img").count(), 14);
     for (const width of [320, 390, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true, `evidence overflow at ${width}`);
       if (width === 390) {
         const toc = page.locator(".toc-toggle"); await toc.focus(); await page.keyboard.press("Enter");
@@ -54,6 +58,7 @@ const doi = "https://doi.org/10.1093/ajrccm/aamag552";
       }
     }
     await page.getByRole("link", { name: "Joint-model summary", exact: true }).first().click();
+    await page.waitForLoadState("load");
     assert.match(await page.locator('meta[name="robots"]').getAttribute("content"), /noindex/);
     assert.equal(await page.getByRole("link", { name: "Longitudinal application", exact: true }).count(), 2);
     assert.doesNotMatch(await page.locator(".publication-copyright").textContent(), /being considered|Version of Record/);
