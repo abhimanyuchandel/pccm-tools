@@ -21,6 +21,8 @@ const doi = "https://doi.org/10.1093/ajrccm/aamag552";
     const link = page.locator('section[aria-label="Interstitial lung disease tools"] a[href="/ODDS/"]');
     assert.equal(await link.count(), 1);
     await link.click();
+    await page.waitForLoadState("load");
+    await page.locator("#entryRows input").first().waitFor();
     assert.equal(await page.locator('meta[name="robots"]').getAttribute("content"), "index, follow");
     assert.equal(await page.locator('link[rel="canonical"]').getAttribute("href"), "https://pccmtools.org/ODDS/");
     await page.locator("#aboutTitle").click();
