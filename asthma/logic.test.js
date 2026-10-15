@@ -33,7 +33,7 @@ test("normalization preserves explicit zero / false but not blank numeric values
   assert.equal(data.ocsExacerbations, 0); assert.equal(data.activityLimitation, false); assert.equal(data.eosinophils, null); assert.equal(data.feno, null);
 });
 test("schema and pure state have identical keys", () => {
-  const context = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), context);
+  const context = { window: { asthmaInhalers: require("./inhalers.js") } }; vm.runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), context);
   assert.deepEqual(Object.keys(context.window.asthmaInputSchema).sort(), Object.keys(L.createEmptyState()).sort());
 });
 test("GINA adult exact 12% / 200 mL threshold is inclusive", () => {
@@ -343,9 +343,9 @@ test("dangerous objective vitals override the acute toggle and stable-treatment 
 test("higher-ICS trial dosing enters the note only after a compatible plan is chosen", () => {
   const data = poor({ eosinophils: 450 });
   assert.doesNotMatch(note(data), /500\/50 mcg|tiotropium Respimat/);
-  const text = note(data, null, { controller: "highDose", reliever: "airsupra", lama: "defer" });
-  assert.match(text, /500\/50 mcg, 1 inhalation twice daily/);
-  assert.match(text, /Stop the previous combination controller/);
+  const text = note(data, null, { controller: "highDose", controllerProduct: "advair-diskus-500-50", reliever: "airsupra", lama: "defer" });
+  assert.match(text, /500\/50 mcg: 1 inhalation twice daily/);
+  assert.match(text, /Stop the replaced ICS-LABA/);
   assert.match(text, /albuterol-budesonide/);
   assert.doesNotMatch(text, /(?:Plan to initiate|Planned initiation).*biologic/);
 });
@@ -809,7 +809,7 @@ test("new shortcut options preserve biologics, OCS exposure, urgent findings, an
 });
 
 test("direct-choice questions retain every original value and explicit unknown option", () => {
-  const context = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), context);
+  const context = { window: { asthmaInhalers: require("./inhalers.js") } }; vm.runInNewContext(fs.readFileSync(path.join(__dirname, "input-schema.js"), "utf8"), context);
   for (const [key, values] of Object.entries({ symptomDays: ["unknown", "none", "one-two", "three", "four-six", "daily"], nightWaking: ["unknown", "none", "less-weekly", "weekly-plus"], sabaFrequency: ["unknown", "none", "one-two", "more-two"], acutePresentation: ["unknown", "none", "active", "recent"] })) {
     const field = context.window.asthmaInputSchema[key];
     assert.equal(field.compact, true); assert.equal(field.quickChoices, true);

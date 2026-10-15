@@ -1,9 +1,10 @@
 (function (root, factory) {
   const logic = typeof module !== "undefined" && module.exports ? require("./logic.js") : root.asthmaLogic;
-  const notes = factory(logic);
+  const inhalers = typeof module !== "undefined" && module.exports ? require("./inhalers.js") : root.asthmaInhalers;
+  const notes = factory(logic, inhalers);
   if (typeof module !== "undefined" && module.exports) module.exports = notes;
   if (root) root.asthmaNotes = notes;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (logic) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (logic, inhalers) {
   "use strict";
 
   const unique = lines => [...new Set(lines.filter(Boolean))];
@@ -13,7 +14,7 @@
 
   function subjective(d, f) {
     const lines = [], symptoms = [days[d.symptomDays], nights[d.nightWaking], d.activityLimitation === true ? "activity limitation due to asthma" : d.activityLimitation === false ? "no activity limitation due to asthma" : null].filter(Boolean);
-    if (symptoms.length) lines.push(`During the preceding 4 weeks, the patient had ${symptoms.join("; ")}.`);
+    if (symptoms.length) lines.push(`During the preceding 4 weeks, the patient had ${proseList(symptoms)}.`);
     if (f.control.sabaApplicable && d.sabaFrequency !== "unknown") lines.push({ none: "No symptomatic SABA use was reported.", "one-two": "Symptomatic SABA use was reported 1-2 times/week.", "more-two": "Symptomatic SABA use was reported more than twice/week." }[d.sabaFrequency] + " Pre-exercise use was excluded.");
     if (!f.control.sabaApplicable && d.airUsesPerWeek !== null) lines.push(`ICS-containing reliever use was reported ${d.airUsesPerWeek} times/week.`);
     if (d.urgentRedFlags === false && !f.acute.emergency) lines.push("No urgent red-flag features were documented.");
@@ -23,7 +24,7 @@
       const counts = [];
       if (d.ocsExacerbations !== null) counts.push(`${d.ocsExacerbations} exacerbation${d.ocsExacerbations === 1 ? "" : "s"} requiring oral corticosteroids`);
       if (d.hospitalExacerbations !== null) counts.push(`${d.hospitalExacerbations} asthma hospitalization${d.hospitalExacerbations === 1 ? "" : "s"}`);
-      if (counts.length) lines.push(`The preceding 12-month history included ${counts.join("; ")}.`);
+      if (counts.length) lines.push(`The preceding 12-month history included ${proseList(counts)}.`);
     }
     if (d.recentExacerbation === true) lines.push(f.acute.recentResolved ? "The patient was seen after a recent resolved exacerbation." : "A recent exacerbation was reported.");
     if (d.priorIcu === true) lines.push("The history included ICU admission, intubation, or life-threatening asthma.");
@@ -37,8 +38,14 @@
     const vaccines = { flu: "influenza", covid: "COVID-19", pneumococcal: "pneumococcal", rsv: "RSV", zoster: "zoster", tdap: "Tdap / Td" };
     const history = Object.entries(vaccines).filter(([key]) => d[key] !== "unknown").map(([key, name]) => `${name} ${d[key] === "complete" ? "current / complete" : "due / incomplete"}`);
     if (history.length) lines.push(`Recorded vaccination status was: ${history.join("; ")}.`);
-    let text = `Additional interval history: ***\nCurrent medications, strengths, and schedule: ***`;
-    if (lines.length) text += `\n${unique(lines).join(" ")}`;
+    const person = { male: "man", female: "woman", nonbinary: "nonbinary patient" }[d.gender] || "patient";
+    const intro = `This ${d.age === null ? "" : `${d.age}-year-old `}${person} was seen for ${f.acute.active ? "an active asthma exacerbation" : f.acute.recentResolved ? "follow-up after a resolved asthma exacerbation" : f.treatment.effectivePhase === "initial" ? "initial asthma management" : "asthma follow-up"}.`;
+    let text = `${intro}\nAdditional interval history: ***`;
+    // Short paragraphs separate symptoms from risk, exposures, and medication history.
+    const historyParagraphs = unique(lines);
+    for (let index = 0; index < historyParagraphs.length; index += 4) text += `\n\n${historyParagraphs.slice(index, index + 4).join(" ")}`;
+    const current = inhalers.currentDescriptions(d);
+    text += `\n\nCurrent controller and rescue medications are: ${current.length ? `${current.join("; ")}. Additional medication details: ***.` : "***."}`;
     if (f.acute.active) text += "\nAcute symptom progression: ***\nTreatment administered, dose, and timing: ***";
     return text;
   }
@@ -181,10 +188,10 @@
     stepup: () => "Controller and reliever plan: ***.",
     "step5-review": d => d.icsDose === "medium" ? "A limited monitored trial of higher-dose ICS-LABA or an appropriate add-on was considered after optimization, with subsequent phenotype-directed decisions rather than indefinite inhaled-dose escalation. Product/MART ceilings were to be respected." : "Review of persistent inadequate control despite high-dose ICS-LABA was recommended, including objective diagnosis, optimization, phenotype-directed add-on options, and steroid burden.",
     lama: () => "A tiotropium add-on was considered, conditional on verification of existing LAMA exposure, with modest lung-function/exacerbation benefit and no rescue activity.",
-    "clarify-regimen": () => "Verification of the controller, ICS dose intensity, and reliever was recommended before assigning an escalation step.",
+    "clarify-regimen": () => "Verify the current controller product, supported ICS dose intensity, and compatible reliever before selecting continuation, escalation, or dose reduction.",
     continue: () => "Recommended continuation of the effective ICS-containing regimen, with review of future risk, adverse effects, technique, adherence, and preferences. An effective Track 2 regimen would not be changed solely to change tracks.",
     stepdown: (d, f) => `A supervised step-down was considered after at least 3 months of control and stable lung function. ${d.controller === "ics-formoterol" && f.treatment.track === 1 && f.treatment.step === "4" ? "For budesonide-formoterol, the proposed reduction was 160/4.5 mcg, 1 inhalation twice daily plus 1 as needed, maximum 12 total inhalations/day." : d.controller === "ics-formoterol" && f.treatment.track === 1 && f.treatment.step === "3" ? "For budesonide-formoterol, the proposed reduction was 160/4.5 mcg, 1 maintenance inhalation once daily plus 1 as needed, maximum 12 total inhalations/day; further reduction to AIR alone would follow reassessment." : "A product-specific maintenance ICS reduction of about 25-50% was considered while retaining ICS protection and a compatible reliever."} Baseline assessment, a written return-to-prior-treatment plan, and reassessment in 4-8 weeks were recommended. Complete ICS withdrawal was not recommended.`,
-    "stepdown-conditional": () => "Step-down was deferred until sustained control for at least 3 months, stable lung function, and review of exacerbations, pregnancy, infection, travel, steroid exposure, and prior life-threatening asthma; current ICS protection was to be retained.",
+    "stepdown-conditional": () => "Step-down was deferred until sustained control for at least 3 months, stable lung function, a verified compatible inhaler regimen, and review of exacerbations, pregnancy, infection, travel, steroid exposure, and prior life-threatening asthma; current ICS protection was to be retained.",
     "stable-biologic": () => "Review OCS and add-on burden before reducing inhaled therapy following a good biologic response. Taper chronic OCS cautiously with adrenal-risk assessment. Do not automatically stop the biologic or withdraw ICS.",
     "complete-control": () => "Complete symptom-control and exacerbation-risk assessment before assigning good control or reducing treatment. Retain appropriate ICS protection.",
     "ics-protection": () => "An ICS-containing strategy was recommended rather than SABA-only treatment for confirmed asthma, with intensity guided by symptoms, lung function, and exacerbation history.",
@@ -199,7 +206,7 @@
       const interval = f.selectedBiologicId === "depemokimab" ? "at least 6 months" : "about 4 months";
       return `${ready ? "Assess response" : "If treatment is subsequently initiated, assess response"} after ${interval} using symptoms, exacerbations, lung function, and steroid burden.${f.selectedBiologicId === "depemokimab" ? "" : " Extend an uncertain response assessment to 6-12 months when clinically appropriate."}`;
     },
-    "routine-followup": (d, f, rec) => f.acute.recentResolved ? "Arrange recovery review within 2-7 days of the exacerbation if not already completed, and sooner for incomplete recovery or deterioration." : rec.plan?.selections.controller === "stepdown" ? "Follow up in 4-8 weeks to reassess control, lung function, and response to step-down. Resume the previous regimen and contact the clinic if control worsens." : f.control.poor || f.risk.frequent || d.persistentExacerbations === true || f.treatment.effectivePhase === "initial" ? "Follow up in 4-6 weeks after treatment initiation or adjustment, sooner for deterioration. Reassess symptoms, exacerbations, technique, adherence, adverse effects, and lung function." : "Follow up in about 3 months, sooner for worsening control.",
+    "routine-followup": (d, f, rec) => f.acute.recentResolved ? "Arrange recovery review within 2-7 days of the exacerbation if not already completed, and sooner for incomplete recovery or deterioration." : rec.plan?.selections.controller === "stepdown" ? "Follow up in 4-8 weeks to reassess control, lung function, and response to step-down. Resume the previous regimen and contact the clinic if control worsens." : f.control.poor || f.risk.frequent || d.persistentExacerbations === true || f.treatment.effectivePhase === "initial" || f.treatment.needsIcsStart ? "Follow up in 4-6 weeks after treatment initiation or adjustment, sooner for deterioration. Reassess symptoms, exacerbations, technique, adherence, adverse effects, and lung function." : "Follow up in about 3 months, sooner for worsening control.",
     "technique-counsel": () => "Review inhaler technique using demonstration and teach-back, medication adherence and access, and spacer use where appropriate.",
     "action-plan": () => "Provide or update the written asthma action plan with usual treatment, worsening-symptom instructions, reliever limits, and urgent-care precautions. Seek urgent care for severe breathlessness, inability to speak, cyanosis, altered mental status, or poor rescue response.",
     nonpharmacologic: () => "Reduce relevant exposures, encourage regular activity as tolerated, and address documented obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors.",
@@ -228,6 +235,9 @@
     const f = rec.findings, groups = new Map(), medicationIds = new Set();
     const append = (heading, text) => { if (!groups.has(heading)) groups.set(heading, []); groups.get(heading).push(text); };
     for (const group of rec.plan?.groups || []) {
+      if (group.id === "controllerProduct") continue;
+      if (group.id === "reliever" && rec.plan.selections.relieverProduct) continue;
+      if (group.id === "relieverProduct" && (rec.plan.groups.some(g => g.id === "reliever") || group.optional)) continue;
       if (group.id === "lama" && rec.plan.selections.controller === "continue-biologic" && !group.selected) continue;
       if (!group.selected) append("Medication / management", group.placeholder + ".");
     }

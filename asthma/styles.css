@@ -17,6 +17,61 @@
   --dangerBg: #fff2f0;
 }
 
+/* Guided screens reuse the clinical controls without tying visibility to clinical state. */
+.asthma-page [hidden] { display: none !important; }
+.asthma-page .guided-encounter { padding: 28px 30px; scroll-margin-top: 18px; }
+.asthma-page .guide-overview,
+.asthma-page .step-counter-row,
+.asthma-page .guide-controls,
+.asthma-page .answer-review-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.asthma-page .guide-overview .eyebrow { margin: 0; }
+.asthma-page .text-btn { border: 0; padding: 9px 5px; background: transparent; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; cursor: pointer; min-height: 44px; }
+.asthma-page .guide-chapters { display: flex; flex-wrap: wrap; gap: 5px; margin: 16px 0 12px; }
+.asthma-page .chapter-button { flex: 1 0 auto; border: 1px solid var(--line-soft); border-radius: 8px; padding: 9px 10px; background: #f4f7fb; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; min-height: 44px; }
+.asthma-page .chapter-button.is-active { background: var(--accent); color: white; border-color: var(--accent); }
+.asthma-page .step-counter-row { margin-top: 18px; }
+.asthma-page .step-counter-row p { margin: 0; font-size: 13px; }
+.asthma-page #encounter-progress { display: block; appearance: none; width: 100%; height: 5px; border: 0; border-radius: 4px; margin: 10px 0 24px; background: #dde6f0; }
+.asthma-page #encounter-progress::-webkit-progress-bar { background: #dde6f0; border-radius: 4px; }
+.asthma-page #encounter-progress::-webkit-progress-value { background: #3e6c8d; border-radius: 4px; }
+.asthma-page #encounter-progress::-moz-progress-bar { background: #3e6c8d; border-radius: 4px; }
+.asthma-page #step-heading { margin: 0 0 12px; font-size: clamp(23px, 2.4vw, 29px); line-height: 1.2; }
+.asthma-page #step-hint:empty { display: none; }
+.asthma-page .step-fields { margin-top: 20px; gap: 18px 22px; align-items: start; }
+.asthma-page .step-fields > .choice-field { grid-column: 1 / -1; }
+.asthma-page .step-fields > .checkbox-field { padding: 12px 14px; border: 1px solid var(--line-soft); background: #f8fbfe; border-radius: 10px; }
+.asthma-page .step-fields > .checkbox-field .checkbox-row { min-height: 44px; }
+.asthma-page .step-fields > .checkbox-field .hint { margin-top: 6px; }
+.asthma-page .step-fields:empty { display: none; }
+.asthma-page .step-extras { margin-top: 16px; }
+.asthma-page .step-extras > .ghost-btn { margin: 0 0 10px; }
+.asthma-page .guide-toggle { display: flex; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #f4f8fc; }
+.asthma-page .guide-toggle .hint { display: block; margin-top: 6px; }
+.asthma-page .guide-controls { border-top: 1px solid var(--line-soft); margin-top: 26px; padding-top: 20px; }
+.asthma-page .guide-controls button { min-width: 100px; min-height: 46px; }
+.asthma-page button:disabled { cursor: not-allowed; opacity: .55; }
+.asthma-page .answer-review { display: grid; gap: 12px; }
+.asthma-page .answer-review-section { border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px 18px; }
+.asthma-page .answer-review-header h3 { margin: 0; }
+.asthma-page .answer-review dl { margin: 10px 0 0; }
+.asthma-page .answer-review dl > div { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid #e8eef5; }
+.asthma-page .answer-review dt { color: var(--muted); }
+.asthma-page .answer-review dd { margin: 0; overflow-wrap: anywhere; }
+.asthma-page .current-product-reference p { line-height: 1.55; }
+.asthma-page .guide-chapters button:focus-visible,
+.asthma-page .text-btn:focus-visible { outline: 3px solid #39769b; outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  .asthma-page .guided-encounter { padding: 20px 16px; }
+  .asthma-page .guide-chapters { gap: 4px; }
+  .asthma-page .chapter-button { flex: 1 0 27%; padding: 7px 5px; font-size: 13px; }
+  .asthma-page .step-fields { grid-template-columns: 1fr; gap: 16px; }
+  .asthma-page .answer-review-section { padding: 12px; }
+  .asthma-page .answer-review dl > div { grid-template-columns: 1fr; gap: 3px; }
+  .asthma-page .step-counter-row .eyebrow { font-size: 11px; letter-spacing: .08em; }
+  .asthma-page .guide-overview .eyebrow { font-size: 12px; }
+}
+
 * {
   box-sizing: border-box;
 }

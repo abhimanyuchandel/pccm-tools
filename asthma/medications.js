@@ -9,7 +9,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const REVIEW_DATE = "October 13, 2026";
+  const REVIEW_DATE = "October 15, 2026";
 
   const SOURCES = {
     gina: {

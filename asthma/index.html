@@ -14,14 +14,16 @@
   <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
   <link rel="icon" type="image/png" href="/assets/pccmapps.png">
   <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-  <link rel="stylesheet" href="/asthma/styles.css?v=20261014-1">
-  <script src="/asthma/input-schema.js?v=20261014-1" defer></script>
-  <script src="/asthma/medications.js?v=20261014-1" defer></script>
-  <script src="/asthma/smoking.js?v=20261014-1" defer></script>
-  <script src="/asthma/plans.js?v=20261014-1" defer></script>
-  <script src="/asthma/logic.js?v=20261014-1" defer></script>
-  <script src="/asthma/notes.js?v=20261014-1" defer></script>
-  <script src="/asthma/app.js?v=20261014-1" defer></script>
+  <link rel="stylesheet" href="/asthma/styles.css?v=20261015-2">
+  <script src="/asthma/inhalers.js?v=20261015-2" defer></script>
+  <script src="/asthma/input-schema.js?v=20261015-2" defer></script>
+  <script src="/asthma/medications.js?v=20261015-2" defer></script>
+  <script src="/asthma/smoking.js?v=20261015-2" defer></script>
+  <script src="/asthma/plans.js?v=20261015-2" defer></script>
+  <script src="/asthma/logic.js?v=20261015-2" defer></script>
+  <script src="/asthma/notes.js?v=20261015-2" defer></script>
+  <script src="/asthma/workflow.js?v=20261015-2" defer></script>
+  <script src="/asthma/app.js?v=20261015-2" defer></script>
 </head>
 <body class="asthma-page">
   <a class="skip-link" href="#asthma-form">Skip to clinical inputs</a>
@@ -39,6 +41,21 @@
 
       <noscript><p class="panel warning">JavaScript is required to enter clinical information and generate recommendations.</p></noscript>
       <form id="asthma-form" class="form-panels" novalidate autocomplete="off">
+        <section id="guided-encounter" class="panel guided-encounter" aria-labelledby="step-heading">
+          <div class="guide-overview"><p class="eyebrow">Guided encounter</p><button type="button" id="review-answers-btn" class="text-btn">Review answers</button></div>
+          <div id="guide-chapters" class="guide-chapters" aria-label="Encounter progress"></div>
+          <div class="step-counter-row"><p id="step-counter" class="hint"></p><p id="step-chapter" class="eyebrow"></p></div>
+          <progress id="encounter-progress" max="1" value="0" aria-label="Guided encounter progress"></progress>
+          <h2 id="step-heading" tabindex="-1"></h2>
+          <p id="step-hint" class="hint"></p>
+          <div id="urgent-input-alert" class="emergency-output hidden" role="alert"></div>
+          <div id="step-fields" class="step-fields grid"></div>
+          <div id="step-extras" class="step-extras"></div>
+          <div class="guide-controls"><button type="button" id="previous-step-btn" class="ghost-btn">Back</button><button type="button" id="next-step-btn" class="primary-btn">Next</button></div>
+          <p id="guide-announcement" class="sr-only" role="status" aria-live="polite"></p>
+        </section>
+        <div id="input-bank" hidden>
+          <div data-fields="gender treatmentEntry currentControllerProduct currentControllerPreset currentRelieverProduct"></div>
         <section class="panel" aria-labelledby="encounter-heading">
           <h2 id="encounter-heading">1) Encounter and Current Therapy</h2>
           <div class="grid" data-fields="managementPhase age"></div>
@@ -142,7 +159,7 @@
                 </section>
               </div>
               <div class="grid full-width" data-fields="bronchodilatorHeld"></div>
-              <details class="washout-note reference-disclosure">
+              <details id="washout-reference" class="washout-note reference-disclosure">
                 <summary>Bronchodilator washout reference</summary>
                 <div class="washout-note-body">
                   <table class="washout-table" aria-label="ATS/ERS bronchodilator washout times">
@@ -242,7 +259,7 @@
           <summary><span class="drawer-title">6) Preventive Care Status</span><span class="hint">Documented vaccine history; unknown does not mean incomplete</span></summary>
           <div class="drawer-body">
             <div class="grid" data-fields="pneumococcal rsv zoster tdap flu covid"></div>
-            <details class="clinical-drawer vaccine-reference reference-disclosure">
+            <details id="vaccine-reference" class="clinical-drawer vaccine-reference reference-disclosure">
               <summary>Adult asthma vaccine quick reference</summary>
               <div class="drawer-body">
                 <p class="hint">General guidance, not a record of vaccination. Prior products, immune status and local protocols affect the individual schedule.</p>
@@ -262,6 +279,7 @@
           </div>
         </details>
 
+        </div>
         <div id="form-errors" class="form-errors hidden" role="alert" aria-atomic="true"></div>
         <div class="generate-bar">
           <button type="submit" id="generate-btn" class="primary-btn generation-button" data-generation-button aria-describedby="recommendation-status">
@@ -382,7 +400,7 @@
 
       <footer class="footer">
         <p><strong>Evidence base:</strong> GINA 2026; NAEPP 2020 focused updates; current U.S. prescribing information; CDC adult immunization guidance; and ATS / WHO tobacco-cessation guidance.</p>
-        <p><strong>Application last updated:</strong> October 14, 2026.</p>
+        <p><strong>Application last updated:</strong> October 15, 2026.</p>
         <ul class="evidence-links">
           <li><a href="https://ginasthma.org/2026-gina-strategy-report/" target="_blank" rel="noopener noreferrer">GINA 2026 strategy</a></li>
           <li><a href="https://ginasthma.org/2026-gina-severe-asthma-guide/" target="_blank" rel="noopener noreferrer">GINA severe asthma guide</a></li>
