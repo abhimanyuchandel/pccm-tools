@@ -206,7 +206,7 @@
         change(key, input.value === "" ? null : input.valueAsNumber),
       );
       outer.append(label, input);
-    } else if (f.options.length <= 5) {
+    } else if (f.options.length <= 5 && !f.preferSelect) {
       const set = el("fieldset");
       set.append(el("legend", "", f.label));
       const choices = el("div", "choice-grid");
@@ -470,6 +470,7 @@
     recommendation.groups.forEach((g) => {
       const set = el("fieldset", "plan-group");
       set.append(el("legend", "", g.title));
+      if (g.hint) set.append(el("p", "hint", g.hint));
       const options = el("div", "plan-options");
       const all = [
         {

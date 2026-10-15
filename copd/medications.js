@@ -89,9 +89,58 @@
       title: "Umeclidinium/vilanterol U.S. prescribing information",
       url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6de414b1-f707-4b98-9e4b-742032ec90af",
     },
+    stiolto: {
+      title: "Stiolto Respimat U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01e15aee-40e0-23f3-537f-c96dd63e2cb1",
+    },
+    bevespi: {
+      title: "Bevespi Aerosphere U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ae02436e-9528-490e-a844-0c0f6f2843f9",
+    },
+    handihaler: {
+      title: "Spiriva HandiHaler U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=820839ef-e53d-47e8-a3b9-d911ff92e6a9",
+    },
+    tiotropiumGeneric: {
+      title:
+        "FDA approval of therapeutically equivalent generic tiotropium capsules",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/appletter/2023/211287Orig1s000ltr.pdf",
+    },
+    incruse: {
+      title: "Incruse Ellipta U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=dbb64747-1505-49d7-9a33-99dd402e96d3",
+    },
+    yupelri: {
+      title: "Yupelri U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6dfebf04-7c90-436a-9b16-750d3c1ee0a6",
+    },
+    brovana: {
+      title: "Arformoterol / Brovana U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f9633c92-99e5-4b5e-ab51-fa77453e5761",
+    },
+    perforomist: {
+      title: "Formoterol / Perforomist U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fb2fe258-fe2e-47f6-8adf-ca75bf6f90af",
+    },
+    breo: {
+      title: "Breo Ellipta U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=96428df1-ea05-431a-98d3-1ec2c4b63878",
+    },
+    advair: {
+      title: "Advair Diskus U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4eeb5f6a-593f-4a9e-9692-adefa2caf8fc",
+    },
+    wixela: {
+      title: "Wixela Inhub U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3beef422-8a07-4a45-9ba6-414511e4b7e2",
+    },
     symbicort: {
       title: "Symbicort U.S. prescribing information",
       url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fafa4cf1-99c2-43d5-73ad-51f256de3be0",
+    },
+    breyna: {
+      title: "Breyna U.S. prescribing information",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=dc529fc4-bddb-4673-8202-dc401f86166f",
     },
     mepolizumab: {
       title: "Nucala COPD U.S. prescribing information",
@@ -131,6 +180,31 @@
         "COPD strength differs from the asthma strength. Review glaucoma/urinary retention and technique. Not a rescue inhaler.",
       source: "spiriva",
     },
+    handihaler: {
+      category: "lama",
+      name: "Tiotropium (Spiriva HandiHaler / equivalent generic)",
+      dose: "Tiotropium 18 mcg capsule: inhale the contents of ONE capsule once daily, using two inhalations through the prescribed capsule inhaler.",
+      detail:
+        "Dry-powder capsule device; do not swallow the capsule. The two breaths empty one capsule, not two capsules. Confirm the dispensed product's device instructions. Review glaucoma, urinary retention and anticholinergic effects.",
+      source: "handihaler",
+      sources: ["handihaler", "tiotropiumGeneric"],
+    },
+    incruse: {
+      category: "lama",
+      name: "Umeclidinium (Incruse Ellipta)",
+      dose: "Umeclidinium 62.5 mcg, 1 inhalation once daily through the Ellipta dry-powder inhaler.",
+      detail:
+        "Once-daily DPI option. Confirm adequate device use and review severe milk-protein allergy, glaucoma and urinary retention. Not a rescue inhaler.",
+      source: "incruse",
+    },
+    yupelri: {
+      category: "lama",
+      name: "Revefenacin (Yupelri)",
+      dose: "Revefenacin 175 mcg/3 mL by standard jet nebulizer with a mouthpiece once daily.",
+      detail:
+        "Nebulized LAMA option when suitable equipment is available. Review anticholinergic precautions, liver disease and interactions. Do not assume compatibility with other medicines in the nebulizer cup. Not for rescue use.",
+      source: "yupelri",
+    },
     striverdi: {
       category: "laba",
       name: "Olodaterol (Striverdi Respimat)",
@@ -139,6 +213,22 @@
         "Do not duplicate LABAs. Asthma requires an ICS-containing regimen. Not for acute relief.",
       source: "striverdi",
     },
+    brovana: {
+      category: "laba",
+      name: "Arformoterol (Brovana / generic)",
+      dose: "Arformoterol 15 mcg/2 mL by standard jet nebulizer twice daily, morning and evening.",
+      detail:
+        "Nebulized LABA maintenance option. Do not duplicate formoterol, olodaterol, vilanterol, salmeterol or another LABA-containing inhaler. Review equipment and product-specific storage instructions. Not for acute relief.",
+      source: "brovana",
+    },
+    perforomist: {
+      category: "laba",
+      name: "Formoterol (Perforomist / generic)",
+      dose: "Formoterol 20 mcg/2 mL by standard jet nebulizer every 12 hours.",
+      detail:
+        "Nebulized LABA maintenance option. Do not duplicate another LABA. This is not an ICS-containing product or asthma SMART therapy. Review equipment and storage instructions; not for acute relief.",
+      source: "perforomist",
+    },
     anoro: {
       category: "laba-lama",
       name: "Umeclidinium/vilanterol (Anoro Ellipta)",
@@ -146,6 +236,22 @@
       detail:
         "Verify ability to use the dry-powder device and milk-protein allergy. Replace, rather than duplicate, other LABA/LAMA maintenance inhalers.",
       source: "anoro",
+    },
+    stiolto: {
+      category: "laba-lama",
+      name: "Tiotropium/olodaterol (Stiolto Respimat)",
+      dose: "Tiotropium/olodaterol 2.5/2.5 mcg per actuation, 2 inhalations once daily through the Respimat soft-mist inhaler.",
+      detail:
+        "Soft-mist LABA/LAMA alternative to a dry-powder device. Review cartridge preparation and technique, glaucoma and urinary retention. Do not add separate tiotropium or another LABA/LAMA. Not for rescue use.",
+      source: "stiolto",
+    },
+    bevespi: {
+      category: "laba-lama",
+      name: "Glycopyrrolate/formoterol (Bevespi Aerosphere)",
+      dose: "Glycopyrrolate/formoterol 9/4.8 mcg per actuation, 2 inhalations twice daily through the Aerosphere metered-dose inhaler.",
+      detail:
+        "Twice-daily MDI LABA/LAMA alternative. Review priming, coordination, anticholinergic precautions and access. It is not interchangeable puff-for-puff with Breztri and does not contain an ICS. Not for rescue use.",
+      source: "bevespi",
     },
     trelegy: {
       category: "triple",
@@ -163,13 +269,47 @@
         "Rinse mouth. Verify MDI technique and pneumonia risk. Replace previous combination maintenance inhalers; not for rescue use.",
       source: "breztri",
     },
+    separateTriple: {
+      category: "triple",
+      name: "Separate-inhaler triple: budesonide/formoterol + tiotropium Respimat",
+      dose: "Budesonide/formoterol 160/4.5 mcg per actuation, 2 inhalations twice daily, PLUS tiotropium Respimat 2.5 mcg per actuation, 2 inhalations once daily.",
+      detail:
+        "ICS/LABA plus a separate LAMA can provide triple therapy when a single triple inhaler is not suitable or accessible. This is a two-inhaler regimen, not a fixed-dose product. Review both devices, rinse after the ICS, and replace overlapping maintenance inhalers. Neither inhaler is the rescue prescription.",
+      source: "symbicort",
+      sources: ["gold", "symbicort", "breyna", "spiriva"],
+    },
     symbicort: {
       category: "ics-laba",
-      name: "Budesonide/formoterol (Symbicort)",
+      name: "Budesonide/formoterol (Symbicort / Breyna)",
       dose: "Budesonide/formoterol 160/4.5 mcg per actuation, 2 inhalations twice daily.",
       detail:
         "COPD maintenance dosing, not asthma SMART. Use the separately selected rescue inhaler. Review pneumonia and ICS adverse effects.",
       source: "symbicort",
+      sources: ["symbicort", "breyna"],
+    },
+    breo: {
+      category: "ics-laba",
+      name: "Fluticasone furoate/vilanterol (Breo Ellipta)",
+      dose: "Fluticasone furoate/vilanterol 100/25 mcg, 1 inhalation once daily through the Ellipta dry-powder inhaler.",
+      detail:
+        "100/25 is the COPD strength; do not substitute the asthma 200/25 strength as a COPD preset. Review DPI suitability and severe milk-protein allergy. Rinse after use and use a separate rescue medication.",
+      source: "breo",
+    },
+    advair: {
+      category: "ics-laba",
+      name: "Fluticasone propionate/salmeterol (Advair Diskus)",
+      dose: "Fluticasone propionate/salmeterol 250/50 mcg, 1 inhalation twice daily, approximately 12 hours apart, through the Diskus dry-powder inhaler.",
+      detail:
+        "250/50 is the labeled COPD dose. This preset is for Diskus, not Advair HFA. Review DPI suitability and severe milk-protein allergy; rinse after use. Not a rescue or SMART inhaler.",
+      source: "advair",
+    },
+    wixela: {
+      category: "ics-laba",
+      name: "Fluticasone propionate/salmeterol (Wixela Inhub)",
+      dose: "Fluticasone propionate/salmeterol 250/50 mcg, 1 inhalation twice daily, approximately 12 hours apart, through the Inhub dry-powder inhaler.",
+      detail:
+        "Generic fluticasone/salmeterol device option; 250/50 is the labeled COPD dose. Verify coverage and Inhub technique rather than assuming the device is identical to Diskus. Review severe milk-protein allergy and rinse after use. Not a rescue inhaler.",
+      source: "wixela",
     },
     ensifentrine: {
       category: "addon",
@@ -225,7 +365,7 @@
     },
     inhalers: {
       title: "Selecting a device and an ICS strategy",
-      text: "Review the actual inhalers, technique, adherence, access, inspiratory flow and dexterity. Eosinophils estimate ICS exacerbation-prevention benefit, not COPD diagnosis. Coexisting asthma requires an ICS-containing strategy. ICS withdrawal is not a routine asthma-style step-down; weigh pneumonia/adverse effects and higher withdrawal risk with eosinophils at least 300.",
+      text: "Review the actual inhalers, technique, adherence, access, inspiratory flow and dexterity. Choose an affordable, covered product and a device the patient can use; the product examples are not ranked and do not confirm local formulary coverage. Device strengths are not interchangeable puff-for-puff. Eosinophils estimate ICS exacerbation-prevention benefit, not COPD diagnosis. Coexisting asthma requires an ICS-containing strategy. ICS withdrawal is not a routine asthma-style step-down; weigh pneumonia/adverse effects and higher withdrawal risk with eosinophils at least 300.",
       sources: ["gold"],
     },
     aat: {
@@ -309,5 +449,7 @@
       sources: ["nccn"],
     },
   };
-  return { SOURCES, MEDICATIONS, REFERENCES };
+  const getMedicationSources = (id) =>
+    MEDICATIONS[id].sources || [MEDICATIONS[id].source];
+  return { SOURCES, MEDICATIONS, REFERENCES, getMedicationSources };
 });

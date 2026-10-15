@@ -429,6 +429,10 @@
           options,
           selected: chosen?.id || "",
           placeholder,
+          hint:
+            id === "product"
+              ? "Examples, not a ranking. Choose by local formulary, cost and device suitability. Selecting a product writes its prescription into the plan; it does not document prior use."
+              : "",
         });
         if (chosen) {
           r.selections[id] = chosen.id;
@@ -437,7 +441,7 @@
             chosen.text,
             id === "pneumococcalPlan" ? "prevention" : id,
             chosen.medicationId
-              ? [catalog.MEDICATIONS[chosen.medicationId].source]
+              ? catalog.getMedicationSources(chosen.medicationId)
               : id === "cessation"
                 ? [
                     "tobacco",
@@ -524,7 +528,9 @@
         ...new Set(
           r.actions
             .flatMap((a) => a.sources)
-            .concat(r.medications.map((k) => catalog.MEDICATIONS[k].source)),
+            .concat(
+              r.medications.flatMap((k) => catalog.getMedicationSources(k)),
+            ),
         ),
       ];
       return r;
@@ -834,9 +840,11 @@
           "Controller strategy and prescription: ***.",
         );
         const category =
-          selected?.id === "dual" || selected?.id === "withdraw"
-            ? "laba-lama"
-            : selected?.id;
+          selected?.id === "continue"
+            ? d.currentRegimen
+            : selected?.id === "dual" || selected?.id === "withdraw"
+              ? "laba-lama"
+              : selected?.id;
         if (
           ["lama", "laba", "laba-lama", "triple", "ics-laba"].includes(category)
         ) {
@@ -846,16 +854,21 @@
               option(
                 id,
                 m.name,
-                "Start " +
-                  m.dose +
-                  " Replace overlapping maintenance inhalers.",
-                [],
+                "Use " + m.dose + " Replace overlapping maintenance inhalers.",
+                [
+                  !known(d.age) &&
+                    "Confirm adult age before selecting a prescription.",
+                  !diagnosis.supported &&
+                    "Reconcile the COPD diagnostic context.",
+                  d.deviceConcern &&
+                    "Confirm the selected device is suitable after reviewing the device concern.",
+                ],
                 id,
               ),
             );
           const product = group(
             "product",
-            "Optional U.S. product",
+            "Optional U.S. controller prescription",
             products,
             "",
           );

@@ -18,6 +18,7 @@
       "encounter",
       "managementPhase",
       "age",
+      "gender",
       "redFlags",
     ]);
     add(

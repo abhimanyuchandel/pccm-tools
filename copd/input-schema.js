@@ -57,6 +57,19 @@
       min: 18,
       integer: true,
     }),
+    gender: {
+      type: "choice",
+      label: "Patient gender",
+      options: [
+        ["unknown", "Not documented"],
+        ["male", "Male"],
+        ["female", "Female"],
+        ["nonbinary", "Nonbinary"],
+      ],
+      defaultValue: "unknown",
+      preferSelect: true,
+      hint: "Optional; used for documentation only.",
+    },
     redFlags: yesNo(
       "Urgent warning features present?",
       "Severe distress, confusion/drowsiness, cyanosis, chest pain, syncope, unstable circulation, or rapidly worsening oxygen needs. An unassessed answer does not establish outpatient safety.",

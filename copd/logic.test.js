@@ -250,6 +250,186 @@ test("COPD product catalog uses COPD doses, not asthma SMART or biologic loading
   assert.match(C.MEDICATIONS.dupilumab.dose, /300 mg.*2 weeks/);
   assert.doesNotMatch(C.MEDICATIONS.dupilumab.dose, /600|loading/);
 });
+const controllerPresets = {
+  lama: ["spiriva", "handihaler", "incruse", "yupelri"],
+  laba: ["striverdi", "brovana", "perforomist"],
+  "laba-lama": ["anoro", "stiolto", "bevespi"],
+  "ics-laba": ["symbicort", "breo", "advair", "wixela"],
+  triple: ["trelegy", "breztri", "separateTriple"],
+};
+for (const [category, ids] of Object.entries(controllerPresets)) {
+  test(
+    category +
+      " has relevant formulary examples when continuing the current treatment class",
+    () => {
+      const r = build({ currentRegimen: category }, { controller: "continue" });
+      assert.deepEqual(
+        group(r, "product")
+          .options.map((o) => o.id)
+          .sort(),
+        [...ids].sort(),
+      );
+    },
+  );
+  for (const id of ids)
+    test(
+      "selected controller preset " +
+        id +
+        " agrees with its class, dose and note",
+      () => {
+        const r = build(
+          { currentRegimen: category },
+          { controller: "continue", product: id },
+        );
+        assert.equal(r.selections.product, id);
+        assert.equal(C.MEDICATIONS[id].category, category);
+        const n = N.buildNoteText(r);
+        assert.ok(n.includes(C.MEDICATIONS[id].dose));
+        for (const source of C.getMedicationSources(id))
+          assert.ok(
+            r.sources.includes(source) &&
+              C.SOURCES[source]?.url.startsWith("https://"),
+          );
+        for (const other of ids.filter((other) => other !== id)) {
+          if (C.MEDICATIONS[other].dose !== C.MEDICATIONS[id].dose)
+            assert.ok(!n.includes(C.MEDICATIONS[other].dose));
+        }
+        assert.equal(
+          r.actions.some((a) => a.id === "selected-controller"),
+          false,
+        );
+      },
+    );
+}
+test("new U.S. controller doses retain product/device-specific COPD strengths", () => {
+  assert.match(
+    C.MEDICATIONS.stiolto.dose,
+    /2.5\/2.5.*2 inhalations once daily/,
+  );
+  assert.match(C.MEDICATIONS.bevespi.dose, /9\/4.8.*2 inhalations twice daily/);
+  assert.match(
+    C.MEDICATIONS.handihaler.dose,
+    /ONE capsule once daily.*two inhalations/,
+  );
+  assert.match(C.MEDICATIONS.incruse.dose, /62.5.*1 inhalation once daily/);
+  assert.match(C.MEDICATIONS.yupelri.dose, /175 mcg\/3 mL.*once daily/);
+  assert.match(C.MEDICATIONS.brovana.dose, /15 mcg\/2 mL.*twice daily/);
+  assert.match(C.MEDICATIONS.perforomist.dose, /20 mcg\/2 mL.*12 hours/);
+  assert.match(C.MEDICATIONS.breo.dose, /100\/25.*1 inhalation once daily/);
+  assert.doesNotMatch(C.MEDICATIONS.breo.dose, /200\/25/);
+  for (const id of ["advair", "wixela"])
+    assert.match(C.MEDICATIONS[id].dose, /250\/50.*1 inhalation twice daily/);
+});
+test("separate-inhaler triple is one complete regimen with both component sources and no competing triple", () => {
+  const r = build(
+    { moderateExac: 1, eosinophils: 300 },
+    { controller: "triple", product: "separateTriple" },
+  );
+  assert.equal(r.selections.product, "separateTriple");
+  const n = N.buildNoteText(r);
+  assert.match(
+    n,
+    /160\/4.5.*2 inhalations twice daily, PLUS tiotropium Respimat 2.5 mcg.*2 inhalations once daily/,
+  );
+  assert.ok(r.sources.includes("symbicort") && r.sources.includes("spiriva"));
+  assert.doesNotMatch(n, /100\/62.5\/25|160\/9\/4.8/);
+});
+test("continuation product presets still require adult prescribing context and device suitability", () => {
+  for (const changes of [
+    { age: null },
+    { deviceConcern: true },
+    { diagnosisContext: "suspected", historicalObstruction: null },
+  ]) {
+    assert.equal(
+      build(changes, { controller: "continue", product: "stiolto" }).selections
+        .product,
+      undefined,
+    );
+  }
+  // An access concern can be addressed by selecting a covered alternative within the same class.
+  assert.equal(
+    build(
+      { accessConcern: true },
+      { controller: "continue", product: "stiolto" },
+    ).selections.product,
+    "stiolto",
+  );
+  assert.equal(
+    build(
+      { currentRegimen: "triple" },
+      { controller: "continue", product: "stiolto" },
+    ).selections.product,
+    undefined,
+  );
+});
+for (const [gender, wording] of [
+  ["male", "man"],
+  ["female", "woman"],
+  ["nonbinary", "nonbinary patient"],
+])
+  test(
+    "Subjective records age and " +
+      gender +
+      " without changing clinical decisions",
+    () => {
+      const r = build({ gender }),
+        neutral = build();
+      const subjective = N.buildNoteText(r).split("\n\nObjective")[0];
+      assert.match(subjective, new RegExp("65-year-old " + wording));
+      assert.match(
+        subjective,
+        /Current controller and rescue medications are: \*\*\*\./,
+      );
+      assert.doesNotMatch(
+        subjective,
+        /Current medication names, strengths and schedule/,
+      );
+      assert.deepEqual(r.actions, neutral.actions);
+      assert.deepEqual(r.findings, neutral.findings);
+      assert.ok(subjective.includes("\n\nInterval history: ***.\n\n"));
+    },
+  );
+test("Subjective omits undocumented demographics and does not convert missing exacerbations into negatives", () => {
+  const subjective = N.buildNoteText(
+    build({
+      age: null,
+      gender: "unknown",
+      moderateExac: 1,
+      severeExac: null,
+      smokingStatus: "unknown",
+    }),
+  ).split("\n\nObjective")[0];
+  assert.doesNotMatch(
+    subjective,
+    /year-old|woman|\bman\b|no exacerbation-related hospitalization|never smok/,
+  );
+  assert.match(subjective, /1 exacerbation treated/);
+});
+test("Subjective reflects encounter context and keeps planned medication out of current medication history", () => {
+  for (const [encounter, reason] of [
+    ["routine", "COPD follow-up"],
+    ["active", "an acute respiratory exacerbation"],
+    ["recovery", "follow-up after a respiratory exacerbation"],
+  ]) {
+    assert.ok(
+      N.buildNoteText(build({ encounter, gender: "female" }))
+        .split("\n\nObjective")[0]
+        .includes(reason),
+    );
+  }
+  const r = build({}, { controller: "continue", product: "stiolto" });
+  assert.ok(
+    !N.buildNoteText(r)
+      .split("\n\nObjective")[0]
+      .includes(C.MEDICATIONS.stiolto.dose),
+  );
+  assert.equal(L.createEmptyState().gender, "unknown");
+  assert.ok(
+    W.steps(r.data, r)
+      .find((s) => s.id === "context")
+      .fields.includes("gender"),
+  );
+});
 test("roflumilast requires low FEV1, chronic bronchitis, events and appropriate maintenance context", () => {
   assert.equal(
     L.isRoflumilastCandidate({

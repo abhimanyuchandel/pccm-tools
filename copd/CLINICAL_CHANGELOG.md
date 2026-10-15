@@ -1,7 +1,19 @@
 # COPD guided encounter revision
 
-Clinical review date: October 14, 2026. Asset version: 20261014-3.
+Clinical review date: October 15, 2026. Asset version: 20261015-1.
 Delivery: preview branch `codex/copd-guided-soap`; production promotion requires clinical review.
+
+## Formulary Options and Subjective Documentation (October 15)
+
+- Expanded matched-class controller examples without changing the clinical rules for selecting LABA/LAMA, ICS-containing therapy or triple therapy. No product is automatically selected, ranked, or claimed to be on a local formulary. Choice depends on coverage, affordability, device suitability and patient factors.
+- LABA/LAMA now includes Anoro Ellipta, [Stiolto Respimat](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01e15aee-40e0-23f3-537f-c96dd63e2cb1), and [Bevespi Aerosphere](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ae02436e-9528-490e-a844-0c0f6f2843f9).
+- LAMA options include Respimat, [HandiHaler](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=820839ef-e53d-47e8-a3b9-d911ff92e6a9) or a product-appropriate equivalent capsule inhaler, [Incruse Ellipta](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=dbb64747-1505-49d7-9a33-99dd402e96d3), and [Yupelri](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6dfebf04-7c90-436a-9b16-750d3c1ee0a6). HandiHaler dosing explicitly means two breaths from one capsule, not two capsules or swallowing a capsule.
+- LABA options include olodaterol and nebulized [arformoterol](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f9633c92-99e5-4b5e-ab51-fa77453e5761) or [formoterol](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fb2fe258-fe2e-47f6-8adf-ca75bf6f90af). Do not duplicate LABAs or assume nebulizer mixing compatibility.
+- ICS/LABA examples include Symbicort/[Breyna](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=dc529fc4-bddb-4673-8202-dc401f86166f), [Breo 100/25](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=96428df1-ea05-431a-98d3-1ec2c4b63878), [Advair Diskus 250/50](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4eeb5f6a-593f-4a9e-9692-adefa2caf8fc), and [Wixela Inhub 250/50](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3beef422-8a07-4a45-9ba6-414511e4b7e2). Presets do not substitute asthma-only strengths or Advair HFA for labeled COPD Diskus dosing.
+- Triple choices retain Trelegy and Breztri and add an ICS/LABA plus separate LAMA example using label-verified budesonide/formoterol and tiotropium Respimat doses. This is a two-inhaler regimen, not a separately approved fixed-dose product. The copied plan supplies both component prescriptions and replaces overlapping maintenance inhalers.
+- Formulary-matched product prescriptions are also available when continuing the existing treatment class. Selecting a product writes a definitive prescription into the Plan, not into the history of current use. A product selection still requires an adult prescribing context, reconciled diagnosis and suitable device. An access barrier does not by itself prevent choosing a covered alternative within the same class.
+- Added optional patient gender for documentation only. It does not affect treatment, risk, screening or dosing rules and is not treated as sex assigned at birth. Undocumented gender remains unspecified.
+- Subjective now uses short paragraphs with available age/gender, encounter purpose, symptoms, exacerbations and tobacco history. It retains the interval-history placeholder and uses the requested wording, "Current controller and rescue medications are: \*\*\*." Unknown counts do not become negative findings, and a planned controller is never represented as a medication already being taken.
 
 ## Point-of-care refinements
 

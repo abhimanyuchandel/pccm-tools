@@ -6,6 +6,7 @@ const routine = {
   encounter: "routine",
   managementPhase: "initial",
   age: 65,
+  gender: "female",
   redFlags: false,
   currentRegimen: "laba-lama",
   reliever: "albuterol",
@@ -173,12 +174,74 @@ async function main() {
     assert.equal(await page.locator("#copy-note-btn").isEnabled(), true);
     let note = await page.locator("#note-output").inputValue();
     assert.match(note, /Subjective/);
+    assert.match(note, /65-year-old woman was seen for COPD follow-up/);
+    assert.match(
+      note,
+      /Current controller and rescue medications are: \*\*\*\./,
+    );
+    assert.doesNotMatch(
+      note,
+      /Current medication names, strengths and schedule/,
+    );
+    await page.locator("#result-plan-controller-continue").check();
+    for (const id of ["anoro", "stiolto", "bevespi"])
+      assert.equal(
+        await page.locator("#result-plan-product-" + id).isEnabled(),
+        true,
+      );
+    await page.locator("#result-plan-product-stiolto").check();
+    const stioltoNote = await page.locator("#note-output").inputValue();
+    assert.match(
+      stioltoNote,
+      /Tiotropium\/olodaterol 2.5\/2.5 mcg per actuation, 2 inhalations once daily/,
+    );
+    assert.doesNotMatch(
+      stioltoNote.split("\n\nObjective")[0],
+      /Tiotropium\/olodaterol/,
+    );
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        ),
+        false,
+        "controller choices overflow at " + width,
+      );
+      if (width === 390)
+        await page
+          .getByRole("group", {
+            name: "Optional U.S. controller prescription",
+            exact: true,
+          })
+          .screenshot({ path: "/tmp/copd-controller-options-390.png" });
+    }
     assert.match(note, /Controller strategy.*\*\*\*/);
     assert.match(
       await page.locator("#results-content").innerText(),
       /follow-up management logic was used/,
     );
     await page.locator("#result-plan-controller-triple").check();
+    await page.locator("#result-plan-product-separateTriple").check();
+    await page.setViewportSize({ width: 390, height: 900 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+      "triple choices overflow on mobile",
+    );
+    await page
+      .getByRole("group", {
+        name: "Optional U.S. controller prescription",
+        exact: true,
+      })
+      .screenshot({ path: "/tmp/copd-triple-options-390.png" });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    assert.match(
+      await page.locator("#note-output").inputValue(),
+      /PLUS tiotropium Respimat 2.5 mcg/,
+    );
     await page.locator("#result-plan-product-trelegy").check();
     await page.locator("#result-plan-cessation-varenicline").check();
     await page.locator("#result-plan-rescue-albuterol").check();
@@ -206,6 +269,15 @@ async function main() {
     assert.match(
       await page.locator("#note-output").inputValue(),
       /66 year old/,
+    );
+    await page.getByRole("button", { name: "Context", exact: true }).click();
+    await input("gender", "male");
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await page.locator("#review-btn").click();
+    await generate();
+    assert.match(
+      await page.locator("#note-output").inputValue(),
+      /66-year-old man/,
     );
     // Upstream changes remove incompatible prescriptions and retain useful measurements.
     await page.getByRole("button", { name: "Context", exact: true }).click();

@@ -5,63 +5,102 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
   const known = (n) => n !== null && n !== undefined && Number.isFinite(n);
-  function buildNoteText(r) {
-    if (r.invalid) return "";
-    const d = r.data,
-      f = r.findings,
-      s = [],
-      o = [],
-      a = [];
-    s.push("Interval history: ***.");
+  function buildSubjective(d, f) {
+    const gender =
+      { male: "man", female: "woman", nonbinary: "nonbinary patient" }[
+        d.gender
+      ] || "patient";
+    const person = known(d.age)
+      ? "This " + d.age + "-year-old " + gender
+      : "The " + gender;
+    const reason =
+      d.encounter === "active"
+        ? "an acute respiratory exacerbation"
+        : d.encounter === "recovery"
+          ? "follow-up after a respiratory exacerbation"
+          : f.therapy.phase === "followup"
+            ? "COPD follow-up"
+            : "COPD evaluation and treatment review";
+    const paragraphs = [
+      person + " was seen for " + reason + ".",
+      "Interval history: ***.",
+    ];
     if (d.encounter === "active")
-      s.push("Acute symptom history and treatment already used: ***.");
+      paragraphs.push("Acute symptom history and treatment already used: ***.");
+    const symptoms = [];
     if (d.persistentDyspnea !== null)
-      s.push(
+      symptoms.push(
         d.persistentDyspnea
           ? "The patient reported persistent dyspnea or activity limitation on current treatment."
-          : "Persistent dyspnea or activity limitation on current treatment was not reported.",
+          : "The patient did not report persistent dyspnea or activity limitation on current treatment.",
       );
+    if (d.encounter === "active") {
+      [
+        ["acuteDyspnea", "Increased dyspnea"],
+        ["acuteSputumVolume", "Increased sputum volume"],
+        ["acutePurulence", "Sputum purulence"],
+      ].forEach(([key, label]) => {
+        if (d[key] !== null)
+          symptoms.push(
+            label + (d[key] ? " was reported." : " was not reported."),
+          );
+      });
+    }
+    if (symptoms.length) paragraphs.push(symptoms.join(" "));
+    const events = [];
     if (known(d.moderateExac))
-      s.push(
-        d.moderateExac === 0
-          ? "No nonhospitalized exacerbations requiring systemic steroids or antibiotics were reported in the past 12 months."
-          : d.moderateExac +
-              " nonhospitalized exacerbation" +
-              (d.moderateExac === 1 ? " was" : "s were") +
-              " reported in the past 12 months.",
+      events.push(
+        (d.moderateExac === 0 ? "no" : d.moderateExac) +
+          " exacerbation" +
+          (d.moderateExac === 1 ? "" : "s") +
+          " treated with systemic steroids and/or antibiotics without hospitalization",
       );
     if (known(d.severeExac))
-      s.push(
-        d.severeExac === 0
-          ? "No exacerbation-related hospitalizations were reported in the past 12 months."
-          : d.severeExac +
-              " exacerbation-related hospitalization" +
-              (d.severeExac === 1 ? " was" : "s were") +
-              " reported in the past 12 months.",
+      events.push(
+        (d.severeExac === 0 ? "no" : d.severeExac) +
+          " exacerbation-related hospitalization" +
+          (d.severeExac === 1 ? "" : "s"),
+      );
+    if (events.length)
+      paragraphs.push(
+        "In the past 12 months, the patient reported " +
+          events.join(" and ") +
+          ".",
       );
     const smoking = {
       current: "The patient currently smokes cigarettes.",
       former: "The patient previously smoked cigarettes.",
       never: "The patient reported never smoking cigarettes.",
     };
-    if (smoking[d.smokingStatus])
-      s.push(
-        smoking[d.smokingStatus] +
-          (known(d.packYears)
-            ? " Cumulative exposure was " + d.packYears + " pack-years."
-            : ""),
+    if (d.smokingStatus === "never" && known(d.packYears) && d.packYears > 0) {
+      paragraphs.push(
+        "The patient reported never smoking, but a cigarette exposure of " +
+          d.packYears +
+          " pack-years was also documented. Reconcile the tobacco history.",
       );
-    s.push("Current medication names, strengths and schedule: ***.");
-    if (d.encounter === "active") {
-      [
-        ["acuteDyspnea", "Increased dyspnea"],
-        ["acuteSputumVolume", "Increased sputum volume"],
-        ["acutePurulence", "Sputum purulence"],
-      ].forEach(([k, name]) => {
-        if (d[k] !== null)
-          s.push(name + (d[k] ? " was reported." : " was not reported."));
-      });
+    } else {
+      const tobacco = [];
+      if (smoking[d.smokingStatus]) tobacco.push(smoking[d.smokingStatus]);
+      if (known(d.packYears))
+        tobacco.push("Cumulative exposure was " + d.packYears + " pack-years.");
+      if (d.smokingStatus === "former" && known(d.yearsSinceQuit))
+        tobacco.push(
+          d.yearsSinceQuit === 0
+            ? "The patient quit within the past year."
+            : "The patient quit " + d.yearsSinceQuit + " years ago.",
+        );
+      if (tobacco.length) paragraphs.push(tobacco.join(" "));
     }
+    paragraphs.push("Current controller and rescue medications are: ***.");
+    return paragraphs;
+  }
+  function buildNoteText(r) {
+    if (r.invalid) return "";
+    const d = r.data,
+      f = r.findings,
+      s = buildSubjective(d, f),
+      o = [],
+      a = [];
     if (f.diagnosis.ratio !== null)
       o.push(
         "Post-bronchodilator FEV1/FVC: " +
@@ -251,7 +290,7 @@
       .filter((section) => section.items.length);
     return (
       "Subjective\n" +
-      s.join(" ") +
+      s.join("\n\n") +
       "\n\nObjective\n" +
       o.map((x) => "- " + x).join("\n") +
       "\n\nAssessment\n" +
