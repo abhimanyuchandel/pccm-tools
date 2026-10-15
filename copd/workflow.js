@@ -95,7 +95,7 @@
           "acute-infection",
           "Acute care",
           "Antibiotic safety and infection context",
-          ["antibioticSafety", "resistantOrganisms", "bronchiectasis"],
+          ["antibioticSafety", "renalStatus", "resistantOrganisms", "bronchiectasis"],
           "acute",
         );
       add(
@@ -164,7 +164,13 @@
           "phenotype",
           "Treatment",
           "ICS benefit and exacerbation phenotype",
-          ["eosinophils", "historicalEosinophils", "chronicBronchitis"],
+          [
+            "eosinophils", "historicalEosinophils", "chronicBronchitis",
+            ...(d.currentRegimen === "ics-laba" &&
+              d.persistentDyspnea === true &&
+              r.findings.risk.high === false && d.asthma === "no"
+              ? ["priorIcsBenefit"] : []),
+          ],
           "inhalers",
         );
       add(
