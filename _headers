@@ -1,4 +1,19 @@
-/ODDS/evidence/*
+/ODDS/
+  X-Robots-Tag: index, follow
+
+/ODDS/index.html
+  X-Robots-Tag: index, follow
+
+/ODDS/evidence/
+  X-Robots-Tag: index, follow
+
+/ODDS/evidence/index.html
+  X-Robots-Tag: index, follow
+
+/ODDS/evidence/downloads/comprehensive.pdf
+  X-Robots-Tag: index, follow
+
+/ODDS/evidence/downloads/joint.pdf
   X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
 
 /odds_joint_model.html

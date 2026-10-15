@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from lxml import html as lxml_html
+from lxml import etree, html as lxml_html
 from PIL import Image
 from pypdf import PdfReader
 
@@ -24,13 +24,15 @@ CANONICAL_JOINT_URL = "/odds_joint_model.html"
 CALCULATOR_URL = "/ODDS/"
 EVIDENCE_URL = "/ODDS/evidence/"
 LEGACY_JOINT_HTML = "ODDS_joint_model_public_summary.html"
-ROBOTS_DIRECTIVE = "noindex, nofollow, noarchive, nosnippet"
+ROBOTS_DIRECTIVE = "index, follow"
+PRIVATE_ROBOTS_DIRECTIVE = "noindex, nofollow, noarchive, nosnippet"
+MANUSCRIPT_DOI = "https://doi.org/10.1093/ajrccm/aamag552"
+MANUSCRIPT_TITLE = "Serial multidomain six-minute walk assessment for dynamic risk prediction in idiopathic pulmonary fibrosis"
 COPYRIGHT_NOTICE_TITLE = "© 2026 The ODDS Study Authors. All rights reserved unless otherwise noted."
 COPYRIGHT_NOTICE_BODY = (
     "This author-prepared expanded project report is provided to support research "
     "evaluation and external validation of ODDS. It has not undergone external peer "
-    "review and is not a journal Version of Record. A related manuscript is being "
-    "considered for publication."
+    "review and is not a journal version of record."
 )
 EXPECTED_SOURCE_TEXT_SHA256 = {
     "comprehensive": "9b30c0e5a72557734a85f8ccd01e4bf39fdb0c3be4215b6a1a622745fa7a7e4c",
@@ -56,7 +58,7 @@ PUBLICATIONS = (
 
 PROHIBITED_PUBLIC_EXTENSIONS = {".docx", ".xlsx", ".xls", ".csv", ".sav", ".dta"}
 PROHIBITED_PUBLIC_MODEL_EXTENSIONS = {".rds", ".rda", ".rdata", ".rmd", ".qmd", ".ipynb"}
-LOCAL_PATH_PATTERN = re.compile(r"(?:file://|/Users/|/private/var/|/var/folders/)", re.IGNORECASE)
+LOCAL_PATH_PATTERN = re.compile(r"(?:file://|https?://(?:127\.0\.0\.1|localhost)(?::\d+)?(?:/|\b)|/Users/|/private/var/|/var/folders/)", re.IGNORECASE)
 
 
 def fail(message: str) -> None:
@@ -124,7 +126,8 @@ def verify_html(page: Path, expected_tables: int, expected_images: int, required
     robots_meta = root.xpath(
         '//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="robots"]/@content'
     )
-    if robots_meta != [ROBOTS_DIRECTIVE]:
+    expected_robots = ROBOTS_DIRECTIVE if page == EVIDENCE_DIR / "index.html" else PRIVATE_ROBOTS_DIRECTIVE
+    if robots_meta != [expected_robots]:
         fail(f"{page.name}: missing exact robots meta directive")
     copyright_nodes = root.xpath(
         '//*[contains(concat(" ", normalize-space(@class), " "), " publication-copyright ")]'
@@ -198,6 +201,7 @@ def verify_html(page: Path, expected_tables: int, expected_images: int, required
     citation_links = root.xpath('//a[contains(concat(" ", normalize-space(@class), " "), " citation-link ")]')
     reference_links = root.xpath('//a[contains(concat(" ", normalize-space(@class), " "), " reference-link ")]')
     if page == EVIDENCE_DIR / "index.html":
+        verify_manuscript_citation(root)
         if root.xpath('//p[contains(concat(" ", normalize-space(@class), " "), " source-site-link ")]'):
             fail("Comprehensive report still displays the removed source-site link")
         publication_date = root.xpath(
@@ -248,6 +252,8 @@ def verify_pdf(path: Path, required_urls: set[str]) -> dict:
         fail(f"{path.name}: local filesystem path in visible text")
     if expected_copyright_text() not in normalize_space(extracted[-1]):
         fail(f"{path.name}: copyright notice is missing from the final PDF page")
+    if "being considered for publication" in " ".join(extracted):
+        fail(f"{path.name}: obsolete manuscript status remains")
     if any(LEGACY_JOINT_HTML in uri for uri in uris):
         fail(f"{path.name}: legacy joint-model hyperlink found")
     normalized_uris = {urlsplit(uri).path for uri in uris}
@@ -262,6 +268,16 @@ def verify_pdf(path: Path, required_urls: set[str]) -> dict:
     }
 
 
+def verify_manuscript_citation(root) -> None:
+    citations = root.xpath(f'//a[@href="{MANUSCRIPT_DOI}"]/..')
+    if len(citations) != 1:
+        fail("Expected one published-manuscript citation")
+    text = normalized_element_text(citations[0])
+    for item in ("Abhimanyu Chandel", "Stephanie Morgan", "Junad M Chowdhury", "Zein Kattih", "Vikramjit Khangoora", "Christopher A Thomas", "Christopher S King", "Steven D Nathan", MANUSCRIPT_TITLE, "American Journal of Respiratory and Critical Care Medicine", "2026;aamag552"):
+        if item not in text:
+            fail(f"Published-manuscript citation is missing {item}")
+
+
 def verify_discovery_controls() -> None:
     calculator_page = CALCULATOR_DIR / "index.html"
     calculator_root = lxml_html.fromstring(calculator_page.read_text(encoding="utf-8"))
@@ -272,17 +288,22 @@ def verify_discovery_controls() -> None:
         fail("Calculator is missing its copyright notice")
     if normalized_element_text(calculator_notices[0]) != expected_copyright_text():
         fail("Calculator copyright wording changed")
+    verify_manuscript_citation(calculator_root)
+    if calculator_root.xpath('//meta[@name="robots"]/@content') != [ROBOTS_DIRECTIVE]:
+        fail("Calculator must allow indexing and link following")
+    if calculator_root.xpath('//link[@rel="canonical"]/@href') != [f"{PUBLIC_ORIGIN}{CALCULATOR_URL}"]:
+        fail("Calculator canonical URL is incorrect")
 
     calculator_publication_links = [
         link for link in calculator_root.xpath("//a[@href]") if is_publication_link(link.get("href", ""))
     ]
     if len(calculator_publication_links) != 1:
-        fail("Calculator must contain exactly one reviewer-publication link")
+        fail("Calculator must contain exactly one evidence-report link")
     calculator_publication_link = calculator_publication_links[0]
     if calculator_publication_link.get("href") != EVIDENCE_URL:
         fail("Calculator may link only to the comprehensive evidence report")
-    if "nofollow" not in calculator_publication_link.get("rel", "").lower().split():
-        fail("Calculator evidence link must use rel=nofollow")
+    if "nofollow" in calculator_publication_link.get("rel", "").lower().split():
+        fail("Calculator evidence link must be crawlable")
     if normalize_space(calculator_publication_link.text_content()) != "Evidence and model validation":
         fail("Calculator evidence link label changed")
     if not calculator_publication_link.xpath(
@@ -290,33 +311,35 @@ def verify_discovery_controls() -> None:
     ):
         fail("Calculator evidence link must remain inside the collapsed About section")
 
-    excluded_pages = {
-        calculator_page.resolve(),
-        (EVIDENCE_DIR / "index.html").resolve(),
-        JOINT_PAGE.resolve(),
-    }
-    for page in APP_DIR.rglob("*.html"):
-        if page.resolve() in excluded_pages:
-            continue
-        root = lxml_html.fromstring(page.read_text(encoding="utf-8"))
-        links = [href for href in root.xpath("//a[@href]/@href") if is_publication_link(href)]
-        if links:
-            fail(f"Publicly indexed page links to reviewer publication: {page.relative_to(APP_DIR)}")
+    home = lxml_html.fromstring((APP_DIR / "index.html").read_text(encoding="utf-8"))
+    home_links = home.xpath('//section[@aria-label="Interstitial lung disease tools"]//a[@href="/ODDS/"]')
+    if len(home_links) != 1 or "nofollow" in home_links[0].get("rel", "").lower().split():
+        fail("Home page must contain a crawlable ODDS link under Interstitial Lung Disease")
 
     sitemap = APP_DIR / "sitemap.xml"
-    if sitemap.exists():
-        sitemap_text = sitemap.read_text(encoding="utf-8")
-        if EVIDENCE_URL in sitemap_text or CANONICAL_JOINT_URL in sitemap_text:
-            fail("Reviewer publication appears in sitemap.xml")
+    sitemap_root = etree.parse(str(sitemap))
+    sitemap_urls = sitemap_root.xpath('//s:loc/text()', namespaces={"s": "http://www.sitemaps.org/schemas/sitemap/0.9"})
+    if len(set(sitemap_urls)) != len(sitemap_urls):
+        fail("Sitemap contains duplicate URLs")
+    for route in (CALCULATOR_URL, EVIDENCE_URL):
+        if f"{PUBLIC_ORIGIN}{route}" not in sitemap_urls:
+            fail(f"Missing public ODDS URL from sitemap: {route}")
+    if any(CANONICAL_JOINT_URL in url or "joint.pdf" in url for url in sitemap_urls):
+        fail("Unlisted technical summary appears in sitemap")
 
     robots = APP_DIR / "robots.txt"
     if robots.exists():
-        for line in robots.read_text(encoding="utf-8").splitlines():
+        robots_text = robots.read_text(encoding="utf-8")
+        if f"Sitemap: {PUBLIC_ORIGIN}/sitemap.xml" not in robots_text:
+            fail("robots.txt does not advertise the sitemap")
+        for line in robots_text.splitlines():
             normalized = line.strip().lower()
             if normalized.startswith("disallow:") and (
-                EVIDENCE_URL.lower() in normalized or CANONICAL_JOINT_URL.lower() in normalized
+                normalized.split(":", 1)[1].strip() == "/" or "/odds" in normalized
             ):
-                fail("robots.txt blocks a reviewer publication route")
+                fail("robots.txt blocks a public ODDS route")
+    else:
+        fail("robots.txt is missing")
 
     if CALCULATOR_DIR != APP_DIR:
         headers_path = APP_DIR / "_headers"
@@ -324,13 +347,16 @@ def verify_discovery_controls() -> None:
             fail("Cloudflare Pages _headers file is missing")
         rules = parse_header_rules(headers_path.read_text(encoding="utf-8"))
         expected_header = f"X-Robots-Tag: {ROBOTS_DIRECTIVE}"
-        for route in (f"{EVIDENCE_URL}*", CANONICAL_JOINT_URL):
+        for route in (CALCULATOR_URL, f"{CALCULATOR_URL}index.html", EVIDENCE_URL, f"{EVIDENCE_URL}index.html", f"{EVIDENCE_URL}downloads/comprehensive.pdf"):
             if expected_header not in rules.get(route, []):
                 fail(f"Missing X-Robots-Tag rule for {route}")
+        for route in (CANONICAL_JOINT_URL, f"{EVIDENCE_URL}downloads/joint.pdf"):
+            if f"X-Robots-Tag: {PRIVATE_ROBOTS_DIRECTIVE}" not in rules.get(route, []):
+                fail(f"Unlisted technical summary is missing its noindex rule: {route}")
 
         function_path = APP_DIR / "functions" / "odds_joint_model.html.js"
         function_text = function_path.read_text(encoding="utf-8")
-        if "X-Robots-Tag" not in function_text or ROBOTS_DIRECTIVE not in function_text:
+        if "X-Robots-Tag" not in function_text or PRIVATE_ROBOTS_DIRECTIVE not in function_text:
             fail("Joint-model Pages Function is missing its X-Robots-Tag header")
 
 
@@ -341,6 +367,8 @@ def main() -> None:
         fail("Build manifest does not record generated PDFs")
     if manifest.get("robots_directive") != ROBOTS_DIRECTIVE:
         fail("Build manifest does not record the robots directive")
+    if manifest.get("published_manuscript_doi") != MANUSCRIPT_DOI:
+        fail("Build manifest does not record the published manuscript DOI")
     if manifest.get("copyright_notice") != f"{COPYRIGHT_NOTICE_TITLE}\n{COPYRIGHT_NOTICE_BODY}":
         fail("Build manifest does not record the exact copyright notice")
     if not all(item.get("wording_verified") for item in manifest.get("publications", [])):
@@ -349,6 +377,8 @@ def main() -> None:
     if manifest_urls != {EVIDENCE_URL, CANONICAL_JOINT_URL}:
         fail("Build manifest does not record the canonical publication URLs")
     for item in manifest.get("publications", []):
+        if item.get("robots_directive") != (ROBOTS_DIRECTIVE if item.get("key") == "comprehensive" else PRIVATE_ROBOTS_DIRECTIVE):
+            fail("Build manifest does not record publication-specific discovery controls")
         if item.get("source_text_sha256") != EXPECTED_SOURCE_TEXT_SHA256.get(item.get("key")):
             fail(f"Visible wording hash changed for {item.get('key', 'unknown')} publication")
     if (EVIDENCE_DIR / LEGACY_JOINT_HTML).exists() or (APP_DIR / LEGACY_JOINT_HTML).exists():
@@ -375,7 +405,7 @@ def main() -> None:
 
     results = []
     pdf_links = {
-        "comprehensive.pdf": {CANONICAL_JOINT_URL},
+        "comprehensive.pdf": {CANONICAL_JOINT_URL, urlsplit(MANUSCRIPT_DOI).path},
         "joint.pdf": {CALCULATOR_URL, EVIDENCE_URL, CANONICAL_JOINT_URL},
     }
     for page, table_count, figure_count, pdf_name, required_links in PUBLICATIONS:

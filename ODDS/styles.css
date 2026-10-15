@@ -726,6 +726,12 @@ tbody tr:nth-child(even) td {
   }
 }
 
+@media (min-width: 721px) and (max-width: 900px) {
+  .data-entry-table tr {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .pccm-bar {
     align-items: flex-start;

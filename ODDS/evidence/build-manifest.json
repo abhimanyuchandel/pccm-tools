@@ -10,6 +10,7 @@
       "source_sha256": "1f1e9efac31801a3a6e20208e3a639c5e2dcdbd97b71ba814f7d91bd86ea6790",
       "html": "evidence/index.html",
       "public_url": "/ODDS/evidence/",
+      "robots_directive": "index, follow",
       "source_text_sha256": "9b30c0e5a72557734a85f8ccd01e4bf39fdb0c3be4215b6a1a622745fa7a7e4c",
       "wording_verified": true,
       "tables": 9,
@@ -21,6 +22,7 @@
       "source_sha256": "d5ece244a06e1213e6d6f82f3f307047141ff9a85c49fff1818a3464c6a70e0a",
       "html": "odds_joint_model.html",
       "public_url": "/odds_joint_model.html",
+      "robots_directive": "noindex, nofollow, noarchive, nosnippet",
       "source_text_sha256": "2e83968fe072a2e2b5baa1e15b08195a4ed2d859a12b6d6187bf63ec74cb055a",
       "wording_verified": true,
       "tables": 6,
@@ -28,6 +30,8 @@
     }
   ],
   "pdfs_generated": true,
-  "robots_directive": "noindex, nofollow, noarchive, nosnippet",
-  "copyright_notice": "\u00a9 2026 The ODDS Study Authors. All rights reserved unless otherwise noted.\nThis author-prepared expanded project report is provided to support research evaluation and external validation of ODDS. It has not undergone external peer review and is not a journal Version of Record. A related manuscript is being considered for publication."
+  "robots_directive": "index, follow",
+  "published_manuscript_doi": "https://doi.org/10.1093/ajrccm/aamag552",
+  "publication_metadata_updated": "2026-10-15",
+  "copyright_notice": "\u00a9 2026 The ODDS Study Authors. All rights reserved unless otherwise noted.\nThis author-prepared expanded project report is provided to support research evaluation and external validation of ODDS. It has not undergone external peer review and is not a journal version of record."
 }

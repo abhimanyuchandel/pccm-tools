@@ -567,6 +567,29 @@ tbody tr:last-child td {
   padding: 20px 4px 0;
 }
 
+.manuscript-citation {
+  margin: 20px 0;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.manuscript-citation h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.manuscript-citation p { margin: 0; }
+
+@media print {
+  .manuscript-citation { break-inside: avoid; padding: 12px 0; border: 0; font-size: 9pt; }
+}
+
 .publication-footer-links {
   display: flex;
   flex-wrap: wrap;
