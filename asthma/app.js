@@ -311,6 +311,9 @@
         else if (def.type === "enum") text = def.options.find(([value]) => value === answer)?.[1] || text;
         else if (typeof answer === "boolean") text = answer ? "Yes" : "No";
         else if (answer !== null) text = String(answer);
+        if (def.type === "exception" && answer === def.checkedValue) text = "Present";
+        else if (def.type === "exception" && def.uncheckedValue !== undefined && answer === def.uncheckedValue) text = "No concern documented";
+        else if (def.type === "exception" && answer === false) text = "Individually documented as absent";
         if (["history", "confirmation"].includes(def.type) && answer !== true) text = "Not documented";
         const row = element("div"); row.append(element("dt", "", def.label), element("dd", "", text)); list.append(row);
       }
