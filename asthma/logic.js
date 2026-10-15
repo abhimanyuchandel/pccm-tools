@@ -198,7 +198,8 @@
     else if (d.controller === "none") description = "No maintenance controller documented";
     const step5 = combination && ["medium", "high"].includes(d.icsDose) && (d.lamaAddon === true || d.controller === "triple" || d.maintenanceOcs === true || !["none", "unknown"].includes(d.currentBiologic));
     if (step5) { step = "5"; description = `${track ? `GINA Track ${track} ` : "GINA "}Step 5 add-on treatment with ${d.icsDose}-dose ${track === 1 && d.controller === "ics-formoterol" ? "ICS-formoterol MART" : "ICS-LABA"}${d.controller === "triple" ? "-LAMA maintenance (not triple-inhaler MART)" : ""}`; }
-    return { maintenance, effectivePhase, combination, formoterol, incompatible, airOnly, track, step, step5, description, relieverName: { "ics-formoterol": "ICS-formoterol", "ics-saba": "albuterol-budesonide", saba: "SABA", none: "no reliever", unknown: "reliever not documented" }[d.reliever] };
+    const needsIcsStart = !maintenance && ["none", "saba-only"].includes(d.controller) && ["none", "saba"].includes(d.reliever);
+    return { maintenance, effectivePhase, needsIcsStart, combination, formoterol, incompatible, airOnly, track, step, step5, description, relieverName: { "ics-formoterol": "ICS-formoterol", "ics-saba": "albuterol-budesonide", saba: "SABA", none: "no reliever", unknown: "reliever not documented" }[d.reliever] };
   }
 
   function classifySevereAsthmaState(input, control = classifyControl(input), risk = classifyExacerbationRisk(input), selection = {}) {
@@ -439,11 +440,11 @@
     const modifiable = d.adherence === "suboptimal" || d.technique === "incorrect" || d.accessBarrier === true;
     const prerequisitesIncomplete = (treatment.maintenance || treatment.airOnly) && (d.adherence === "unknown" || d.technique === "unknown" || d.accessBarrier === null);
     const poor = control.poor || risk.frequent || d.persistentExacerbations === true;
-    if (treatment.effectivePhase === "initial") {
+    if (treatment.effectivePhase === "initial" || treatment.needsIcsStart) {
       const proposed = pickInitialTreatment(d);
       if (proposed) {
         findings.proposedMedicationId = proposed;
-        action("start-controller", `Consider ${proposed === "air" ? "as-needed low-dose budesonide-formoterol (GINA Track 1 Steps 1-2)" : proposed === "smartLow" ? "low-dose budesonide-formoterol SMART (GINA Track 1 Step 3)" : "medium-dose budesonide-formoterol SMART (GINA Track 1 Step 4)"}, incorporating symptom burden, lung function, and exacerbation history. Confirm the exact product and shared treatment choice.`, "management", [proposed]);
+        action("start-controller", `Start an ICS-containing strategy: consider ${proposed === "air" ? "as-needed low-dose budesonide-formoterol (GINA Track 1 Steps 1-2)" : proposed === "smartLow" ? "low-dose budesonide-formoterol SMART (GINA Track 1 Step 3)" : "medium-dose budesonide-formoterol SMART (GINA Track 1 Step 4)"}, incorporating symptom burden, lung function, and exacerbation history. Confirm the exact product and shared treatment choice.`, "management", [proposed]);
       } else action("complete-initial", "Document daytime symptom frequency and night waking before assigning an initial treatment step; missing symptom history does not support a low-intensity recommendation.", "testing");
       action("track2-alternative", "If Track 1 is unavailable, unsuitable, or not preferred, use an appropriately dosed daily ICS / ICS-LABA controller with a compatible reliever; albuterol-budesonide is a practical adult U.S. reliever option. Do not use SABA-only treatment for confirmed asthma.", "alternative", ["airsupra"]);
       if (d.fev1Predicted !== null && d.fev1Predicted < 80) result.rationale.push("FEV1 below 80% predicted is used as a pragmatic signal of reduced lung function when selecting initial treatment intensity; it is not a stand-alone asthma diagnostic threshold.");
@@ -451,7 +452,8 @@
       if (modifiable || prerequisitesIncomplete) action("optimize", "Before routine escalation, review and correct inhaler technique, adherence, affordability / access, smoke and irritant exposure, obesity, rhinosinusitis, symptomatic GERD, OSA, inducible laryngeal obstruction, and medication adverse effects. Reassess after optimization; urgent clinical needs still take precedence.", "management");
       if (!modifiable) {
         let proposed = null;
-        if (treatment.airOnly || d.controller === "ics" && d.icsDose === "low") proposed = "smartLow";
+        if (treatment.airOnly || ["none", "saba-only"].includes(d.controller) && d.reliever === "ics-saba" || d.controller === "ics" && d.icsDose === "low") proposed = "smartLow";
+        else if (d.controller === "ics" && ["medium", "high"].includes(d.icsDose)) proposed = "smartMedium";
         else if (treatment.combination && d.icsDose === "low") proposed = "smartMedium";
         if (proposed) {
           findings.proposedMedicationId = proposed;
@@ -464,12 +466,16 @@
     } else if (control.complete && control.classification === "well controlled") {
       action("continue", "Continue the effective ICS-containing regimen while reviewing adherence, technique, future exacerbation risk, adverse effects, and treatment preferences. Do not change an effective Track 2 regimen solely to change tracks.");
       const eligible = !modifiable && !prerequisitesIncomplete && risk.complete && !risk.anyExacerbation && d.recentExacerbation === false && d.priorIcu !== null && d.stableMonths >= 3 && d.lungFunctionStable === true && d.pregnant === false && d.respiratoryInfection === false && d.travelling === false && d.maintenanceOcs === false;
-      if (eligible && treatment.maintenance && !treatment.incompatible && d.icsDose !== "unknown" && !treatment.step5) {
+      const regimenVerified = treatment.track !== null && !treatment.incompatible && !severe.unverifiedHighSmart && d.icsDose !== "unknown" && !(d.controller === "ics" && d.reliever === "ics-formoterol") && !(d.controller === "triple" && d.lamaAddon === true);
+      if (eligible && treatment.maintenance && regimenVerified && !treatment.step5) {
         const smart = d.controller === "ics-formoterol";
         const regimen = smart && treatment.track === 1 && treatment.step === "4" ? "If using budesonide-formoterol, reduce medium-dose SMART to 160/4.5 mcg, 1 inhalation twice daily plus 1 as needed (maximum 12 total inhalations/day)." : smart && treatment.track === 1 && treatment.step === "3" ? "If using budesonide-formoterol, consider 160/4.5 mcg, 1 maintenance inhalation once daily plus 1 as needed (maximum 12 total inhalations/day). Reassess control and future risk before a later reduction to as-needed-only ICS-formoterol." : "Reduce the maintenance ICS dose by about 25-50% using an available product-specific regimen; retain ICS protection, review the ongoing need for add-ons, and provide a compatible reliever.";
         action("stepdown", `With control sustained for at least 3 months and stable lung function, consider a supervised step-down: ${regimen} Record baseline symptoms / lung function, provide a written return-to-prior-treatment plan, and reassess in 4-8 weeks. Do not completely withdraw ICS.`, "management", smart && treatment.track === 1 && treatment.step === "4" ? ["smartLow"] : []);
         if (d.priorIcu === true || risk.elevated) result.cautions.push("Prior life-threatening asthma or another future-risk factor warrants particularly close supervision if reducing treatment despite current symptom stability.");
-      } else action("stepdown-conditional", "Consider step-down only after sustained control for at least 3 months, stable lung function, and review of recent exacerbations, pregnancy, infection, travel, steroid exposure, and prior life-threatening events. Continue current ICS protection until these conditions are established.", "monitoring");
+      } else {
+        action("stepdown-conditional", "Consider step-down only after sustained control for at least 3 months, stable lung function, a verified compatible inhaler regimen, and review of recent exacerbations, pregnancy, infection, travel, steroid exposure, and prior life-threatening events. Continue current ICS protection until these conditions are established.", "monitoring");
+        if (treatment.maintenance && !regimenVerified) action("clarify-regimen", "Verify the current controller product, supported ICS dose, and compatible reliever before selecting continuation or a dose reduction. Do not infer a reduction schedule from an unverified or unsupported regimen.", "testing");
+      }
       if (!["unknown", "none"].includes(d.currentBiologic)) action("stable-biologic", "For a good biologic response, review systemic steroid / add-on burden before reducing inhaled therapy. Taper chronic OCS cautiously with adrenal-risk assessment; do not automatically stop the biologic or withdraw ICS.", "management");
     } else {
       action("complete-control", "Complete symptom-control and exacerbation-risk assessment before concluding that current therapy is sufficient or stepping down. Maintain appropriate ICS protection while completing the assessment.", "testing");
@@ -500,7 +506,7 @@
       action("selected-biologic", text, "management", [selected.id], ["severe"]).noteText = text;
       action("biologic-monitor", `${selected.ready ? "After initiation, review" : "If initiated after the prerequisites are met, review"} clinical response after ${selected.id === "depemokimab" ? "at least 6 months" : "about 4 months"}, including control, exacerbations, lung function, and steroid exposure.${selected.id === "depemokimab" ? "" : " Extend an uncertain trial to 6-12 months before declaring failure."}`, "monitoring", [], ["severe"]);
     }
-    if (!acute.active) action("routine-followup", acute.recentResolved ? "Individualize follow-up according to recovery and current control after the resolved exacerbation. Confirm an initial post-exacerbation review within 2-7 days of the episode if not already completed; review sooner for incomplete recovery or deterioration." : poor || treatment.effectivePhase === "initial" ? "Arrange follow-up in about 4-6 weeks after treatment initiation / adjustment, sooner for deterioration; reassess symptoms, exacerbations, adherence, technique, adverse effects, and lung function as appropriate." : "Arrange routine follow-up in about 3 months; use an earlier 4-8-week review after step-down or another treatment change.", "followup");
+    if (!acute.active) action("routine-followup", acute.recentResolved ? "Individualize follow-up according to recovery and current control after the resolved exacerbation. Confirm an initial post-exacerbation review within 2-7 days of the episode if not already completed; review sooner for incomplete recovery or deterioration." : poor || treatment.effectivePhase === "initial" || treatment.needsIcsStart ? "Arrange follow-up in about 4-6 weeks after treatment initiation / adjustment, sooner for deterioration; reassess symptoms, exacerbations, adherence, technique, adverse effects, and lung function as appropriate." : "Arrange routine follow-up in about 3 months; use an earlier 4-8-week review after step-down or another treatment change.", "followup");
     action("technique-counsel", "Review inhaler technique with demonstration / teach-back, adherence, access, and spacer use where appropriate.", "counseling");
     action("action-plan", "Provide or update a written asthma action plan describing usual treatment, early worsening treatment, reliever limits, and when to return to the prior regimen or seek urgent care. Seek emergency care for severe breathlessness, inability to speak, cyanosis, altered mental status, or poor response to rescue treatment.", "counseling");
     action("nonpharmacologic", "Discuss exposure reduction and regular activity as tolerated; address relevant obesity, rhinosinusitis, symptomatic reflux, OSA, and other contributors.", "counseling");

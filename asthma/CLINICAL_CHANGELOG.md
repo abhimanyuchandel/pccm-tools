@@ -1,8 +1,17 @@
 # Adult Asthma Clinical Workflow Revision
 
-Clinical reference review and workflow revision: October 15, 2026. Asset version: `20261015-1`.
+Clinical reference review and workflow revision: October 15, 2026. Asset version: `20261015-2`.
 
 This revision is for preview review, not an automatic production promotion. The decision support is deterministic, is intended for adult U.S. pulmonary practice, and does not replace clinician judgment, product labeling, or local emergency protocols. Published guidelines and prescribing information may change after this review.
+
+## Additional Common-Encounter Audit
+
+- Added 39 complete synthetic encounters plus 96 controller/reliever combinations, 108 complete/incomplete symptom-history combinations, and 36 urgent-finding/context combinations. Each generated note is checked for all four SOAP sections and for missing-value artifacts and invented completed care. See [SCENARIO_AUDIT.md](SCENARIO_AUDIT.md) for scope and limitations.
+- Corrected follow-up encounters with explicitly documented absent ICS treatment or SABA-only treatment. These now offer an ICS-containing starting strategy based on symptoms, lung function, and known exacerbations, without changing the recorded encounter phase or claiming that an existing ICS regimen should be continued. Incomplete history does not select a low-intensity regimen. Early reassessment follows a new treatment start. [GINA 2026 Summary Guide, Table 3 and adult treatment tracks](https://ginasthma.org/wp-content/uploads/2026/07/GINA-Summary-Guide-2026-WEB-WMS.pdf).
+- Completed missing follow-up branches for uncontrolled medium/high-dose ICS monotherapy and as-needed ICS-SABA alone. The former presents medium-dose MART or a selected medium-dose ICS-LABA strategy after current optimization; the latter permits maintenance treatment selection. These are pragmatic transitions, not claims of microgram equivalence or a mandatory switch. Exact product, reliever, and instructions still require clinician selection; the replaced ICS is not duplicated. Existing low-dose ICS and optimized Step 4-5 pathways are preserved.
+- Prevented automated step-down selections for an unverified high-dose SMART regimen, an unsupported controller/reliever pairing, an absent compatible reliever, or duplicate LAMA exposure. The application requests regimen verification instead of deriving a low-dose prescription from an unsupported entry. [GINA treatment adjustment and product-specific MART doses](https://ginasthma.org/wp-content/uploads/2026/07/GINA-Summary-Guide-2026-WEB-WMS.pdf).
+- Cleared an earlier SMART proposal when the clinician selects Track 2, continuation, or another valid strategy. The Assessment no longer describes an unchosen SMART regimen while the Plan documents a different prescription. This is a shared-state consistency correction, not a treatment-rule change.
+- Rechecked diagnosis, reliever-specific control, symptoms versus future risk, selected versus future biologic treatment, drug-specific prerequisites, pregnancy, smoking-cessation precautions, CDC vaccine prompts, acute severity, retained urgent findings, and matching recommendation/note instructions. No new dose presets, biologic eligibility thresholds, patient-data storage, APIs, or production changes were introduced.
 
 ## Guided Encounter and Formulary Options
 

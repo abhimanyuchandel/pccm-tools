@@ -220,6 +220,29 @@ async function main() {
     assert.equal(await page.locator('[name="plan-controller"][value="stepdown"]').count(), 0);
     assert.doesNotMatch((await text()).split("\nPlan\n")[1], /Reduce to Symbicort/);
 
+    await load(); await setInputs(page, { ...state, controller: "saba-only", reliever: "saba", icsDose: "unknown", sabaFrequency: "none" }); await generate();
+    assert.doesNotMatch(await text(), /continuation of the effective ICS-containing regimen/);
+    await page.locator('[name="plan-controller"][value="air"]').check();
+    await page.locator('[name="plan-controllerProduct"]').selectOption("breyna-air");
+    assert.match(await text(), /Start Breyna 160\/4.5.*1 inhalation as needed/);
+    assert.match(await text(), /Follow up in 4-6 weeks/);
+    await page.locator("#copy-note-btn").click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await text());
+
+    await load(); await setInputs(page, { ...state, controller: "ics", icsDose: "medium", reliever: "saba", sabaFrequency: "more-two", symptomDays: "daily", nightWaking: "weekly-plus", activityLimitation: true }); await generate();
+    assert.equal(await page.locator('[name="plan-controller"][value="smartMedium"]').count(), 1);
+    await page.locator('[name="plan-controller"][value="track2"]').check();
+    await page.locator('[name="plan-controllerProduct"]').selectOption("wixela-250-50");
+    await page.locator('[name="plan-relieverProduct"]').selectOption("airsupra");
+    assert.match(await text(), /Wixela Inhub 250\/50/);
+    assert.match(await text(), /Replace the prior ICS controller/);
+    assert.doesNotMatch((await text()).split("\n\nAssessment\n")[1].split("\n\nPlan\n")[0], /planned regimen is budesonide.*SMART/);
+    assert.doesNotMatch((await text()).split("\nPlan\n")[1], /Use.*Symbicort|Use.*Breyna/);
+    for (const width of [320, 390, 768, 1280]) { await checkWidth(width); await generate(); }
+
+    await load(); await setInputs(page, { ...state, icsDose: "high", stableMonths: 4, lungFunctionStable: true, recentExacerbation: false, priorIcu: false, respiratoryInfection: false, travelling: false }); await generate();
+    assert.equal(await page.locator('[name="plan-controller"][value="stepdown"]').count(), 0);
+    assert.match(await text(), /Verify the current controller product, supported ICS dose intensity/);
+
     await load(); await setInputs(page, { ...state, acutePresentation: "recent" }); await generate();
     assert.match(await text(), /resolved exacerbation/);
     assert.equal(await page.locator("#respiratory-rate").isVisible(), false);

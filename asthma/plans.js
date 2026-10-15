@@ -43,13 +43,14 @@
       options.push(option("continue", "Continue current inhaled regimen", "Continue the current ICS-containing controller and compatible reliever at the documented doses.", [], blockers));
     }
     const proposed = f.proposedMedicationId;
-    const optimizationReviewRequired = Boolean(proposed && tx.effectivePhase === "followup" && !optimizedNow);
+    const startingController = tx.effectivePhase === "initial" || tx.needsIcsStart;
+    const optimizationReviewRequired = Boolean(proposed && tx.effectivePhase === "followup" && !tx.needsIcsStart && !optimizedNow);
     if (proposed) {
       const names = { air: "AIR-only", smartLow: "Low-dose SMART", smartMedium: "Medium-dose SMART" };
       const blockers = [];
       if (d.age === null) blockers.push("Verify adult age");
       if (optimizationReviewRequired) blockers.push("Review and address inhaler technique, adherence, and access before selecting a routine step-up");
-      options.push(option(proposed, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}`, `${tx.effectivePhase === "initial" ? "Start" : "Change to"} ${names[proposed]}. ${catalog.MEDICATIONS[proposed].noteSchedule}${tx.combination ? " Stop the replaced ICS-LABA controller rather than adding a second LABA." : d.controller === "ics" ? " Replace the previous maintenance ICS inhaler with this regimen." : ""}`, [proposed], blockers));
+      options.push(option(proposed, `${startingController ? "Start" : "Change to"} ${names[proposed]}`, `${startingController ? "Start" : "Change to"} ${names[proposed]}. ${catalog.MEDICATIONS[proposed].noteSchedule}${tx.combination ? " Stop the replaced ICS-LABA controller rather than adding a second LABA." : d.controller === "ics" ? " Replace the previous maintenance ICS inhaler with this regimen." : ""}`, [proposed], blockers));
       const intensity = proposed === "smartMedium" ? "medium" : "low";
       const category = proposed === "air" ? "ICS" : "ICS-LABA";
       const instruction = tx.effectivePhase === "initial" || !tx.maintenance ? "Start" : "Change to";
@@ -111,7 +112,7 @@
         else if (d.treatmentEntry === "product" && currentPreset?.productId === d.currentControllerProduct && currentPreset.dailyIcs > 0) eligible = inhalers.presetsFor(currentPreset.productId).filter(p => p.role === "maintenance" && p.dailyIcs > 0 && p.dailyIcs / currentPreset.dailyIcs >= 0.5 && p.dailyIcs / currentPreset.dailyIcs <= 0.75);
       }
       if (eligible.length) {
-        const products = choose("controllerProduct", "Controller prescription", "Controller product, strength, and schedule: ***", eligible.map(p => ({ ...option(p.id, inhalers.label(p), `${strategy === "stepdown" ? "Reduce to" : tx.effectivePhase === "initial" ? "Start" : "Use"} ${inhalers.prescription(p)}`), inhalerMedications: [inhalers.toMedication(p)] })));
+        const products = choose("controllerProduct", "Controller prescription", "Controller product, strength, and schedule: ***", eligible.map(p => ({ ...option(p.id, inhalers.label(p), `${strategy === "stepdown" ? "Reduce to" : startingController ? "Start" : "Use"} ${inhalers.prescription(p)}`), inhalerMedications: [inhalers.toMedication(p)] })));
         products.optional = ["continue", "continue-biologic", "assess-biologic"].includes(strategy);
         if (products.selected) {
           const sameProduct = products.selected.id === currentPreset?.id && d.treatmentEntry === "product";
@@ -182,8 +183,11 @@
     }
     const selectedPrescription = plan.groups.find(g => g.id === "controllerProduct")?.selected;
     if (selectedPrescription) rec.actions.forEach(action => { action.medicationIds = action.medicationIds.filter(id => !["air", "smartLow", "smartMedium", "highDose"].includes(id)); });
-    if (plan.groups.some(group => group.id === "controller") && !plan.selections.controller) rec.findings.proposedMedicationId = null;
-    else if (plan.selections.controller && catalog.MEDICATIONS[plan.selections.controller]) rec.findings.proposedMedicationId = plan.selections.controller;
+    if (plan.groups.some(group => group.id === "controller")) {
+      const controller = plan.selections.controller;
+      // An earlier SMART proposal must not survive a different selected strategy in the Assessment.
+      rec.findings.proposedMedicationId = controller && catalog.MEDICATIONS[controller] ? controller : null;
+    }
   }
 
   return { buildPlan, applyPlan };
