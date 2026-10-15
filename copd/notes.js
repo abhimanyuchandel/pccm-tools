@@ -47,6 +47,12 @@
       });
     }
     if (symptoms.length) paragraphs.push(symptoms.join(" "));
+    if (d.currentRegimen === "ics-laba" && d.priorIcsBenefit !== null)
+      paragraphs.push(
+        d.priorIcsBenefit
+          ? "Prior improvement in symptoms or exacerbations after adding ICS was reported."
+          : "No prior improvement in symptoms or exacerbations after adding ICS was reported.",
+      );
     const events = [];
     if (known(d.moderateExac))
       events.push(
@@ -150,7 +156,7 @@
     });
     if (f.advanced.bode !== null)
       o.push("BODE index: " + f.advanced.bode + "/10.");
-    if (d.encounter === "active") {
+    if (d.encounter === "active" || r.emergency) {
       [
         ["respiratoryRate", "Respiratory rate", "/min"],
         ["heartRate", "Heart rate", "/min"],
@@ -177,7 +183,8 @@
             ] +
             ".",
         );
-      o.push("Treatment actually administered and reassessment details: ***.");
+      if (d.encounter === "active")
+        o.push("Treatment actually administered and reassessment details: ***.");
     }
     o.push("Examination: ***.");
     a.push(

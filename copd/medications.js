@@ -61,6 +61,10 @@
       title: "NCCN Lung Cancer Screening guidelines",
       url: "https://www.nccn.org/guidelines/guidelines-detail?category=2&id=1441",
     },
+    amoxiclav: {
+      title: "Amoxicillin/clavulanate U.S. prescribing information: renal dosing",
+      url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7ef8592d-c7d0-49a4-a559-3190e559fa2f",
+    },
     tobacco: {
       title: "ATS tobacco-dependence treatment guideline",
       url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7365361/",
@@ -365,7 +369,7 @@
     },
     inhalers: {
       title: "Selecting a device and an ICS strategy",
-      text: "Review the actual inhalers, technique, adherence, access, inspiratory flow and dexterity. Choose an affordable, covered product and a device the patient can use; the product examples are not ranked and do not confirm local formulary coverage. Device strengths are not interchangeable puff-for-puff. Eosinophils estimate ICS exacerbation-prevention benefit, not COPD diagnosis. Coexisting asthma requires an ICS-containing strategy. ICS withdrawal is not a routine asthma-style step-down; weigh pneumonia/adverse effects and higher withdrawal risk with eosinophils at least 300.",
+      text: "Review the actual inhalers, technique, adherence, access, inspiratory flow and dexterity. Choose an affordable, covered product and a device the patient can use; examples are not ranked and strengths are not interchangeable puff-for-puff. Eosinophils estimate ICS exacerbation-prevention benefit, not COPD diagnosis. For exacerbations on LABA or LAMA, consider triple therapy at eosinophils at least 300. On ICS/LABA without asthma, further exacerbations favor triple at counts at least 100 or LABA/LAMA below 100. Persistent symptoms without exacerbations require review of prior ICS benefit. Coexisting asthma requires ICS. Review pneumonia, adverse effects and increased withdrawal risk at counts at least 300.",
       sources: ["gold"],
     },
     aat: {
@@ -440,8 +444,8 @@
     },
     acute: {
       title: "Outpatient exacerbation assessment",
-      text: "Assess severity, trajectory and mimics before outpatient treatment. Short-acting bronchodilators, a short systemic-steroid course when indicated, and selective antibiotics are distinct decisions. Antibiotic benefit is more likely with sputum purulence plus increased dyspnea or volume. Controlled oxygen during acute care commonly targets 88-92%, with blood-gas reassessment when indicated. Missing observations or reported improvement alone do not establish discharge safety.",
-      sources: ["gold"],
+      text: "Assess severity, trajectory and mimics before outpatient treatment. Short-acting bronchodilators, a short systemic-steroid course when indicated, and selective antibiotics are distinct decisions. Antibiotic benefit is more likely with sputum purulence plus increased dyspnea or volume. The amoxicillin/clavulanate 875 mg dose is unsuitable below a renal-function threshold of 30 mL/min; individualize the drug, dose and interval. Controlled oxygen during acute care commonly targets 88-92%, with blood-gas reassessment when indicated. Missing observations or reported improvement alone do not establish discharge safety.",
+      sources: ["gold", "amoxiclav"],
     },
     screening: {
       title: "NCCN screening versus diagnostic imaging",

@@ -100,10 +100,16 @@
               ": clinically unusual or concerning; verify the value and assess in context.",
           });
       });
+      for (const key of ["fev1fvc", "fev1Predicted"])
+        if (d[key] === 0)
+          errors.push({
+            key,
+            text: schema[key].label + ": zero is not a usable spirometry value. Verify the measurement or leave it undocumented.",
+          });
       return { errors, warnings };
     }
     function normalizeFev1FvcHeuristic(value) {
-      if (!known(value) || Number(value) < 0 || Number(value) > 100)
+      if (!known(value) || Number(value) <= 0 || Number(value) > 100)
         return null;
       return Number(value) > 1 ? Number(value) / 100 : Number(value);
     }
@@ -198,7 +204,7 @@
           (ratio !== null && ratio < 0.7) || d.historicalObstruction === true;
       const supported = objective || d.diagnosisContext === "established";
       const grade =
-        supported && known(d.fev1Predicted)
+        objective && (ratio === null || ratio < 0.7) && known(d.fev1Predicted)
           ? d.fev1Predicted >= 80
             ? 1
             : d.fev1Predicted >= 50
@@ -322,7 +328,16 @@
     }
     function advanced(d, risk) {
       const bode = calculateBode(d);
+      const transplant =
+        (bode !== null && bode >= 5) ||
+        (known(d.fev1Predicted) && d.fev1Predicted < 25) ||
+        (d.abgAvailable === true &&
+          ((known(d.paco2) && d.paco2 > 50) ||
+            (d.abgRoomAir === true && known(d.pao2) && d.pao2 < 60))) ||
+        d.pulmonaryHypertension === true ||
+        (d.progression === true && risk.recurrent);
       const trigger =
+        transplant ||
         d.emphysema === true ||
         d.progression === true ||
         (known(d.fev1Predicted) && d.fev1Predicted < 50) ||
@@ -348,14 +363,7 @@
           d.fev1Predicted <= 20 &&
           ((known(d.dlco) && d.dlco <= 20) ||
             d.ctDistribution === "homogeneous"),
-        transplant:
-          (bode !== null && bode >= 5) ||
-          (known(d.fev1Predicted) && d.fev1Predicted < 25) ||
-          (d.abgAvailable === true &&
-            ((known(d.paco2) && d.paco2 > 50) ||
-              (d.abgRoomAir === true && known(d.pao2) && d.pao2 < 60))) ||
-          d.pulmonaryHypertension === true ||
-          (d.progression === true && risk.recurrent),
+        transplant,
       };
     }
     function buildRecommendation(input, requested = {}) {
@@ -442,18 +450,20 @@
             id === "pneumococcalPlan" ? "prevention" : id,
             chosen.medicationId
               ? catalog.getMedicationSources(chosen.medicationId)
-              : id === "cessation"
-                ? [
-                    "tobacco",
-                    ...(chosen.id === "varenicline" ? ["varenicline"] : []),
-                  ]
-                : id === "pneumococcalPlan"
-                  ? ["pneumo"]
-                  : id === "transplant"
-                    ? ["transplant"]
-                    : id === "lvr"
-                      ? ["lvr", "valves"]
-                      : ["gold"],
+              : id === "acuteAntibiotic" && chosen.id === "amox"
+                ? ["gold", "amoxiclav"]
+                : id === "cessation"
+                  ? [
+                      "tobacco",
+                      ...(chosen.id === "varenicline" ? ["varenicline"] : []),
+                    ]
+                  : id === "pneumococcalPlan"
+                    ? ["pneumo"]
+                    : id === "transplant"
+                      ? ["transplant"]
+                      : id === "lvr"
+                        ? ["lvr", "valves"]
+                        : ["gold"],
           );
           if (chosen.medicationId) r.medications.push(chosen.medicationId);
         } else if (requested[id])
@@ -645,7 +655,11 @@
                 "amox",
                 "Amoxicillin/clavulanate",
                 "Start amoxicillin/clavulanate 875/125 mg orally twice daily for 5 days after verifying renal suitability and local guidance.",
-                ab,
+                [
+                  ...ab,
+                  !["normal", "impaired"].includes(d.renalStatus) &&
+                    "Verify renal function at least 30 mL/min before using the 875 mg dose. Severe impairment or dialysis requires an individualized regimen.",
+                ],
               ),
               option(
                 "culture",
@@ -688,6 +702,12 @@
               : "Obtain post-bronchodilator spirometry in the appropriate stable clinical context and evaluate alternative diagnoses before confirming COPD.",
             "testing",
           );
+        if (diagnosis.supported && diagnosis.ratio !== null && diagnosis.ratio >= 0.7)
+          action(
+            "discordant-spirometry",
+            "Reconcile current spirometry without fixed-ratio obstruction with the historical COPD diagnosis. Review test quality, timing and alternative causes of a low FEV1; do not assign an airflow-obstruction grade from this discordant result alone.",
+            "testing",
+          );
         if (
           diagnosis.ratio !== null &&
           diagnosis.ratio >= 0.6 &&
@@ -707,10 +727,39 @@
         const base = [
           !diagnosis.supported && "Clarify COPD diagnosis.",
           !known(d.age) && "Confirm adult age.",
+          ["unknown", "other"].includes(d.currentRegimen) &&
+            "Reconcile the current maintenance agents before prescribing overlapping treatment.",
           !therapy.optimized &&
             "Address treatment barriers before routine escalation.",
         ];
         const asthma = d.asthma === "confirmed" || d.asthma === "suspected";
+        const icsLabaExacerbations =
+          d.currentRegimen === "ics-laba" && risk.high === true;
+        const icsLabaDyspnea =
+          d.currentRegimen === "ics-laba" && d.persistentDyspnea === true && risk.high === false;
+        const historicalIcsRisk =
+          d.historicalEosinophils !== null && d.historicalEosinophils >= 300;
+        const icsRemovalReview =
+          therapy.hasIcs &&
+          (d.eosinophils === null || d.eosinophils >= 300 || historicalIcsRisk);
+        if (risk.high === true && ["lama", "laba", "laba-lama", "ics-laba"].includes(d.currentRegimen) && d.eosinophils === null)
+          action(
+            "eosinophils-needed",
+            "Obtain or review an available stable-state blood eosinophil count to guide ICS treatment. Review corticosteroid exposure and historical values; a missing count is not a low count.",
+            "testing",
+          );
+        if (icsLabaExacerbations && historicalIcsRisk && d.eosinophils !== null && d.eosinophils < 100)
+          action(
+            "eosinophil-discordance",
+            "Reconcile the low current eosinophil count with the historically high count before removing ICS. Review timing, systemic corticosteroids and prior ICS response; repeat a suitable stable-state count when indicated.",
+            "testing",
+          );
+        if (icsLabaDyspnea && !asthma && d.priorIcsBenefit === null)
+          action(
+            "ics-response-review",
+            "Review whether ICS previously improved symptoms or prevented exacerbations before changing an ICS/LABA regimen for persistent dyspnea. Evaluate other causes of breathlessness; do not assume that an undocumented prior response means no benefit.",
+            "testing",
+          );
         const o = [];
         if (therapy.maintenance)
           o.push(
@@ -735,6 +784,10 @@
                 ...base,
                 d.asthma !== "no" &&
                   "Clarify coexisting asthma before choosing a non-ICS strategy.",
+                icsRemovalReview &&
+                  "Review current/historical eosinophils and ICS-removal risk before selecting this non-ICS change.",
+                icsLabaDyspnea && d.priorIcsBenefit !== false &&
+                  "Confirm the lack of prior ICS benefit before switching for persistent symptoms alone.",
               ],
             ),
           );
@@ -778,11 +831,14 @@
             r.group === "E" &&
             d.eosinophils !== null &&
             d.eosinophils >= 300) ||
+          (["lama", "laba"].includes(d.currentRegimen) &&
+            risk.high === true && d.eosinophils !== null && d.eosinophils >= 300) ||
           (d.currentRegimen === "laba-lama" &&
             risk.high &&
             d.eosinophils !== null &&
             d.eosinophils >= 100) ||
-          (d.currentRegimen === "ics-laba" && risk.high)
+          (icsLabaExacerbations && (asthma || d.eosinophils !== null && d.eosinophils >= 100)) ||
+          (icsLabaDyspnea && d.priorIcsBenefit === true)
         )
           triple();
         if (asthma && !therapy.hasIcs) {
@@ -797,10 +853,8 @@
           if (d.currentRegimen === "laba-lama") triple();
         }
         if (
-          d.currentRegimen === "ics-laba" &&
-          d.persistentDyspnea === true &&
-          risk.high === false &&
-          d.asthma === "no"
+          (icsLabaDyspnea || icsLabaExacerbations && d.eosinophils !== null && d.eosinophils < 100) &&
+          !asthma
         )
           dual();
         if (
@@ -882,6 +936,8 @@
               );
           }
         }
+        const effectiveRegimen = !selected || selected.id === "clarify" ? d.currentRegimen : category;
+        const hasMaintenanceLama = ["lama", "laba-lama", "triple"].includes(effectiveRegimen);
         group(
           "rescue",
           "Rescue prescription",
@@ -890,11 +946,12 @@
               "continue",
               "Continue documented rescue prescription",
               "Continue the current short-acting rescue prescription.",
-              !["albuterol", "duoneb", "other"].includes(d.reliever)
-                ? [
-                    "Clarify the current rescue prescription before continuing it.",
-                  ]
-                : [],
+              [
+                !["albuterol", "duoneb", "other"].includes(d.reliever) &&
+                  "Clarify the current rescue prescription before continuing it.",
+                d.reliever === "duoneb" && hasMaintenanceLama &&
+                  "Avoid routine ipratropium duplication with maintenance LAMA treatment; select an appropriate albuterol-only rescue prescription.",
+              ],
             ),
             option(
               "albuterol",
@@ -913,7 +970,7 @@
         );
         if (
           d.reliever === "duoneb" &&
-          ["lama", "laba-lama", "triple"].includes(d.currentRegimen)
+          hasMaintenanceLama
         )
           r.cautions.push(
             "Review routine ipratropium with maintenance LAMA therapy to avoid unnecessary antimuscarinic duplication.",
@@ -935,6 +992,7 @@
           d.encounter === "recovery"
             ? "Follow up within 1-4 weeks after the exacerbation and reassess recovery, oxygen needs and prevention by 3 months."
             : (selected && !["continue", "clarify"].includes(selected.id)) ||
+                ["ensifentrine", "roflumilast", "azithromycin", "dupilumab", "mepolizumab"].includes(r.selections.addon) ||
                 risk.high === true
               ? "Follow up in about 4-6 weeks to reassess symptoms, exacerbations, adherence and adverse effects, sooner for deterioration."
               : "Follow up in about 3-6 months, sooner for worsening symptoms or an exacerbation.",
@@ -1039,7 +1097,7 @@
           )
             add(
               "dupilumab",
-              "Eosinophils at least 300, chronic bronchitis and recurrent exacerbations on triple therapy fit the GOLD/trial profile. FDA's eosinophilic-phenotype indication and payer requirements are not identical. Consider injection burden, eosinophilic conditions and hypersensitivity.",
+              "Eosinophils at least 300, chronic bronchitis and recurrent exacerbations on triple therapy support GOLD-guided assessment. These findings do not verify all trial enrollment criteria. Confirm the indication, treatment history and safety; FDA labeling and payer requirements differ. Consider injection burden, eosinophilic conditions and hypersensitivity.",
               bio,
             );
           if (
@@ -1473,7 +1531,7 @@
               option(
                 "refer",
                 "Refer for transplant assessment",
-                "Refer for lung-transplant assessment based on advanced COPD/progression and the available prognostic findings. Center review will address trajectory, goals, age/frailty, tobacco exposure and comorbidities. Referral does not establish listing eligibility; evaluation may proceed alongside volume-reduction review.",
+                "Refer for lung-transplant assessment based on the available prognostic concerns after reviewing disease trajectory, response to optimized care and patient goals. Center review will address age/frailty, tobacco exposure and comorbidities. Referral does not establish listing eligibility; evaluation may proceed alongside volume-reduction review.",
               ),
               option(
                 "discuss",

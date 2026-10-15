@@ -171,6 +171,10 @@
     recurrentPneumonia: yesNo(
       "Severe or recurrent pneumonia while receiving ICS?",
     ),
+    priorIcsBenefit: yesNo(
+      "Did adding ICS previously improve symptoms or reduce exacerbations?",
+      "For persistent symptoms on ICS/LABA without current exacerbations, prior ICS benefit helps distinguish retaining ICS and adding a LAMA from switching to LABA/LAMA. Leave not assessed if the prior response is unclear. Review coexisting asthma and eosinophils before removing ICS.",
+    ),
     chronicBronchitis: yesNo(
       "Chronic productive cough / chronic bronchitis phenotype?",
       "Clarify duration and exclude other causes. The classic definition is cough/sputum for at least 3 months in each of 2 consecutive years; biologic trials used their own chronic-cough criteria.",
@@ -273,7 +277,7 @@
       "Selected cessation medication's safety reviewed and acceptable?",
       "Review allergies, interactions, pregnancy/breastfeeding where relevant, cardiovascular instability, mood and seizure history, and organ function. Stable psychiatric illness alone is not a contraindication.",
     ),
-    renalStatus: choice("Renal function for cessation dosing", [
+    renalStatus: choice("Renal function for medication dosing", [
       ["normal", "No relevant impairment"],
       ["impaired", "Impaired; CrCl at least 30"],
       ["severe", "CrCl below 30 mL/min"],

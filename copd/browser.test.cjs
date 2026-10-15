@@ -450,6 +450,84 @@ async function main() {
       await page.locator("#field-severeExac").getAttribute("aria-invalid"),
       "true",
     );
+    // Additional audited clinical pathways, using the same controls as the clinician.
+    await load();
+    await walk({ ...routine, currentRegimen: "lama", smokingStatus: "former", moderateExac: 1, eosinophils: 300 });
+    await generate();
+    assert.equal(await page.locator("#result-plan-controller-triple").isEnabled(), true);
+    await page.locator("#result-plan-controller-triple").check();
+    await page.locator("#result-plan-product-trelegy").check();
+    assert.match(await page.locator("#note-output").inputValue(), /100\/62.5\/25/);
+
+    await load();
+    await walk({ ...routine, currentRegimen: "ics-laba", smokingStatus: "former", moderateExac: 1, eosinophils: 99 });
+    await generate();
+    assert.equal(await page.locator("#result-plan-controller-triple").count(), 0);
+    await page.locator("#result-plan-controller-dual").check();
+    await page.locator("#result-plan-product-stiolto").check();
+    assert.match(await page.locator("#note-output").inputValue(), /Tiotropium\/olodaterol/);
+    assert.doesNotMatch(await page.locator("#note-output").inputValue(), /Use Fluticasone|Use Budesonide/);
+
+    await load();
+    const priorBenefitStages = await walk({ ...routine, currentRegimen: "ics-laba", smokingStatus: "former", moderateExac: 0, severeExac: 0, eosinophils: 80, priorIcsBenefit: true });
+    assert.ok(priorBenefitStages.some(s => s.fields.includes("priorIcsBenefit")));
+    await generate();
+    assert.equal(await page.locator("#result-plan-controller-dual").isDisabled(), true);
+    await page.locator("#result-plan-controller-triple").check();
+    assert.match(await page.locator("#note-output").inputValue(), /Prior improvement in symptoms or exacerbations after adding ICS was reported/);
+    await page.getByRole("button", { name: "Treatment", exact: true }).click();
+    for (let i = 0; i < 8 && !(await page.locator("#field-priorIcsBenefit-no").count()); i++) await page.locator("#next-btn").click();
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) {
+        console.log(await page.evaluate(() => Array.from(document.querySelectorAll("body *"))
+          .filter(n => n.getBoundingClientRect().right > innerWidth + 1)
+          .map(n => ({ tag: n.tagName, id: n.id, className: n.className, width: n.getBoundingClientRect().width, text: n.textContent.slice(0, 100) }))
+          .slice(0, 20)));
+        await page.screenshot({ path: "/tmp/copd-ics-benefit-overflow.png", fullPage: true });
+      }
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "ICS-benefit input overflow at " + width);
+      if (width === 320) {
+        await page.locator('[data-field="priorIcsBenefit"]').screenshot({ path: "/tmp/copd-ics-benefit-320.png" });
+        await page.locator("label:has(#result-plan-product-trelegy)").screenshot({ path: "/tmp/copd-triple-option-320.png" });
+      }
+    }
+    await input("priorIcsBenefit", false);
+    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await page.locator("#review-btn").click(); await generate();
+    assert.equal(await page.locator("#result-plan-controller-triple").count(), 0);
+    assert.equal(await page.locator("#result-plan-controller-dual").isEnabled(), true);
+
+    await load();
+    await walk({ ...routine, currentRegimen: "laba-lama", catScore: 14, mmrcScore: 2, moderateExac: 0, severeExac: 0,
+      fev1Predicted: 55, smokingStatus: "former", emphysema: false, progression: false, currentOxygen: false, currentNiv: false,
+      advancedInterest: "detail", bmi: 20, walkDistance: 120 });
+    await generate();
+    assert.equal(await page.locator("#result-plan-transplant-discuss").count(), 1);
+    await page.locator("#result-plan-transplant-discuss").check();
+    assert.match(await page.locator("#note-output").inputValue(), /BODE index: 6\/10/);
+    assert.match(await page.locator("#note-output").inputValue(), /Do not infer listing eligibility/);
+
+    await load();
+    await walk({ ...routine, encounter: "active", acuteDyspnea: true, acuteSputumVolume: true, acutePurulence: true,
+      acuteProgression: "stable", respiratoryRate: 20, heartRate: 90, acuteSpo2: 93, acuteOxygen: "roomair",
+      acuteMentalStatus: "baseline", mimicConcern: false, outpatientSupport: true, outpatientAppropriate: true,
+      acuteReassessed: false, antibioticSafety: true, renalStatus: "severe", resistantOrganisms: false, bronchiectasis: false });
+    await generate();
+    assert.equal(await page.locator("#result-plan-acuteAntibiotic-amox").isDisabled(), true);
+    assert.equal(await page.locator("#result-plan-acuteAntibiotic-doxy").isEnabled(), true);
+    await page.locator("#result-plan-acuteAntibiotic-doxy").check();
+    assert.match(await page.locator("#note-output").inputValue(), /Start doxycycline 100 mg/);
+    assert.doesNotMatch(await page.locator("#note-output").inputValue(), /875\/125/);
+    await page.locator("#copy-note-btn").click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.locator("#note-output").inputValue());
+    await page.getByRole("button", { name: "Context", exact: true }).click();
+    await input("encounter", "routine");
+    await page.locator("#review-btn").click();
+    await generate();
+    assert.doesNotMatch(await page.locator("#note-output").inputValue(), /Start doxycycline|875\/125/);
+
     // Responsive layouts and keyboard access.
     for (const width of [320, 390, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 });
@@ -528,7 +606,7 @@ async function main() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "COPD browser checks passed: guided branching, selected plans, clipboard/staleness, regeneration position, acute safety, calculators, keyboard, memory-only state and four viewport widths.",
+      "COPD browser checks passed: guided branching, audited controller/renal/referral paths, selected plans, clipboard/staleness, regeneration position, acute safety, calculators, keyboard, memory-only state and four viewport widths.",
     );
     await context.close();
   } finally {
