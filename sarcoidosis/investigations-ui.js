@@ -10,7 +10,7 @@
     await navigator.clipboard.writeText(text);
   }
   function renderTable(kind, bundle) {
-    const model = I.table(kind, bundle), table = el("table", "study-table"); table.setAttribute("role", "table");
+    const model = I.table(kind, bundle), table = el("table", "study-table"); table.setAttribute("role", "table"); table.dataset.kind = kind;
     table.append(el("caption", "sr-only", I.definitions[kind].title + " history, newest first"));
     const thead = el("thead"), heading = el("tr"), tbody = el("tbody");
     thead.setAttribute("role", "rowgroup"); tbody.setAttribute("role", "rowgroup"); heading.setAttribute("role", "row");
@@ -39,6 +39,7 @@
     const pending = () => I.kinds.filter(k => drafts[k] || imports[k]);
     function mount(kind) {
       const def = I.definitions[kind], root = el("section", "study-manager"); root.dataset.study = kind;
+      const report = def.entry === "report", addLabel = report ? `Add ${kind === "echo" ? "echo" : "CT"} report` : "Add " + def.singular;
       let controlsOpen = false;
       const rerender = () => {
         const active = document.activeElement, id = active?.id, name = active?.getAttribute("aria-label");
@@ -54,8 +55,8 @@
         const bundle = getBundle(), rows = I.order(bundle.records[kind]);
         root.append(el("p", "hint", def.hint));
         const tools = el("div", "study-toolbar");
-        tools.append(button("Add " + def.singular, () => { drafts[kind] = { row: { date: "", role: "history" }, errors: [] }; invalidate(); rerender(); root.querySelector(".study-editor input")?.focus({ preventScroll: true }); }),
-          button("Paste previous table", () => { imports[kind] = { raw: "", grid: null, map: [], headings: true, replace: false, roles: false }; invalidate(); rerender(); root.querySelector(".study-paste")?.focus({ preventScroll: true }); }));
+        tools.append(button(addLabel, () => { drafts[kind] = { row: { date: "", role: "history" }, errors: [] }; invalidate(); rerender(); root.querySelector(".study-editor input")?.focus({ preventScroll: true }); }, report ? "primary" : "secondary"),
+          button(report ? "Import previous table" : "Paste previous table", () => { imports[kind] = { raw: "", grid: null, map: [], headings: true, replace: false, roles: false }; invalidate(); rerender(); root.querySelector(".study-paste")?.focus({ preventScroll: true }); }));
         if (drafts[kind] || imports[kind]) tools.querySelectorAll("button").forEach(b => { b.disabled = true; });
         const status = el("p", "study-copy-status hint"); status.setAttribute("role", "status");
         const b = button("Copy table", async () => {
@@ -89,16 +90,22 @@
               }, "quiet study-remove")); edits.append(item);
           }); root.append(edits);
           const hasCurrent = Boolean(I.selected(bundle, kind, "current"));
-          root.append(el("p", "hint", hasCurrent ? "Current / Comparison identifies the tests reviewed at this encounter. Only assigned PFT and walk values inform the existing clinical rules; echo and CT remain report text. All rows are included in copied tables." : "No current test assigned. Results remain historical until you choose an encounter role. All rows can still be copied."));
-        } else root.append(el("p", "study-empty", "No results added. Add a result or paste a previous table; unavailable values can remain blank."));
+          root.append(el("p", "hint", report ? "Reports are displayed by date and included in the copied note. Current/comparison labels are optional and do not change the clinical assessment." : hasCurrent ? "Current / Comparison identifies the tests reviewed at this encounter. Only assigned PFT and walk values inform the existing clinical rules. All rows are included in copied tables." : "No current test assigned. Results remain historical until you choose an encounter role. All rows can still be copied."));
+        } else if (!drafts[kind] && !imports[kind]) root.append(el("p", "study-empty", report ? `No reports added. Choose ${addLabel} to enter a date and paste the conclusion. Use Import previous table only to reuse a saved table.` : "No results added. Add a result or paste a previous table; unavailable values can remain blank."));
         if (drafts[kind]) drawEditor();
         if (imports[kind]) drawImport();
       }
       function drawEditor() {
         const draft = drafts[kind], form = el("div", "study-editor"), fields = el("div", "study-editor-grid");
-        form.append(el("h3", "", (draft.row.id ? "Edit " : "Add ") + def.singular));
+        const optional = el("details", "study-optional"), optionalFields = el("div", "study-editor-grid");
+        if (report) {
+          form.classList.add("report-editor");
+          optional.append(el("summary", "", kind === "echo" ? "Optional inputs | Measurements and report details" : "Optional inputs | Report details"));
+          optional.open = def.fields.some(f => !def.primaryFields.includes(f.key) && draft.row[f.key] != null && draft.row[f.key] !== "" && !["unknown", "history"].includes(draft.row[f.key]));
+        }
+        form.append(el("h3", "", draft.row.id ? `Edit ${def.singular}${report ? " report" : ""}` : addLabel));
         def.fields.forEach(f => {
-          const box = el("div", "study-edit-field"), label = el("label", "field-label", f.label), id = "study-edit-" + kind + "-" + f.key;
+          const box = el("div", "study-edit-field"), label = el("label", "field-label", report && f.key === "date" ? "Study date" : f.label), id = "study-edit-" + kind + "-" + f.key;
           label.htmlFor = id; let input;
           if (f.type === "choice" || f.type === "role") {
             input = el("select"); const options = f.type === "role" ? [["history", "Historical only"], ["current", "Current for this encounter"], ["comparison", "Comparison test"]] : f.options;
@@ -109,15 +116,23 @@
             else box.classList.add("study-wide");
             if (f.type === "date") input.placeholder = "YYYY-MM-DD, YYYY-MM, or YYYY";
             if (f.range) input.placeholder = f.key === "lvef" ? "e.g. 55-60" : "e.g. <35";
-            input.value = draft.row[f.key] ?? ""; input.maxLength = 3000;
+            input.value = draft.row[f.key] ?? "";
+            if (f.key !== "impression") input.maxLength = 3000;
+            if (report && f.key === "impression") {
+              input.placeholder = "Paste the report's conclusion or impression here. Line breaks and numbered findings are preserved.";
+              input.setAttribute("aria-describedby", id + "-hint");
+            }
           }
           input.id = id; input.autocomplete = "off";
           input.addEventListener("input", () => { draft.row[f.key] = f.type === "number" ? input.value === "" ? null : input.valueAsNumber : input.value; invalidate(); });
-          box.append(label, input); fields.append(box);
+          box.append(label, input);
+          if (report && f.key === "impression") { const help = el("p", "hint", "Paste the conclusion only, without patient identifiers or report headers. You do not need to extract measurements or reformat the text."); help.id = id + "-hint"; box.append(help); }
+          (report && !def.primaryFields.includes(f.key) ? optionalFields : fields).append(box);
         });
         form.append(fields);
+        if (report) { optional.append(optionalFields); form.append(optional); }
         const errors = el("div", "study-errors"); errors.setAttribute("role", "alert"); draft.errors.forEach(t => errors.append(el("p", "", t))); form.append(errors);
-        const actions = el("div", "study-toolbar"); actions.append(button("Save result", () => {
+        const actions = el("div", "study-toolbar"); actions.append(button(report ? "Save report" : "Save result", () => {
           const row = { ...draft.row }, parsed = I.parseDate(row.date); draft.errors = [];
           if (parsed === null) draft.errors.push("Use a valid date (YYYY-MM-DD, YYYY-MM, YYYY, or U.S. MM/DD/YYYY), or leave blank."); else row.date = parsed;
           const next = I.normalize(getBundle());

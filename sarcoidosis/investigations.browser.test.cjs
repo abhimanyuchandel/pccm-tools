@@ -16,13 +16,15 @@ async function main() {
     }
     const button = name => page.getByRole("button", { name, exact: true });
     async function setStudy(kind, values) {
-      await button("Add " + { pft: "PFT", walk: "6MWT", echo: "Echo", ct: "CT" }[kind]).click();
+      const report = ["echo", "ct"].includes(kind);
+      await button({ pft: "Add PFT", walk: "Add 6MWT", echo: "Add echo report", ct: "Add CT report" }[kind]).click();
+      if (report && Object.keys(values).some(k => !["date", "impression"].includes(k))) await page.locator(".study-optional > summary").click();
       for (const [key, value] of Object.entries(values)) {
         const input = page.locator(`#study-edit-${kind}-${key}`);
         if (await input.evaluate(n => n.tagName) === "SELECT") await input.selectOption(value);
         else await input.fill(String(value));
       }
-      await button("Save result").click(); assert.equal(await page.locator(".study-editor").count(), 0);
+      await button(report ? "Save report" : "Save result").click(); assert.equal(await page.locator(".study-editor").count(), 0);
     }
     async function importText(kind, text) {
       await button("Paste previous table").click(); await page.locator("#study-paste-" + kind).fill(text); await button("Review pasted table").click();
@@ -57,17 +59,34 @@ async function main() {
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "6MWT 2026-10-16 encounter role");
     await page.getByRole("combobox", { name: "6MWT 2025-10 encounter role", exact: true }).selectOption("comparison");
     await go("echo");
+    await button("Add echo report").click();
+    assert.equal(await page.locator(".study-optional").evaluate(n => n.open), false);
+    assert.equal(await page.locator("#study-edit-echo-lvef").isVisible(), false);
+    assert.equal(await page.locator("#study-edit-echo-impression").getAttribute("maxlength"), null);
+    await page.locator("#study-edit-echo-date").fill("09/01/2025");
+    const echoConclusion = "1. Left ventricular systolic function is preserved.\n2. No estimate of RVSP was available.";
+    await page.evaluate(text => navigator.clipboard.writeText(text), echoConclusion); await page.locator("#study-edit-echo-impression").focus(); await page.keyboard.press("ControlOrMeta+V");
+    assert.equal(await page.locator("#study-edit-echo-impression").inputValue(), echoConclusion);
+    await bounds(); await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-echo-report-desktop.png" });
+    await page.setViewportSize({ width: 390, height: 900 }); await page.locator(".report-editor").screenshot({ path: "/tmp/sarcoidosis-echo-report-mobile.png" });
+    await button("Save report").click(); assert.equal(await page.locator(".study-table thead th").count(), 2);
+    assert.match(await page.locator(".study-table").textContent(), /2025-09-01/); assert.ok((await page.locator(".study-table").textContent()).includes(echoConclusion));
+    await page.locator(".study-row-controls > summary").click(); await page.locator(".study-row-control").first().getByRole("button", { name: "Edit", exact: true }).click();
+    assert.equal(await page.locator("#study-edit-echo-impression").inputValue(), echoConclusion); assert.equal(await page.locator(".study-optional").evaluate(n => n.open), false);
+    await button("Save report").click(); assert.equal(await page.locator(".study-table tbody tr").count(), 1);
     await setStudy("echo", { date: "2026-09", lvef: "55-60", rvsp: "<35", rv: "Normal reported RV size and function", impression: "Technically limited study. PASP not estimated.", role: "current" });
     await go("ct");
     const html = '<table><tr><th>Date</th><th>Modality</th><th>Reported findings</th><th>Reported impression</th></tr><tr><td>2025-10</td><td>HRCT</td><td>Upper-lobe fibrosis<img src="https://example.invalid/pasted-report-image"></td><td>Stable compared with prior &lt;uncertain&gt;<script>window.badPaste = true</script></td></tr></table>';
-    await button("Paste previous table").click();
+    await button("Import previous table").click();
     await page.locator("#study-paste-ct").evaluate((area, html) => { const data = new DataTransfer(); data.setData("text/html", html); data.setData("text/plain", "Previous CT table"); area.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true })); }, html);
     assert.equal(await page.locator(".study-import .study-table tbody tr").count(), 1);
     await button("Apply reviewed results").click(); assert.equal(await page.evaluate(() => window.badPaste), undefined);
+    await setStudy("ct", { date: "2026-03-01", impression: "1. Stable upper-lobe predominant fibrotic changes.\n2. No new consolidation." });
     await setStudy("ct", { date: "2026-10", modality: "hrct", findings: "Upper-lobe fibrosis with traction bronchiectasis", impression: 'Unchanged, with <uncertain> activity.\nClinical correlation recommended.', comparison: "Compared with 2025-10", role: "current" });
     await bounds(); await generate();
     for (const name of ["Pulmonary function history", "Six-minute walk history", "Echocardiography history", "Chest CT / HRCT history"]) assert.match(await note(), new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(await note(), /55-60/); assert.match(await note(), /335.28/); assert.match(await note(), /FVC change: -2 percentage points/); assert.match(await note(), /<uncertain>/);
+    assert.ok((await note()).includes(echoConclusion)); assert.match(await note(), /2025-09-01/); assert.match(await note(), /2026-03-01/);
     assert.equal(await page.locator("#note-tables table").count(), 4);
     await button("Copy note").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
     const noteHtml = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return await (await items[0].getType("text/html")).text(); });

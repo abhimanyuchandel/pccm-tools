@@ -62,3 +62,10 @@ This adult U.S. pulmonary-led follow-up tool distinguishes guideline recommendat
 - No persistence, backend, patient-data transmission or external parsing service was added. Clearing/reloading removes encounter data. The prior copied table is the portable history for a subsequent visit. Asset version: `20261016-2`.
 
 Run `node --test sarcoidosis/logic.test.js sarcoidosis/investigations.test.js`, `node sarcoidosis/browser.test.cjs` and `node sarcoidosis/investigations.browser.test.cjs` with Playwright available and the static site served locally (or set `SARCOIDOSIS_TEST_URL` to the preview).
+
+### Report-First Echo and CT Entry
+
+- Echo and CT now start with **Study date** and **Report conclusion / impression**. Clinicians can paste a conclusion directly from the original report and save it without extracting measurements or preparing a table. Repeat for earlier studies to build the dated history.
+- Measurements, modality, findings, notes and optional encounter roles remain accessible under collapsed **Optional inputs**. Existing structured data are retained and shown when editing a populated record. Previous-table import remains a separate action for reusing saved histories.
+- Conclusion-only histories display a simple date/conclusion table; optional current/comparison labels are shown only when assigned. Copied tables and SOAP retain report wording, numbered paragraphs and line breaks, without automatic numeric extraction, diagnostic inference or change to prescribing logic.
+- Conclusion fields accept up to 10,000 characters. Longer text is retained in the unsaved editor and flagged rather than silently truncated. Existing exported `Reported impression` headings remain compatible with import. Asset version: `20261016-3`. Preview only.

@@ -26,6 +26,27 @@ for (const kind of I.kinds) {
     assert.deepEqual(I.validate(b), []);
   });
 }
+for (const kind of ["echo", "ct"]) {
+  test(`${kind}: date and pasted conclusion alone produce a valid report and concise table`, () => {
+    const report = "1. Findings are unchanged.\n2. Clinical correlation is recommended.\n   No additional measurement was reported.";
+    const b = I.empty(); b.records[kind] = [{ id: "report", date: "2026-10-16", impression: report }];
+    const r = L.buildRecommendation({ studies: b });
+    assert.equal(r.invalid, false); assert.equal(r.data.studies.records[kind][0].impression, report);
+    assert.equal(I.table(kind, r.data.studies).headers.length, 2);
+    assert.deepEqual(I.table(kind, r.data.studies).rows[0], ["2026-10-16", report]);
+    assert.ok(N.buildNoteText(r).includes(report)); assert.equal(r.data.phConcern, null); assert.equal(r.data.activity, "unknown");
+    if (kind === "echo") { assert.equal(r.data.studies.records.echo[0].lvef, ""); assert.equal(r.data.studies.records.echo[0].trv, null); }
+    assert.equal(I.definitions[kind].entry, "report"); assert.deepEqual(I.definitions[kind].primaryFields, ["date", "impression"]);
+  });
+  test(`${kind}: previous impression column headings still import after the label change`, () => {
+    const r = imported(kind, "Date\tReported impression\n2026-10-16\tStable findings"); assert.deepEqual(r.errors, []); assert.equal(r.records[0].impression, "Stable findings");
+  });
+}
+test("long report conclusions remain intact and excessive length is flagged instead of truncated", () => {
+  const b = I.empty(); b.records.echo = [{ id: "long", date: "2026", impression: "A".repeat(5000) }];
+  assert.deepEqual(I.validate(I.normalize(b)), []); assert.equal(I.normalize(b).records.echo[0].impression.length, 5000);
+  b.records.echo[0].impression = "A".repeat(10001); const normalized = I.normalize(b); assert.equal(normalized.records.echo[0].impression.length, 10001); assert.match(I.validate(normalized).map(e => e.text).join(), /10,000.*no report text was truncated/);
+});
 test("blank numbers remain unknown, including missing walk distance and saturation", () => {
   const r = imported("walk", "Date\tDistance (m)\tNadir SpO2 (%)\tResting SpO2 (%)\n2026-01-01\t\tNot documented\t94\n2025\t0\t90\t93");
   assert.deepEqual(r.errors, []); assert.equal(r.records[0].distance, null); assert.equal(r.records[0].nadir, null); assert.equal(r.records[1].distance, 0);

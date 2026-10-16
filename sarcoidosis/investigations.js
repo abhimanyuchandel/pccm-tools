@@ -25,18 +25,18 @@
       { key: "oxygen", label: "Oxygen conditions", type: "choice", options: [["unknown", "Not documented"], ["roomair", "Room air"], ["oxygen", "Supplemental oxygen"]], aliases: ["oxygen", "o2 conditions"] },
       number("flow", "Oxygen flow (L/min)", 0, 60, ["o2 l/min", "oxygen l/min", "flow l/min"]), text("device", "Oxygen device"), notes],
       hint: "Document oxygen conditions for each test. Differences in oxygen, device, protocol or effort can limit comparison. Historical measurements do not establish today's resting oxygenation." },
-    echo: { title: "Echocardiography", singular: "Echo", fields: [date, role,
+    echo: { title: "Echocardiography", singular: "Echo", entry: "report", primaryFields: ["date", "impression"], fields: [date, role,
       { ...text("lvef", "LVEF (%)", ["ef %", "ejection fraction %", "lvef"]), range: [0, 100] },
       { ...text("rvsp", "RVSP (mmHg)", ["rvsp mmhg"]), range: [0, 200] },
       { ...text("pasp", "PASP (mmHg)", ["pasp mmhg"]), range: [0, 200] },
       number("trv", "TR velocity (m/s)", 0, 8, ["trv m/s", "tr velocity m/s"]),
-      text("rv", "RV size / function", ["rv size/function", "rv findings"]), text("impression", "Reported impression", ["impression", "conclusion", "echo findings"]), notes],
-      hint: "Transcribe the report, including ranges or qualifiers. An unavailable RVSP is not a normal RVSP. Report text does not automatically diagnose pulmonary hypertension or cardiac sarcoidosis." },
-    ct: { title: "Chest CT / HRCT", singular: "CT", fields: [date, role,
+      text("rv", "RV size / function", ["rv size/function", "rv findings"]), text("impression", "Report conclusion / impression", ["impression", "conclusion", "reported impression", "report conclusion", "echo findings"]), notes],
+      hint: "Enter the study date and paste the echo report's conclusion or impression. Repeat for prior studies. Measurements are optional; no measurements or diagnoses are inferred from the text." },
+    ct: { title: "Chest CT / HRCT", singular: "CT", entry: "report", primaryFields: ["date", "impression"], fields: [date, role,
       { key: "modality", label: "Modality", type: "choice", options: [["unknown", "Not documented"], ["ct", "Chest CT"], ["hrct", "HRCT"], ["ctpa", "CTPA"], ["other", "Other CT"]], aliases: ["study", "exam"] },
-      text("findings", "Reported findings", ["findings", "ct findings"]), text("impression", "Reported impression", ["impression", "conclusion"]),
+      text("findings", "Reported findings", ["findings", "ct findings"]), text("impression", "Report conclusion / impression", ["impression", "conclusion", "reported impression", "report conclusion"]),
       text("comparison", "Reported interval comparison", ["interval comparison", "comparison", "interval change"]), notes],
-      hint: "Keep the report's wording and uncertainty. Record the clinician's imaging/activity interpretation separately; pasted findings do not automatically determine activity or treatment." },
+      hint: "Enter the study date and paste the CT report's conclusion or impression. Repeat for prior studies. Your clinical imaging/activity assessment remains separate from the report text." },
   };
   const kinds = Object.keys(definitions);
   const combined = { fvcCombined: ["fvcL", "fvc", "FVC (L and % predicted)"], fev1Combined: ["fev1L", "fev1", "FEV1 (L and % predicted)"], tlcCombined: ["tlcL", "tlc", "TLC (L and % predicted)"], dlcoCombined: ["dlcoAbs", "dlco", "DLCO (mL/min/mmHg and % predicted)"] };
@@ -99,7 +99,8 @@
             const match = v.match(/^[<>\u2264\u2265]?\s*(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?$/);
             if (!match || +match[1] < f.range[0] || +match[1] > f.range[1] || match[2] && (+match[2] > f.range[1] || +match[2] < +match[1])) problem = "enter a reported number/range (for example 55-60 or <35), or place narrative in the impression";
           }
-          if (typeof value === "string" && value.length > 3000) problem = "limit each report cell to 3,000 characters";
+          const textLimit = f.key === "impression" ? 10000 : 3000;
+          if (typeof value === "string" && value.length > textLimit) problem = `limit this field to ${textLimit.toLocaleString("en-US")} characters; no report text was truncated`;
           if (problem) errors.push({ key: "studies", text: `${definitions[kind].singular} row ${i + 1}, ${f.label}: ${problem}.` });
         });
         if (kind === "walk" && row.oxygen === "roomair" && row.flow > 0) errors.push({ key: "studies", text: `6MWT row ${i + 1}: room air conflicts with a positive supplemental oxygen flow.` });
@@ -130,12 +131,16 @@
     const leading = r => [r.date || "Not documented", roleFor(bundle, kind, r)];
     if (kind === "pft") return { headers: ["Date", "Encounter role", "FVC", "FEV1", "FEV1/FVC", "TLC", "DLCO", "Context / notes"], rows: rows.map(r => [...leading(r), pair(r, "fvcL", "fvc", "L"), pair(r, "fev1L", "fev1", "L"), value(r.ratio), pair(r, "tlcL", "tlc", "L"), pair(r, "dlcoAbs", "dlco", "mL/min/mmHg"), [displayField(fields.find(f => f.key === "context"), r.context), r.notes].filter(Boolean).join(". ")]) };
     if (kind === "walk") return { headers: ["Date", "Encounter role", "Distance", "Rest / nadir SpO2", "Oxygen conditions", "Notes"], rows: rows.map(r => [...leading(r), r.distance != null ? `${r.distance} m` : "Not documented", r.rest == null && r.nadir == null ? "Not documented" : `${r.rest != null ? r.rest + "%" : "Not documented"} / ${r.nadir != null ? r.nadir + "%" : "Not documented"}`, [displayField(fields.find(f => f.key === "oxygen"), r.oxygen), r.flow != null ? `${r.flow} L/min` : "", r.device].filter(Boolean).join("; "), value(r.notes)]) };
-    if (kind === "echo") return { headers: ["Date", "Encounter role", "LVEF", "RVSP / PASP", "RV / TR velocity", "Reported impression / notes"], rows: rows.map(r => [...leading(r), r.lvef && !missing(r.lvef) ? `${r.lvef.replace(/%$/, "")}%` : "Not documented", r.rvsp || r.pasp ? [`RVSP ${value(r.rvsp)}`, `PASP ${value(r.pasp)}`].join("; ") + " mmHg" : "Not documented", [r.rv, r.trv != null ? `TRV ${r.trv} m/s` : ""].filter(Boolean).join("; ") || "Not documented", [r.impression, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
-    return { headers: ["Date", "Encounter role", "Modality", "Reported findings", "Reported impression", "Reported interval comparison / notes"], rows: rows.map(r => [...leading(r), displayField(fields.find(f => f.key === "modality"), r.modality), value(r.findings), value(r.impression), [r.comparison, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
+    if (kind === "echo") return { headers: ["Date", "Encounter role", "LVEF", "RVSP / PASP", "RV / TR velocity", "Conclusion / impression / notes"], rows: rows.map(r => [...leading(r), r.lvef && !missing(r.lvef) ? `${r.lvef.replace(/%$/, "")}%` : "Not documented", r.rvsp || r.pasp ? [`RVSP ${value(r.rvsp)}`, `PASP ${value(r.pasp)}`].join("; ") + " mmHg" : "Not documented", [r.rv, r.trv != null ? `TRV ${r.trv} m/s` : ""].filter(Boolean).join("; ") || "Not documented", [r.impression, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
+    return { headers: ["Date", "Encounter role", "Modality", "Reported findings", "Conclusion / impression", "Reported interval comparison / notes"], rows: rows.map(r => [...leading(r), displayField(fields.find(f => f.key === "modality"), r.modality), value(r.findings), value(r.impression), [r.comparison, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
   }
   function table(kind, bundle, compact = true) {
     const t = rawTable(kind, bundle, compact);
-    const columns = t.headers.map((h, i) => i).filter(i => !compact || i < 2 || t.rows.some(row => row[i] !== "Not documented"));
+    const columns = t.headers.map((h, i) => i).filter(i => {
+      if (!compact) return true;
+      if (definitions[kind].entry === "report" && i === 1) return t.rows.some(row => row[1] !== "History");
+      return i < 2 || t.rows.some(row => row[i] !== "Not documented");
+    });
     return { headers: columns.map(i => t.headers[i]), rows: t.rows.map(row => columns.map(i => row[i])) };
   }
   const quote = s => /[\t\n\r"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;

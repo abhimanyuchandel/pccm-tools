@@ -160,6 +160,10 @@ textarea { width:100%; resize:vertical; min-height:480px; padding:18px; border:1
 .study-edit-field .field-label { font-size:.82rem; }
 .study-wide { grid-column:1/-1; }
 .study-edit-field textarea { min-height:85px; padding:10px; }
+.report-editor>.study-editor-grid textarea { min-height:180px; line-height:1.6; }
+.study-optional { border:1px solid var(--line); border-radius:9px; background:#fff; margin:20px 0 0; }
+.study-optional>summary { font-size:.82rem; color:var(--ink); }
+.study-optional>.study-editor-grid { padding:8px 16px 18px; }
 .study-paste { min-height:140px; margin:8px 0 12px; font-size:.8rem; }
 .study-map-label { display:grid; gap:6px; min-width:0; font-size:.82rem; overflow-wrap:anywhere; }
 .study-map-label select { font-size:.8rem; }
@@ -168,6 +172,9 @@ textarea { width:100%; resize:vertical; min-height:480px; padding:18px; border:1
 .study-import>.concern-option { margin:14px 0; }
 .note-study { border-top:1px solid var(--line); padding-top:18px; margin-top:22px; }
 .note-study h3 { font-family:inherit; font-size:.95rem; letter-spacing:0; }
+@media(min-width:1001px) {
+  .study-table[data-kind=echo] th:first-child,.study-table[data-kind=ct] th:first-child { width:110px; }
+}
 @media(max-width:1000px) {
   .study-table,.study-table tbody,.study-table tr,.study-table th,.study-table td { display:block; width:100%; }
   .study-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
