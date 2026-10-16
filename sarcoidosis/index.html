@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PCCM Tools | Sarcoidosis Management</title>
+    <meta name="description" content="Guided adult sarcoidosis follow-up, clinician-selected treatment and structured SOAP documentation.">
+    <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
+    <link rel="apple-touch-icon" href="/assets/pccmapps.png">
+    <link rel="stylesheet" href="/sarcoidosis/styles.css?v=20261016-1">
+    <script defer src="/sarcoidosis/input-schema.js?v=20261016-1"></script>
+    <script defer src="/sarcoidosis/medications.js?v=20261016-1"></script>
+    <script defer src="/sarcoidosis/logic.js?v=20261016-1"></script>
+    <script defer src="/sarcoidosis/workflow.js?v=20261016-1"></script>
+    <script defer src="/sarcoidosis/notes.js?v=20261016-1"></script>
+    <script defer src="/sarcoidosis/app.js?v=20261016-1"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#encounter">Skip to encounter</a>
+    <main class="siteShell">
+      <header class="siteBar"><a class="siteBrand" href="/">PCCM Tools</a><a href="/">All clinical tools</a></header>
+      <header class="hero">
+        <p class="eyebrow">Pulmonary Medicine <span class="testing">In testing</span></p>
+        <h1>Sarcoidosis Management</h1>
+        <p class="heroLead">A guided follow-up. An individualized clinical plan.</p>
+        <p class="muted">Adult pulmonary-led care, treatment review and an editable SOAP note.</p>
+      </header>
+      <noscript><p class="alert danger">Enable JavaScript to use this decision-support tool.</p></noscript>
+      <div id="urgent-alert" class="alert danger" role="alert" hidden></div>
+      <div class="workspace">
+        <aside class="journey" aria-label="Encounter progress">
+          <p class="eyebrow">Your encounter</p>
+          <nav id="chapter-nav" aria-label="Encounter chapters"></nav>
+          <p class="privacy-note">Page memory only. Patient entries are not saved or sent to a clinical service.</p>
+          <button id="reset-btn" type="button" class="quiet">Clear encounter</button>
+        </aside>
+        <section id="encounter" class="encounter-card" aria-labelledby="step-title">
+          <div class="step-meta"><span id="chapter-label" class="badge">Patient inputs</span><span id="step-count"></span></div>
+          <progress id="progress" value="1" max="1" aria-label="Position in applicable questions"></progress>
+          <h2 id="step-title" tabindex="-1"></h2>
+          <p id="step-hint" class="hint" hidden></p>
+          <div id="step-content"></div>
+          <div class="step-actions">
+            <button id="back-btn" type="button" class="secondary">Back</button>
+            <button id="review-btn" type="button" class="quiet">Review now</button>
+            <button id="next-btn" type="button" class="primary">Next</button>
+          </div>
+        </section>
+      </div>
+      <section id="results" aria-labelledby="results-title" hidden>
+        <div class="section-heading"><div><p class="eyebrow">Encounter output</p><h2 id="results-title">Clinical recommendations</h2></div><button id="regenerate-btn" type="button" class="primary">Regenerate recommendations</button></div>
+        <p id="output-status" class="status-line" role="status"></p>
+        <div id="results-content"></div>
+        <article class="result-card note-card">
+          <div class="section-heading"><h2>Copy/Paste Clinical Note</h2><button id="copy-note-btn" type="button" class="primary" disabled>Copy note</button></div>
+          <p class="muted">Editable clinical draft. Complete the *** placeholders and verify the selected plan against the actual encounter before EMR insertion. No administration or completed counseling is assumed.</p>
+          <p id="copy-status" class="status-line" role="status"></p>
+          <label class="sr-only" for="note-output">SOAP clinical note</label>
+          <textarea id="note-output" readonly spellcheck="false"></textarea>
+        </article>
+      </section>
+      <footer class="footer">
+        <p><strong>Evidence reviewed:</strong> October 16, 2026. ATS diagnostic guidance, ERS treatment guidance, BTS clinical statement, PREDMETH, SARCORT, current U.S. labeling, CDC and relevant specialty guidance.</p>
+        <p><a href="/sarcoidosis/CLINICAL_CHANGELOG.md">Clinical rules and source log</a></p>
+        <p>This platform encodes clinical guidance into structured decision support. Recommendations simplify complex evidence and may not capture patient-specific factors. SOAP notes require editing for clinical nuance. Independently verify prescriptions, monitoring and results.</p>
+        <p>This tool supports, but does not replace, clinical judgment. It does not provide emergency, organ-specific rescue, infusion-order or transplant-listing protocols. Many sarcoidosis medication regimens are off-label.</p>
+      </footer>
+    </main>
+  </body>
+</html>

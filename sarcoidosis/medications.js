@@ -1,0 +1,83 @@
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  if (root) root.sarcoidosisMedications = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+  const SOURCES = {
+    ats: { title: "ATS diagnosis and detection (2020)", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7159433/" },
+    ers: { title: "ERS treatment guideline (2021)", url: "https://publications.ersnet.org/lookup/pmid/34140301" },
+    bts: { title: "BTS pulmonary sarcoidosis statement", url: "https://thorax.bmj.com/content/76/1/4" },
+    predmeth: { title: "PREDMETH randomized trial (2025)", url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2501443" },
+    sarcort: { title: "SARCORT randomized trial (2023)", url: "https://publications.ersnet.org/content/erj/62/3/2300198.full" },
+    pharmacology: { title: "Practical sarcoidosis pharmacology (expert review, 2024)", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10932410/" },
+    mtx: { title: "Methotrexate U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=948e0bab-6524-4b87-9853-1799d4415558" },
+    aza: { title: "Azathioprine U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4d62b6e4-a9d4-4818-e063-6394a90aa208" },
+    leflunomide: { title: "Leflunomide U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=91712aad-d96c-4ef0-97e7-b31ed18ca6d8" },
+    mmf: { title: "Mycophenolate U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=721564bc-7c0b-4418-ab49-0af362e74eb7" },
+    hcq: { title: "Hydroxychloroquine U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e5fe2ece-40a1-49eb-818f-62ff3c3bb199" },
+    infliximab: { title: "Infliximab U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b05c174f-832c-4321-b34f-2c4ad3742269" },
+    infliximabTrial: { title: "Pulmonary infliximab randomized trial (2006)", url: "https://pubmed.ncbi.nlm.nih.gov/16840744/" },
+    adalimumab: { title: "Pulmonary adalimumab open-label study (2014)", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4134103/" },
+    adalimumabLabel: { title: "Adalimumab U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=608d4f0d-b19f-46d3-749a-7159aa5f933d" },
+    hypercalcemia: { title: "Endotext hypercalcemia assessment", url: "https://www.ncbi.nlm.nih.gov/books/NBK279037/" },
+    aao: { title: "AAO hydroxychloroquine screening revision", url: "https://www.aaojournal.org/article/S0161-6420%2825%2900709-2/fulltext" },
+    endocrine: { title: "Glucocorticoid-induced adrenal insufficiency guideline (2024)", url: "https://academic.oup.com/jcem/article/109/7/1657/7667842" },
+    bone: { title: "ACR glucocorticoid-induced osteoporosis guidance", url: "https://rheumatology.org/glucocorticoid-induced-osteoporosis-guideline" },
+    pjp: { title: "EULAR infection prophylaxis guidance (extrapolated, not sarcoidosis-specific)", url: "https://ard.bmj.com/content/82/6/742" },
+    ph: { title: "WASOG sarcoidosis-associated PH statement", url: "https://publications.ersnet.org/lookup/doi/10.1183/16000617.0165-2021" },
+    cdc: { title: "CDC adult vaccine schedule", url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/adult-notes.html" },
+    pneumococcal: { title: "CDC pneumococcal recommendations", url: "https://www.cdc.gov/pneumococcal/hcp/vaccine-recommendations/index.html" },
+    rsv: { title: "CDC adult RSV guidance", url: "https://www.cdc.gov/rsv/hcp/vaccine-clinical-guidance/adults.html" },
+    immune: { title: "CDC altered immunocompetence", url: "https://www.cdc.gov/vaccines/hcp/imz-best-practices/altered-immunocompetence.html" },
+    strongyloides: { title: "CDC exposure-based Strongyloides assessment", url: "https://www.cdc.gov/yellow-book/hcp/post-travel-evaluation/perspectives-screening-asymptomatic-travelers.html" },
+  };
+  const DRUGS = {
+    prednisone: { name: "Prednisone", defaultDose: 20, min: 5, max: 40, route: "orally", unit: "mg/day", sources: ["ers", "sarcort", "endocrine"],
+      text: "Often the quickest systemic option for inflammatory pulmonary disease. A 20 mg/day starting regimen is reasonable for many non-organ-threatening presentations; 40 mg was not superior to 20 mg for relapse/treatment failure in SARCORT. Dose and duration require individualization. This is not an organ-threatening rescue protocol.",
+      monitoring: "Monitor glucose, blood pressure, weight, mood, infection, eyes and fracture risk. Reassess response within 4-6 weeks; do not continue the starting dose indefinitely. Plan a response-guided taper and review adrenal suppression before withdrawal." },
+    methotrexate: { name: "Methotrexate", defaultDose: 15, target: 25, increment: 5, min: 5, max: 25, route: "orally", unit: "mg once weekly", sources: ["ers", "predmeth", "pharmacology", "mtx"],
+      text: "Best-supported conventional steroid-sparing option. PREDMETH found noninferior FVC improvement at 24 weeks in selected treatment-naive pulmonary patients. Onset is slower than prednisone; it is not rapid rescue for cardiac, neurologic or other organ-threatening disease. Nausea, cytopenia, liver injury and rare pneumonitis are important considerations.",
+      monitoring: "Give folic acid 1 mg orally daily. Obtain CBC, creatinine/eGFR, liver tests and viral-hepatitis review before treatment. Check CBC, renal and liver tests every 2-4 weeks during initiation/titration, then about every 3 months when stable. Avoid daily dosing and TMP-SMX co-prescribing; adjust for organ dysfunction with an individualized plan." },
+    azathioprine: { name: "Azathioprine (Imuran)", defaultDose: 50, target: 150, increment: 25, min: 25, max: 250, route: "orally", unit: "mg/day", sources: ["ers", "pharmacology", "aza"],
+      text: "Alternative when methotrexate is unsuitable. Benefit may take several months. Consider marrow/liver toxicity, infection and skin malignancy risk. Review TPMT/NUDT15 before prescribing; normal results do not replace CBC monitoring. Allopurinol requires specialized major dose adjustment; avoid a standard template with it or febuxostat.",
+      monitoring: "Obtain baseline CBC, renal and liver tests. Monitor CBC weekly during month 1, twice monthly during months 2-3, then monthly or more often after changes per labeling/local protocol; include liver/renal monitoring. Review skin protection and surveillance." },
+    leflunomide: { name: "Leflunomide (Arava)", defaultDose: 10, target: 20, increment: 10, min: 10, max: 20, route: "orally", unit: "mg/day", sources: ["pharmacology", "leflunomide"],
+      text: "Less robust pulmonary evidence than methotrexate. Consider diarrhea, neuropathy, liver toxicity, cytopenia and pneumonitis. This template omits a loading dose. Avoid pregnancy and significant liver disease; prolonged elimination may require a specialist-directed washout. Do not routinely combine with methotrexate.",
+      monitoring: "Obtain CBC, liver/renal tests, TB assessment and blood pressure review. Monitor CBC and ALT at least monthly for 6 months, then every 6-8 weeks, more often with toxicity or combination treatment." },
+    mycophenolate: { name: "Mycophenolate mofetil (CellCept)", defaultDose: 500, target: 1000, increment: 250, min: 250, max: 1500, route: "orally", unit: "mg twice daily", sources: ["pharmacology", "mmf"],
+      text: "Alternative steroid-sparing therapy with mainly observational evidence. GI intolerance, infection and cytopenia may limit use. Not interchangeable milligram-for-milligram with enteric-coated mycophenolate sodium. Teratogenicity requires explicit reproductive-safety review.",
+      monitoring: "Obtain CBC, renal/liver tests and required pregnancy testing/contraception review. Check CBC weekly during month 1, twice monthly during months 2-3, then monthly through year 1; include renal/liver monitoring and local protocol." },
+    hydroxychloroquine: { name: "Hydroxychloroquine (Plaquenil)", defaultDose: 200, target: 200, increment: 0, min: 200, max: 400, route: "orally", unit: "mg/day", sources: ["pharmacology", "hcq", "aao"],
+      text: "Useful for selected cutaneous, musculoskeletal or calcium-related manifestations; not equivalent treatment for significant inflammatory pulmonary disease. Keep at or below 5 mg/kg/day actual body weight and ordinarily at or below 400 mg/day; severe obesity may warrant less. Consider retinal and cardiac/QT toxicity and renal impairment.",
+      monitoring: "Arrange baseline retinal assessment with OCT and fundus autofluorescence soon after starting. Annual OCT/FAF screening may be deferred for the first 5 years only in low-risk patients after ophthalmology review. Renal disease, tamoxifen, older age and retinal disease increase concern. This is separate from ocular sarcoidosis screening." },
+    infliximab: { name: "Infliximab (Remicade or selected biosimilar)", defaultDose: 5, min: 3, max: 5, route: "IV", unit: "mg/kg", sources: ["ers", "pharmacology", "infliximab", "infliximabTrial"],
+      text: "Most supported TNF option for refractory active pulmonary disease after conventional therapy is ineffective or not tolerated. The pulmonary randomized trial found a modest average FVC benefit, not universal response. Consider TB/HBV reactivation, serious infection, infusion reactions, demyelination and heart failure. Product/infusion authorization must be confirmed.",
+      monitoring: "Review TB and HBV screening, infection risk and baseline CBC/liver tests; follow CBC/liver tests about every 3-6 months and local infusion protocol. Infuse over at least 2 hours with an appropriate reaction-management setting. Assess response before continued maintenance." },
+    adalimumab: { name: "Adalimumab (Humira or selected biosimilar)", defaultDose: 40, min: 40, max: 40, route: "subcutaneously", unit: "mg", sources: ["pharmacology", "adalimumab", "adalimumabLabel"],
+      text: "A refractory-disease alternative, particularly when infliximab is not tolerated or feasible. Pulmonary evidence is smaller and mainly open-label; it is not an equally established first-line choice. Sarcoidosis schedules of 40 mg every 1-2 weeks are off-label and are not copied from uveitis or IBD loading regimens.",
+      monitoring: "Review TB, HBV, serious infection, heart failure and demyelination risks. Monitor CBC/liver tests about every 3-6 months and reassess response. Verify the selected biosimilar, device and authorization; avoid simultaneous TNF inhibitors." },
+  };
+  const REFERENCES = {
+    diagnosis: { title: "Diagnosis at follow-up", sources: ["ats"], text: "Diagnosis rests on a compatible presentation, usually nonnecrotizing granulomas when tissue is needed, and exclusion of relevant alternatives. Biopsy is not mandatory in every classic presentation. Infection, occupational exposure, drug reactions and other granulomatous disorders remain important when findings are atypical. Unavailable historical records alone do not invalidate an established diagnosis." },
+    activity: { title: "Activity is not the same as damage", sources: ["ers", "bts"], text: "Treat to prevent organ damage or improve unacceptable quality-of-life impairment. Interpret symptoms, serial physiology and imaging together. Fibrosis, an elevated ACE level, radiographic stage or a single low FVC does not independently prove treatable inflammation. Consider infection, PH, cardiac disease, airway disease, sleep disorders, anemia, deconditioning and treatment toxicity." },
+    screening: { title: "Baseline versus surveillance", sources: ["ats"], text: "Baseline assessment includes eye examination, ECG, CBC, calcium, creatinine and alkaline phosphatase. After negative baseline screening, review calcium, creatinine and alkaline phosphatase annually. New symptoms or abnormal tests trigger targeted eye/cardiac evaluation; asymptomatic patients do not automatically need repeated echo, Holter, CT or PET. Drug monitoring may be more frequent." },
+    treatment: { title: "Choosing a systemic strategy", sources: ["ers", "predmeth", "sarcort"], text: "Observation can be appropriate when there is no important organ threat or unacceptable disease-related quality-of-life impairment. Prednisone acts faster. Methotrexate is an initial option for selected pulmonary patients as well as a steroid-sparing agent, but PREDMETH does not establish it as rapid rescue or as a treatment for all extrapulmonary presentations. Alternatives have weaker evidence. Review objective response, toxicity and patient preference before changing treatment." },
+    taper: { title: "Response-guided prednisone reduction", sources: ["bts", "endocrine"], text: "The staged schedule is a clinician-selected plan, not a prediction of recovery. Review disease control, prior relapse, total exposure and adrenal suppression. Slow the taper near physiologic doses (about 4-6 mg prednisone/day), distinguish withdrawal/adrenal symptoms from sarcoidosis relapse, and arrange reassessment. Do not stop chronic prednisone abruptly." },
+    protection: { title: "Steroid protection and infection prevention", sources: ["ats", "bone", "pjp", "immune", "strongyloides"], text: "Review fracture risk/DXA when prolonged glucocorticoids are expected, together with glucose, BP, mood and eye effects. Do not automatically add calcium or vitamin D: assess calcium metabolism and, if replacement is contemplated, 25-OH and 1,25-OH2 vitamin D. PJP prevention is individualized; rheumatology evidence suggests benefit with prolonged higher-dose steroids, particularly combined immunosuppression, but this is not a universal sarcoidosis rule. Avoid automatic TMP-SMX with methotrexate. Assess Strongyloides only when exposure warrants it." },
+    advanced: { title: "Disproportionate dyspnea and advanced disease", sources: ["ph", "ers"], text: "Disproportionate breathlessness, reduced DLCO, desaturation, fibrosis or suggestive cardiac findings may warrant echocardiography and PH-center review. Echo estimates probability; RHC confirms PH and its hemodynamic type when indicated. Do not automatically prescribe PAH drugs. Advanced fibrotic disease may merit multidisciplinary ILD/transplant assessment, not a declaration of listing eligibility." },
+    vaccines: { title: "Adult vaccine reference", sources: ["cdc", "pneumococcal", "rsv", "immune"],
+      text: "Check prior products/dates, pregnancy, contraindications and local schedules. Live vaccines generally need avoidance during clinically significant immunosuppression; prednisone at least 20 mg/day for at least 14 days is one relevant threshold. Do not delay urgently needed treatment simply to complete vaccination. No medication interruption is automatically recommended here.",
+      table: [
+        ["Vaccine", "General eligibility", "Product / schedule"],
+        ["Influenza", "All adults", "Age-appropriate inactivated or recombinant vaccine each season. Avoid live intranasal vaccine during immunosuppression."],
+        ["COVID-19", "Current age/risk and immune-status guidance", "Use the current CDC formulation and dose schedule; immunocompromised schedules may differ."],
+        ["Pneumococcal", "All adults 50+; ages 19-49 with chronic lung disease or qualifying immunosuppression", "PCV20 or PCV21 alone, or PCV15 then PPSV23 ordinarily after 1 year (minimum 8 weeks in selected immunocompromised patients). Prior vaccination changes the schedule."],
+        ["RSV", "All adults 75+; ages 50-74 at increased risk, including chronic lung disease or significant immune compromise", "One dose of Arexvy, Abrysvo or mResvia. Not annual; no routine repeat after a prior dose. Pregnancy has separate Abrysvo guidance."],
+        ["Zoster", "Adults 50+; immunocompromised adults 19+", "Shingrix 2 doses, usually 2-6 months apart; 1-2 months may be appropriate in selected immunocompromised patients."],
+        ["Tdap / Td", "Primary-series and Tdap history", "Tdap if needed, then Td or Tdap every 10 years. Pregnancy, wound care and incomplete primary series have separate schedules."],
+        ["Hepatitis B / A", "HepB routinely ages 19-59; older adults by risk/request. HepA by risk, including chronic liver disease", "Select a licensed product and complete its schedule; reconcile serology and previous doses, especially before immunosuppression."],
+      ] },
+  };
+  return { DRUGS, SOURCES, REFERENCES };
+});
