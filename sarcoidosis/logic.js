@@ -94,6 +94,7 @@
     const id = drugFor(d), drug = C.DRUGS[id], blockers = [];
     const need = (test, text) => { if (!test) blockers.push(text); };
     if (!drug) return { id, blockers: ["Select the medication."], text: "" };
+    need(urgentKeys.every(key => d[key] === false), "Complete the warning-symptom review before a definitive routine outpatient prescription. Unassessed findings are not negative findings.");
     need(r.findings.diagnosisSupported, "Clarify diagnostic support before starting systemic treatment.");
     need(d.compatible !== false && d.pathology !== "other", "Resolve conflicting clinical/radiographic or pathology evidence before a new systemic prescription.");
     if (["cardiac", "ocular", "neuro"].some(k => d[k] === "suspected")) need(d.organSafety === true, "Assess the new high-risk organ concern and confirm the appropriateness of an outpatient pulmonary treatment plan.");

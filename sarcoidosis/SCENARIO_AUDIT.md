@@ -4,11 +4,11 @@ Review date: October 16, 2026. Branch: `codex/sarcoidosis-guided-soap`.
 
 ## Automated Coverage
 
-- 42 sarcoidosis test cases, generating and checking 890 valid synthetic SOAP drafts. No patient records or source data are used.
+- 43 sarcoidosis test cases, generating and checking 895 valid synthetic SOAP drafts. No patient records or source data are used.
 - Includes a 576-combination drug/activity/indication/review matrix and 126 urgent-feature/context/strategy combinations, plus focused diagnostic, dosing, taper, screening, vaccine and documentation cases.
 - Every valid draft retains the shared clinical actions and resolves their references. Assertions check SOAP sections, numeric integrity and absence of invented examination, vaccine administration or completed counseling.
 - Boundary checks cover weekly MTX, eGFR, delivered dose increments, TPMT/NUDT15, interacting drugs, HCQ weight limits, TNF initiation versus maintenance, switching, combined treatment, current infusion units and steroid exposure before cessation.
-- All 440 combined sarcoidosis, asthma, COPD, PERT and OHCA regression tests passed locally. The existing asthma and COPD browser suites also passed.
+- All 441 combined sarcoidosis, asthma, COPD, PERT and OHCA regression tests passed locally. The existing asthma and COPD browser suites also passed.
 - Sarcoidosis browser verification covers actual guided entry, retained answers, editable schedules, drug-specific safety, selected pneumococcal product, urgent priority, staged taper, clipboard agreement, stale-output protection, keyboard focus and regeneration without viewport movement at 320/390/768/1280 px widths.
 
 ## Suggested Clinical Review Encounters

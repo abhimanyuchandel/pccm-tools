@@ -42,6 +42,7 @@ This adult U.S. pulmonary-led follow-up tool distinguishes guideline recommendat
 
 - Clinical entries remain in page memory only. No backend, storage, query-string serialization or patient-data requests are added.
 - Unknown consequential answers never become negative findings. Deliberate negative-review shortcuts apply only to the displayed group. Routine adherence/access concerns are exception checkboxes.
+- A definitive new routine outpatient prescription requires completion of the warning-symptom review. This conservative implementation safeguard does not turn a missing answer into an absent symptom; general guidance and an editable draft remain available.
 - Vaccine ordering review includes age/risk, explicit immune-status assessment and prior pneumococcal products. Low-dose steroid exposure alone does not automatically establish immunocompromised vaccine eligibility. Previous PCV20/21 does not generate a routine additional pneumococcal dose. Other previous products require a history-specific schedule rather than guessed timing.
 - Hidden clinical measurements and urgent findings remain effective. Inactive proposed dose schedules do not contaminate another treatment decision.
 - Selected action text drives both displayed recommendations and SOAP. Completed counseling, administration, consent, normal examination, or treatment response is never invented.

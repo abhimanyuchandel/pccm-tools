@@ -68,6 +68,9 @@ test("missing or failed prerequisites yield a testing plan, not an invented pres
     const { r, note } = evaluate(values); assert.ok(r.prescription.blockers.length, id + ":" + flag); assert.ok(!r.actions.some(a => a.id === "prescription")); assert.match(note, /Proposed regimen remains pending/);
   }
 });
+test("unassessed warning symptoms do not safety-clear a definitive outpatient prescription", () => {
+  for (const key of L.urgentKeys) { const { r } = evaluate(drug("methotrexate", { [key]: null })); assert.ok(r.prescription.blockers.some(t => t.includes("warning-symptom"))); assert.ok(!r.actions.some(a => a.id === "prescription")); }
+});
 test("methotrexate renal, interaction, dose-delivery and reproductive boundaries", () => {
   for (const egfr of [0, 29.9, 30, 59.9, null]) { const { r } = evaluate(drug("methotrexate", { renalFunction: egfr })); assert.ok(r.prescription.blockers.some(t => t.includes("eGFR"))); }
   for (const egfr of [60, 90]) { const { r } = evaluate(drug("methotrexate", { renalFunction: egfr })); assert.deepEqual(r.prescription.blockers, []); }

@@ -48,9 +48,15 @@
       const table = el("table", "reference-table"); table.setAttribute("role", "table");
       table.append(el("caption", "sr-only", r.title));
       const head = el("thead"), header = el("tr"), body = el("tbody");
+      head.setAttribute("role", "rowgroup"); header.setAttribute("role", "row"); body.setAttribute("role", "rowgroup");
       r.table[0].forEach(t => { const cell = el("th", "", t); cell.scope = "col"; header.append(cell); }); head.append(header);
       r.table.slice(1).forEach(row => { const tr = el("tr"); row.forEach((t, i) => { const cell = el(i === 0 ? "th" : "td"); if (!i) { cell.scope = "row"; cell.textContent = t; } else { const label = el("span", "mobile-label", r.table[0][i]); label.setAttribute("aria-hidden", "true"); cell.append(label, el("span", "", t)); } tr.append(cell); }); body.append(tr); });
-      table.append(head, body); d.append(table);
+      table.append(head, body);
+      table.querySelectorAll("tr").forEach(n => n.setAttribute("role", "row"));
+      table.querySelectorAll("thead th").forEach(n => n.setAttribute("role", "columnheader"));
+      table.querySelectorAll("tbody th").forEach(n => n.setAttribute("role", "rowheader"));
+      table.querySelectorAll("td").forEach(n => n.setAttribute("role", "cell"));
+      d.append(table);
     }
     d.append(el("p", "", r.text), sourceLinks(r.sources)); return d;
   }
