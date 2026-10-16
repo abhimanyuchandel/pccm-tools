@@ -103,7 +103,7 @@ async function main() {
     await go("available-data"); await set("includePft", true); await go("pft");
     await page.getByRole("button", { name: "Add PFT", exact: true }).click(); await page.locator("#study-edit-pft-fvc").fill("70"); await page.locator("#study-edit-pft-role").selectOption("current"); await page.getByRole("button", { name: "Save result", exact: true }).click();
     await go("available-data"); await set("includePft", false);
-    await go("followup"); await generate(); assert.match(await note(), /Pulmonary function history/); assert.match(await note(), /FVC \(% predicted\)/); assert.match(await note(), /70/);
+    await go("followup"); await generate(); assert.match(await note(), /Pulmonary function history/); assert.match(await note(), /FVC: 70% pred/); assert.match(await note(), /70/);
     assert.ok(await page.getByText("Pulmonary function history", { exact: true }).count());
     await go("context"); await set("age", 17); await go("followup");
     await page.locator("#generate-btn").click(); assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await note(), "");

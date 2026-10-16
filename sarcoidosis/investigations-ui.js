@@ -5,9 +5,10 @@
   const button = (text, fn, cls = "secondary") => { const b = el("button", cls, text); b.type = "button"; b.addEventListener("click", fn); return b; };
   async function copy(text, html) {
     if (window.ClipboardItem && navigator.clipboard?.write) {
-      try { await navigator.clipboard.write([new ClipboardItem({ "text/plain": new Blob([text], { type: "text/plain" }), "text/html": new Blob([html], { type: "text/html" }) })]); return; } catch { /* Text-only copying remains available when rich clipboard access is restricted. */ }
+      try { await navigator.clipboard.write([new ClipboardItem({ "text/plain": new Blob([text], { type: "text/plain" }), "text/html": new Blob([html], { type: "text/html" }) })]); return "formatted"; } catch { /* Text-only copying remains available when rich clipboard access is restricted. */ }
     }
     await navigator.clipboard.writeText(text);
+    return "text";
   }
   function renderTable(kind, bundle) {
     const model = I.table(kind, bundle), table = el("table", "study-table"); table.setAttribute("role", "table"); table.dataset.kind = kind;
@@ -44,6 +45,7 @@
       const rerender = () => {
         const active = document.activeElement, id = active?.id, name = active?.getAttribute("aria-label");
         controlsOpen = root.querySelector(".study-row-controls")?.open ?? controlsOpen;
+        if (drafts[kind] && root.querySelector(".study-optional")) drafts[kind].optionalOpen = root.querySelector(".study-optional").open;
         root.replaceChildren(); draw();
         const restored = id ? [...root.querySelectorAll("[id]")].find(n => n.id === id) : name ? [...root.querySelectorAll("[aria-label]")].find(n => n.getAttribute("aria-label") === name) : null;
         const error = [...root.querySelectorAll(".study-errors")].find(n => n.children.length);
@@ -97,14 +99,55 @@
       }
       function drawEditor() {
         const draft = drafts[kind], form = el("div", "study-editor"), fields = el("div", "study-editor-grid");
+        if (kind === "pft") Object.assign(draft.row, I.resolveRatio(draft.row));
         const optional = el("details", "study-optional"), optionalFields = el("div", "study-editor-grid");
         if (report) {
           form.classList.add("report-editor");
           optional.append(el("summary", "", kind === "echo" ? "Optional inputs | Measurements and report details" : "Optional inputs | Report details"));
-          optional.open = def.fields.some(f => !def.primaryFields.includes(f.key) && draft.row[f.key] != null && draft.row[f.key] !== "" && !["unknown", "history"].includes(draft.row[f.key]));
+          draft.optionalOpen ??= def.fields.some(f => !def.primaryFields.includes(f.key) && draft.row[f.key] != null && draft.row[f.key] !== "" && !["unknown", "history"].includes(draft.row[f.key]));
+          optional.open = draft.optionalOpen;
+          optional.addEventListener("toggle", () => { if (drafts[kind] === draft) draft.optionalOpen = optional.open; });
         }
         form.append(el("h3", "", draft.row.id ? `Edit ${def.singular}${report ? " report" : ""}` : addLabel));
+        function dateField() {
+          const box = el("div", "study-edit-field"), id = "study-edit-" + kind + "-date", label = el("label", "field-label", "Study date"); label.htmlFor = id;
+          if (!draft.dateMode) draft.dateMode = draft.row.date?.length === 4 ? "year" : draft.row.date?.length === 7 ? "month" : "date";
+          draft.dateValues ||= {}; draft.dateValues[draft.dateMode] = draft.row.date || "";
+          const controls = el("div", "study-date-control"), input = el("input"); input.id = id; input.type = draft.dateMode === "year" ? "number" : draft.dateMode;
+          input.autocomplete = "off"; input.min = draft.dateMode === "year" ? "1900" : draft.dateMode === "month" ? "1900-01" : "1900-01-01";
+          input.max = draft.dateMode === "year" ? "2200" : draft.dateMode === "month" ? "2200-12" : "2200-12-31";
+          if (draft.dateMode === "year") { input.inputMode = "numeric"; input.step = "1"; input.placeholder = "YYYY"; }
+          input.value = draft.row.date || ""; input.setAttribute("aria-describedby", id + "-hint");
+          input.addEventListener("input", () => { draft.row.date = input.value; draft.dateValues[draft.dateMode] = input.value; invalidate(); }); controls.append(input);
+          if (draft.dateMode !== "year") {
+            const picker = button("Calendar", () => { try { if (input.showPicker) input.showPicker(); else input.focus(); } catch { input.focus(); } });
+            picker.setAttribute("aria-label", "Open calendar for " + def.singular + " date"); controls.append(picker);
+          }
+          const options = el("div", "study-date-options"), precisionLabel = el("label", "sr-only", "Date precision"), precision = el("select");
+          precision.id = "study-date-precision-" + kind; precisionLabel.htmlFor = precision.id;
+          [["date", "Exact date"], ["month", "Month and year only"], ["year", "Year only"]].forEach(([v, t]) => { const o = el("option", "", t); o.value = v; precision.append(o); }); precision.value = draft.dateMode;
+          precision.addEventListener("change", () => {
+            const old = draft.row.date || "", mode = precision.value;
+            draft.dateValues[draft.dateMode] = old;
+            draft.row.date = draft.dateValues[mode] ?? (mode === "year" && /^\d{4}/.test(old) ? old.slice(0, 4) : mode === "month" && /^\d{4}-\d{2}/.test(old) ? old.slice(0, 7) : "");
+            draft.dateMode = mode; invalidate(); rerender();
+          });
+          options.append(precisionLabel, precision);
+          const help = el("p", "hint", "Choose a date or type it. Use month/year or year only for incomplete records; leave unavailable dates blank."); help.id = id + "-hint";
+          box.append(label, controls, options, help); return box;
+        }
+        function ratioPreview() {
+          if (kind !== "pft") return;
+          Object.assign(draft.row, I.resolveRatio(draft.row));
+          const input = form.querySelector("#study-edit-pft-ratio"), hint = form.querySelector(".ratio-hint"); if (!input || !hint) return;
+          const automatic = draft.row.ratioSource === "calculated", ratio = I.calculatedRatio(draft.row);
+          input.readOnly = automatic; input.setAttribute("aria-readonly", String(automatic));
+          if (automatic) input.value = draft.row.ratio == null ? "" : Number(draft.row.ratio.toFixed(3));
+          hint.textContent = automatic ? ratio != null ? "Calculated from FEV1 (L) divided by FVC (L). Use values from the same test and bronchodilator conditions." : Number.isFinite(draft.row.fev1L) && Number.isFinite(draft.row.fvcL) && draft.row.fev1L > draft.row.fvcL ? "Verify the volumes: FEV1 cannot exceed FVC for this calculation." : "Enter both FEV1 and FVC in liters to calculate the ratio. Percent-predicted values cannot be used." : "The reported ratio is retained" + (ratio != null ? `. From the entered volumes: ${Number(ratio.toFixed(3))}.` : ".");
+        }
         def.fields.forEach(f => {
+          if (kind === "pft" && f.key === "ratioSource") return;
+          if (f.type === "date") { fields.append(dateField()); return; }
           const box = el("div", "study-edit-field"), label = el("label", "field-label", report && f.key === "date" ? "Study date" : f.label), id = "study-edit-" + kind + "-" + f.key;
           label.htmlFor = id; let input;
           if (f.type === "choice" || f.type === "role") {
@@ -124,16 +167,30 @@
             }
           }
           input.id = id; input.autocomplete = "off";
-          input.addEventListener("input", () => { draft.row[f.key] = f.type === "number" ? input.value === "" ? null : input.valueAsNumber : input.value; invalidate(); });
+          input.addEventListener("input", () => { draft.row[f.key] = f.type === "number" ? input.value === "" ? null : input.valueAsNumber : input.value; invalidate(); if (["fvcL", "fev1L", "ratio"].includes(f.key)) ratioPreview(); });
           box.append(label, input);
+          if (kind === "pft" && f.key === "ratio") {
+            const toggle = el("label", "ratio-toggle"), reported = el("input"); reported.type = "checkbox"; reported.id = "study-ratio-reported"; reported.checked = draft.row.ratioSource === "reported";
+            reported.addEventListener("change", () => {
+              if (!reported.checked) draft.reportedRatio = draft.row.ratio;
+              draft.row.ratioSource = reported.checked ? "reported" : "calculated";
+              if (reported.checked) draft.row.ratio = draft.reportedRatio ?? null;
+              invalidate(); ratioPreview(); if (reported.checked) { input.value = draft.row.ratio ?? ""; input.focus({ preventScroll: true }); }
+            });
+            toggle.append(reported, el("span", "", "Enter a reported ratio instead"));
+            const hint = el("p", "hint ratio-hint"); hint.id = id + "-hint"; hint.setAttribute("aria-live", "polite"); input.setAttribute("aria-describedby", hint.id); box.append(toggle, hint);
+          }
           if (report && f.key === "impression") { const help = el("p", "hint", "Paste the conclusion only, without patient identifiers or report headers. You do not need to extract measurements or reformat the text."); help.id = id + "-hint"; box.append(help); }
           (report && !def.primaryFields.includes(f.key) ? optionalFields : fields).append(box);
         });
         form.append(fields);
+        ratioPreview();
         if (report) { optional.append(optionalFields); form.append(optional); }
         const errors = el("div", "study-errors"); errors.setAttribute("role", "alert"); draft.errors.forEach(t => errors.append(el("p", "", t))); form.append(errors);
         const actions = el("div", "study-toolbar"); actions.append(button(report ? "Save report" : "Save result", () => {
           const row = { ...draft.row }, parsed = I.parseDate(row.date); draft.errors = [];
+          const dateInput = form.querySelector("#study-edit-" + kind + "-date");
+          if (dateInput?.validity.badInput) draft.errors.push("Complete the study date, choose a partial-date format, or clear the date field if it is unavailable.");
           if (parsed === null) draft.errors.push("Use a valid date (YYYY-MM-DD, YYYY-MM, YYYY, or U.S. MM/DD/YYYY), or leave blank."); else row.date = parsed;
           const next = I.normalize(getBundle());
           row.id ||= `${kind}-${Date.now()}`;
@@ -144,7 +201,7 @@
           const normalized = I.normalize(next);
           draft.errors.push(...I.validate(normalized).map(e => e.text));
           if (next.records[kind].length > 100) draft.errors.push("Keep at most 100 results per investigation.");
-          if (!def.fields.some(f => !["date", "role"].includes(f.key) && row[f.key] != null && row[f.key] !== "" && row[f.key] !== "unknown")) draft.errors.push("Enter at least one measurement or report finding.");
+          if (!def.fields.some(f => !["date", "role", "ratioSource"].includes(f.key) && row[f.key] != null && row[f.key] !== "" && row[f.key] !== "unknown")) draft.errors.push("Enter at least one measurement or report finding.");
           if (draft.errors.length) { rerender(); return; }
           delete drafts[kind]; commit(normalized);
         }, "primary"), button("Cancel edit", () => { delete drafts[kind]; rerender(); }, "quiet")); form.append(actions); root.append(form);

@@ -14,12 +14,13 @@ async function main() {
       for (let i = 0; i < 90; i++) { if (await page.locator("#encounter").getAttribute("data-step") === id) return; if (!await page.locator("#next-btn").isVisible()) break; await page.locator("#next-btn").click(); }
       throw new Error("Could not reach " + id);
     }
-    const button = name => page.getByRole("button", { name, exact: true });
+    const button = name => name === "Copy note" ? page.locator("#copy-note-btn") : page.getByRole("button", { name, exact: true });
     async function setStudy(kind, values) {
       const report = ["echo", "ct"].includes(kind);
       await button({ pft: "Add PFT", walk: "Add 6MWT", echo: "Add echo report", ct: "Add CT report" }[kind]).click();
       if (report && Object.keys(values).some(k => !["date", "impression"].includes(k))) await page.locator(".study-optional > summary").click();
       for (const [key, value] of Object.entries(values)) {
+        if (key === "date") await page.locator("#study-date-precision-" + kind).selectOption(String(value).length === 7 ? "month" : String(value).length === 4 ? "year" : "date");
         const input = page.locator(`#study-edit-${kind}-${key}`);
         if (await input.evaluate(n => n.tagName) === "SELECT") await input.selectOption(value);
         else await input.fill(String(value));
@@ -39,6 +40,22 @@ async function main() {
     await go("available-data");
     for (const key of ["includePft", "includeWalk", "includeEcho", "includeCt"]) await page.locator("#field-" + key).check();
     await go("pft");
+    await button("Add PFT").click();
+    assert.equal(await page.locator("#study-edit-pft-date").getAttribute("type"), "date");
+    await page.locator("#study-edit-pft-date").evaluate(n => { n.showPicker = () => { n.dataset.calendarOpened = "true"; }; });
+    await page.getByRole("button", { name: "Open calendar for PFT date", exact: true }).click(); assert.equal(await page.locator("#study-edit-pft-date").getAttribute("data-calendar-opened"), "true");
+    await page.locator("#study-edit-pft-date").fill("2026-10-16");
+    await page.locator("#study-date-precision-pft").selectOption("month"); assert.equal(await page.locator("#study-edit-pft-date").inputValue(), "2026-10");
+    await page.locator("#study-date-precision-pft").selectOption("year"); assert.equal(await page.locator("#study-edit-pft-date").inputValue(), "2026");
+    await page.locator("#study-date-precision-pft").selectOption("date"); assert.equal(await page.locator("#study-edit-pft-date").inputValue(), "2026-10-16");
+    await page.locator("#study-edit-pft-fvc").fill("80"); await page.locator("#study-edit-pft-fev1").fill("76"); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "");
+    await page.locator("#study-edit-pft-fvcL").fill("3.2"); await page.locator("#study-edit-pft-fev1L").fill("2.4"); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "0.75"); assert.ok(await page.locator("#study-edit-pft-ratio").evaluate(n => n.readOnly));
+    await page.locator("#study-edit-pft-fev1L").fill("1.6"); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "0.5");
+    await page.locator("#study-ratio-reported").check(); await page.locator("#study-edit-pft-ratio").fill("0.76"); await page.locator("#study-edit-pft-fev1L").fill("2.4"); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "0.76");
+    await page.locator("#study-ratio-reported").uncheck(); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "0.75");
+    await page.locator("#study-edit-pft-fvcL").fill(""); assert.equal(await page.locator("#study-edit-pft-ratio").inputValue(), "");
+    await bounds(); await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-calendar-ratio-desktop.png" }); await button("Cancel edit").click();
+    await button("Add PFT").click(); await page.locator("#study-date-precision-pft").selectOption("month"); await page.locator("#study-edit-pft-date").fill("2025-10"); await page.locator("#study-date-precision-pft").selectOption("date"); assert.equal(await page.locator("#study-edit-pft-date").inputValue(), "", "A partial date must not acquire an invented day"); await button("Cancel edit").click();
     await setStudy("pft", { date: "2025-10", fvcL: 3.2, fvc: 80, fev1L: 2.6, fev1: 78, dlco: 70, context: "pre", role: "comparison" });
     await setStudy("pft", { date: "2026-10-16", fvcL: 3.1, fvc: 78, fev1L: 2.5, fev1: 76, dlco: 64, context: "pre", role: "current" });
     assert.match(await page.locator(".study-table").textContent(), /3.1 L \/ 78% pred/);
@@ -50,6 +67,7 @@ async function main() {
     const clipHtml = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return await (await items[0].getType("text/html")).text(); }); assert.match(clipHtml, /<table/);
     await importText("pft", pftText); await bounds(); await button("Apply reviewed results").click(); assert.match(await page.locator(".study-copy-status").textContent(), /0 results added; 2 exact duplicates skipped/);
     await go("walk");
+    await button("Add 6MWT").click(); assert.equal(await page.locator("#study-edit-walk-date").getAttribute("type"), "date"); assert.ok(await page.getByRole("button", { name: "Open calendar for 6MWT date", exact: true }).isVisible()); await button("Cancel edit").click();
     await importText("walk", "Date\tDistance (ft)\tResting SpO2 (%)\tNadir SpO2 (%)\tOxygen conditions\tOxygen flow (L/min)\n2025-10\t1000\t94\t89\tSupplemental oxygen\t2\n2026-10-16\t1100\t93\t88\tSupplemental oxygen\t2");
     assert.match(await page.locator(".study-import").textContent(), /converted to meters/); await button("Apply reviewed results").click();
     assert.equal(await page.locator("#urgent-alert").isVisible(), false);
@@ -63,7 +81,8 @@ async function main() {
     assert.equal(await page.locator(".study-optional").evaluate(n => n.open), false);
     assert.equal(await page.locator("#study-edit-echo-lvef").isVisible(), false);
     assert.equal(await page.locator("#study-edit-echo-impression").getAttribute("maxlength"), null);
-    await page.locator("#study-edit-echo-date").fill("09/01/2025");
+    assert.equal(await page.locator("#study-edit-echo-date").getAttribute("type"), "date");
+    await page.locator("#study-edit-echo-date").fill("2025-09-01");
     const echoConclusion = "1. Left ventricular systolic function is preserved.\n2. No estimate of RVSP was available.";
     await page.evaluate(text => navigator.clipboard.writeText(text), echoConclusion); await page.locator("#study-edit-echo-impression").focus(); await page.keyboard.press("ControlOrMeta+V");
     assert.equal(await page.locator("#study-edit-echo-impression").inputValue(), echoConclusion);
@@ -87,15 +106,22 @@ async function main() {
     for (const name of ["Pulmonary function history", "Six-minute walk history", "Echocardiography history", "Chest CT / HRCT history"]) assert.match(await note(), new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(await note(), /55-60/); assert.match(await note(), /335.28/); assert.match(await note(), /FVC change: -2 percentage points/); assert.match(await note(), /<uncertain>/);
     assert.ok((await note()).includes(echoConclusion)); assert.match(await note(), /2025-09-01/); assert.match(await note(), /2026-03-01/);
-    assert.equal(await page.locator("#note-tables table").count(), 4);
-    await button("Copy note").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
+    assert.equal(await page.locator("#note-preview table").count(), 4);
+    assert.deepEqual(await page.locator("#note-preview h3").allTextContents(), ["Subjective", "Objective", "Assessment", "Plan"]);
+    await page.locator("#copy-note-bottom-btn").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
     const noteHtml = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return await (await items[0].getType("text/html")).text(); });
     assert.equal((noteHtml.match(/<table /g) || []).length, 4); assert.match(noteHtml, /&lt;uncertain&gt;/); assert.doesNotMatch(noteHtml, /<script/);
+    const destination = await context.newPage(); await destination.goto(base); await destination.setContent('<label for="editor">Synthetic EMR-style rich editor</label><div id="editor" contenteditable="true"></div>');
+    await destination.locator("#editor").focus(); await destination.keyboard.press("ControlOrMeta+V");
+    assert.equal(await destination.locator("#editor table").count(), 4); assert.match(await destination.locator("#editor").textContent(), /2025-09-01/); assert.match(await destination.locator("#editor").textContent(), /55-60/);
+    await destination.close(); await page.bringToFront();
+    await page.locator("#copy-note-text-btn").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("copied as plain text")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note()); assert.doesNotMatch(await note(), /\t/);
     await bounds(); await page.locator(".note-card").screenshot({ path: "/tmp/sarcoidosis-investigations-note-desktop.png" });
-    await page.setViewportSize({ width: 390, height: 900 }); await page.locator("#note-tables").screenshot({ path: "/tmp/sarcoidosis-investigations-note-mobile.png" });
+    await page.setViewportSize({ width: 390, height: 900 }); assert.ok(await page.locator("#note-preview table").evaluateAll(nodes => nodes.every(n => getComputedStyle(n).display === "table")));
+    await page.locator("#note-preview").screenshot({ path: "/tmp/sarcoidosis-investigations-note-mobile.png" });
     await go("pft");
     await button("Add PFT").click(); await page.locator("#study-edit-pft-fvc").fill("75"); await go("followup"); await page.locator("#generate-btn").click();
-    assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.match(await page.locator("#step-content").textContent(), /unfinished/);
+    for (const id of ["copy-note-btn", "copy-note-bottom-btn", "copy-note-text-btn"]) assert.equal(await page.locator("#" + id).isDisabled(), true); assert.match(await page.locator("#step-content").textContent(), /unfinished/);
     await go("pft"); assert.equal(await page.locator("#study-edit-pft-fvc").inputValue(), "75"); await button("Cancel edit").click();
     await importText("pft", "Date\tFVC\n2026\t76"); assert.equal(await button("Apply reviewed results").isDisabled(), true);
     await page.getByRole("combobox", { name: "Import column 2", exact: true }).focus(); await page.getByRole("combobox", { name: "Import column 2", exact: true }).selectOption("fvc"); assert.equal(await button("Apply reviewed results").isDisabled(), false);
@@ -111,7 +137,7 @@ async function main() {
     await button("Copy note").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("manual copying")); assert.match(await page.locator("#copy-status").textContent(), /manual copying/);
     await go("pft"); await page.locator(".study-row-controls > summary").click();
     await page.locator(".study-row-control").first().getByRole("button", { name: "Remove", exact: true }).click();
-    await generate(); assert.doesNotMatch(await note(), /FVC change:/); assert.equal(await page.locator("#note-tables .note-study").first().locator("tbody tr").count(), 1);
+    await generate(); assert.doesNotMatch(await note(), /FVC change:/); assert.equal(await page.locator("#note-preview table").first().locator("tbody tr").count(), 1);
     assert.deepEqual(posts, []); assert.deepEqual(external, []); assert.deepEqual(errors, []);
     assert.deepEqual(await page.evaluate(() => [Object.keys(localStorage), Object.keys(sessionStorage)]), [[], []]);
     await page.reload(); await go("available-data"); await page.locator("#field-includePft").check(); await go("pft"); assert.equal(await page.locator(".study-table").count(), 0);

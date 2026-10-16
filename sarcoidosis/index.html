@@ -7,15 +7,15 @@
     <meta name="description" content="Guided adult sarcoidosis follow-up, clinician-selected treatment and structured SOAP documentation.">
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="/sarcoidosis/styles.css?v=20261016-3">
-    <script defer src="/sarcoidosis/input-schema.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/medications.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/investigations.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/logic.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/workflow.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/notes.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/investigations-ui.js?v=20261016-3"></script>
-    <script defer src="/sarcoidosis/app.js?v=20261016-3"></script>
+    <link rel="stylesheet" href="/sarcoidosis/styles.css?v=20261016-4">
+    <script defer src="/sarcoidosis/input-schema.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/medications.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/investigations.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/logic.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/workflow.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/notes.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/investigations-ui.js?v=20261016-4"></script>
+    <script defer src="/sarcoidosis/app.js?v=20261016-4"></script>
   </head>
   <body>
     <a class="skip-link" href="#encounter">Skip to encounter</a>
@@ -54,13 +54,14 @@
         <p id="output-status" class="status-line" role="status"></p>
         <div id="results-content"></div>
         <article class="result-card note-card">
-          <div class="section-heading"><h2>Copy/Paste Clinical Note</h2><button id="copy-note-btn" type="button" class="primary" disabled>Copy note</button></div>
+          <div class="section-heading note-toolbar"><h2>Copy/Paste Clinical Note</h2><div class="note-copy-actions"><button id="copy-note-btn" type="button" class="primary" disabled>Copy note to clipboard</button><button id="copy-note-text-btn" type="button" class="secondary" disabled>Copy text-only</button></div></div>
           <p class="muted">Editable clinical draft. Complete the *** placeholders and verify the selected plan against the actual encounter before EMR insertion. No administration or completed counseling is assumed.</p>
           <p id="copy-status" class="status-line" role="status"></p>
-          <div id="note-tables" aria-label="Investigation tables included in the copied note"></div>
-          <p class="hint">Copy note includes formatted tables where your EMR supports them. The text version below retains all dates, units and values for systems that accept plain text.</p>
-          <label class="sr-only" for="note-output">SOAP clinical note</label>
-          <textarea id="note-output" readonly spellcheck="false"></textarea>
+          <p class="hint">Copy note includes real tables and a text fallback. Paste normally to retain formatting where supported. If your EMR removes tables, use Copy text-only for dated, labelled results. EMR formatting varies.</p>
+          <p class="hint note-scroll-hint">Scroll within each table to see additional columns on smaller screens.</p>
+          <div id="note-preview" class="note-preview" role="region" aria-label="Formatted SOAP clinical draft"></div>
+          <details id="plain-note" class="plain-note"><summary>Plain-text version / manual copy</summary><label class="sr-only" for="note-output">SOAP clinical note, plain text</label><textarea id="note-output" readonly spellcheck="false"></textarea></details>
+          <div class="note-copy-footer"><button id="copy-note-bottom-btn" type="button" class="primary" disabled>Copy note to clipboard</button><p id="copy-status-bottom" class="status-line" aria-hidden="true"></p></div>
         </article>
       </section>
       <footer class="footer">

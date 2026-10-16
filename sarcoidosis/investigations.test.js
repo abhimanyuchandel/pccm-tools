@@ -145,10 +145,49 @@ test("reported echo ranges and qualifiers are retained, not replaced by calculat
 test("clinical note includes every table, date and role without duplicating scalar data", () => {
   const b = I.empty(); I.kinds.forEach(k => { b.records[k] = fixtures[k]; b.selections[k] = { current: "a", comparison: "b" }; });
   const r = L.buildRecommendation({ studies: b }), note = N.buildNoteText(r), html = N.buildNoteHtml(r);
-  assert.equal(r.invalid, false); I.kinds.forEach(k => assert.ok(note.includes(I.plainTable(k, r.data.studies))));
+  assert.equal(r.invalid, false); I.kinds.forEach(k => assert.ok(note.includes(I.noteTableText(k, r.data.studies))));
+  I.kinds.forEach(k => assert.ok(N.buildNoteText(r, { tables: "tsv" }).includes(I.plainTable(k, r.data.studies))));
   assert.equal((html.match(/<table /g) || []).length, 4); assert.doesNotMatch(note, /Current FVC:|6MWT distance:/); assert.match(note, /FVC change: -2 percentage points/);
   for (const action of r.actions) assert.ok(note.includes(action.text));
   assert.equal((note.match(/Interval history: \*\*\*/g) || []).length, 1);
+});
+test("FEV1/FVC automatically uses matching absolute volumes, not percent-predicted inputs", () => {
+  const b = bundle("pft", [{ id: "a", date: "2026-10-16", fvcL: 3.2, fev1L: 2.4, fvc: 80, fev1: 76 }]);
+  assert.ok(Math.abs(b.records.pft[0].ratio - .75) < Number.EPSILON); assert.equal(b.records.pft[0].ratioSource, "calculated");
+  const onlyPercent = bundle("pft", [{ id: "a", fvc: 80, fev1: 76 }]); assert.equal(onlyPercent.records.pft[0].ratio, null);
+  const note = N.buildNoteText(L.buildRecommendation({ studies: b })); assert.match(note, /FEV1\/FVC: 0.75 \(calculated\)/);
+});
+test("calculated ratios follow volume changes and clear when a prerequisite is removed", () => {
+  const b = bundle("pft", [{ id: "a", fvcL: 3.2, fev1L: 2.4 }]); b.records.pft[0].fev1L = 1.6;
+  assert.equal(I.normalize(b).records.pft[0].ratio, .5);
+  b.records.pft[0].fvcL = null; assert.equal(I.normalize(b).records.pft[0].ratio, null);
+});
+test("reported ratios and explicit empty reported entries are never overwritten by calculation", () => {
+  const b = bundle("pft", [{ id: "a", fvcL: 3.2, fev1L: 2.4, ratio: .76 }, { id: "b", fvcL: 3.2, fev1L: 2.4, ratio: null, ratioSource: "reported" }]);
+  assert.equal(b.records.pft[0].ratio, .76); assert.equal(b.records.pft[0].ratioSource, "reported"); assert.equal(b.records.pft[1].ratio, null);
+  b.records.pft[0].fev1L = 1.6; assert.equal(I.normalize(b).records.pft[0].ratio, .76);
+});
+test("invalid volumes never supply a ratio or a falsely valid clinical note", () => {
+  for (const values of [{ fvcL: 0, fev1L: 2 }, { fvcL: -3, fev1L: 2 }, { fvcL: 3, fev1L: 4 }, { fvcL: 3, fev1L: NaN }, { fvcL: 90, fev1L: 80 }]) {
+    assert.equal(I.calculatedRatio(values), null); const r = L.buildRecommendation({ studies: bundle("pft", [{ id: "a", ...values }]) }); assert.equal(r.invalid, true); assert.equal(N.buildNoteText(r), "");
+  }
+  assert.equal(I.calculatedRatio({ fvcL: 3, fev1L: 3 }), 1);
+});
+test("automatic ratio provenance survives copy/import and exact-result deduplication", () => {
+  const b = bundle("pft", [{ id: "a", date: "2026", fvcL: 3.1, fev1L: 2.5 }]);
+  const r = imported("pft", I.plainTable("pft", b)); assert.deepEqual(r.errors, []); assert.equal(r.records[0].ratioSource, "calculated"); assert.equal(r.records[0].ratio, 2.5 / 3.1);
+  const merged = I.merge(b, "pft", r.records); assert.equal(merged.added, 0); assert.equal(merged.duplicates, 1);
+  const fromVolumes = imported("pft", "Date\tFVC (L)\tFEV1 (L)\n2026\t3.1\t2.5"); assert.deepEqual(fromVolumes.errors, []); assert.equal(fromVolumes.records[0].ratioSource, "calculated"); assert.equal(I.merge(b, "pft", fromVolumes.records).added, 0);
+});
+test("importing a historical calculated ratio without source volumes preserves it as reported data", () => {
+  const r = imported("pft", "Date\tFEV1/FVC (ratio)\tFEV1/FVC source\n2025\t0.75\tCalculated from volumes");
+  assert.deepEqual(r.errors, []); assert.equal(r.records[0].ratio, .75); assert.equal(r.records[0].ratioSource, "reported"); assert.match(r.notices.join(), /retained as reported/);
+});
+test("formatted notes contain real bordered tables while text fallback needs no tabs or fixed-width font", () => {
+  const r = L.buildRecommendation({ studies: bundle("pft") }), html = N.buildNoteHtml(r), plain = N.buildNoteText(r);
+  assert.match(html, /<table[^>]*border="1"/); assert.match(html, /<thead><tr><th scope="col"/); assert.match(html, /<tbody><tr><td/); assert.doesNotMatch(html, /<ul|<li/);
+  assert.doesNotMatch(plain, /\t/); assert.match(plain, /2026-10-16 \| Encounter role: Current \| FVC: 3.1 L \/ 78% pred/);
+  assert.ok(html.includes("3.1 L / 78% pred")); assert.ok(plain.includes("3.1 L / 78% pred"));
 });
 test("HTML output escapes report text instead of executing it", () => {
   const b = bundle("ct", [{ id: "a", date: "2026", findings: '<img src=x onerror="alert(1)"> & <script>bad()</script>' }]);

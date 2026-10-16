@@ -6,7 +6,7 @@
   "use strict";
   const known = n => typeof n === "number" && Number.isFinite(n);
   const round = n => Number(n.toFixed(1));
-  function buildNoteText(r) {
+  function buildNoteText(r, options = {}) {
     if (r.invalid) return "";
     const d = r.data, f = r.findings, s = [], o = [], a = [], plan = [];
     const person = { male: "man", female: "woman", nonbinary: "nonbinary patient" }[d.gender] || "patient";
@@ -68,20 +68,21 @@
     if (r.emergency) a.push("Urgent findings require prompt assessment before routine outpatient planning.");
     r.actions.forEach((action, i) => plan.push(`${i + 1}. ${action.text}`));
     if (!r.emergency) r.placeholders.forEach(text => plan.push(`${plan.length + 1}. ${text}`));
-    const tables = d.studies ? I.kinds.filter(k => d.studies.records[k].length).map(k => I.definitions[k].title + " history\n" + I.plainTable(k, d.studies)).join("\n\n") : "";
+    const tables = d.studies ? I.kinds.filter(k => d.studies.records[k].length).map(k => I.definitions[k].title + " history\n" + (options.tables === "tsv" ? I.plainTable(k, d.studies) : I.noteTableText(k, d.studies))).join("\n\n") : "";
     return ["Subjective", s.join("\n\n"), "Objective", [tables, o.map(t => "- " + t).join("\n")].filter(Boolean).join("\n\n"), "Assessment", a.join(" "), "Plan", plan.join("\n\n")].join("\n\n");
   }
   function buildNoteHtml(r) {
-    let text = buildNoteText(r);
+    let text = buildNoteText(r, { tables: "tsv" });
     if (!text) return "";
     const replacements = [];
     if (r.data.studies) I.kinds.filter(k => r.data.studies.records[k].length).forEach(kind => {
       const token = `\u0000TABLE${replacements.length}\u0000`;
       text = text.replace(I.definitions[kind].title + " history\n" + I.plainTable(kind, r.data.studies), token);
-      replacements.push({ token, html: I.htmlTable(kind, r.data.studies) });
+      replacements.push({ token, html: I.htmlTable(kind, r.data.studies, true) });
     });
-    let html = I.escape(text).replace(/^(Subjective|Objective|Assessment|Plan)$/gm, "<strong>$1</strong>").replace(/\n/g, "<br>");
+    let html = I.escape(text).replace(/^(Subjective|Objective|Assessment|Plan)$/gm, '<h3 style="font:bold 16px/1.4 Arial,sans-serif;margin:16px 0 4px;color:#172d43">$1</h3>').replace(/\n/g, "<br>");
     replacements.forEach(({ token, html: table }) => { html = html.replace(token, () => table); });
+    html = html.replace(/(?:<br>)+(?=<(?:h3|table)\b)/g, "").replace(/(<\/(?:h3|table)>)(?:<br>)+/g, "$1");
     return `<div style="font:14px/1.5 Arial,sans-serif">${html}</div>`;
   }
   return { buildNoteText, buildNoteHtml };

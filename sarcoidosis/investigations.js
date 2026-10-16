@@ -14,6 +14,7 @@
       number("fvcL", "FVC (L)", .01, 12, ["fvc l", "fvc liters"]), number("fvc", "FVC (% predicted)", 1, 200, ["fvc %", "fvc % pred", "fvc percent predicted"]),
       number("fev1L", "FEV1 (L)", .01, 12, ["fev1 l", "fev1 liters"]), number("fev1", "FEV1 (% predicted)", 1, 200, ["fev1 %", "fev1 % pred", "fev1 percent predicted"]),
       number("ratio", "FEV1/FVC (ratio)", .01, 1, ["fev1/fvc", "fev1 fvc ratio"]),
+      { key: "ratioSource", label: "FEV1/FVC source", type: "choice", options: [["unknown", "Not documented"], ["calculated", "Calculated from volumes"], ["reported", "Reported ratio"]], aliases: ["ratio source"] },
       number("tlcL", "TLC (L)", .01, 20, ["tlc l"]), number("tlc", "TLC (% predicted)", 1, 250, ["tlc %", "tlc % pred"]),
       number("dlcoAbs", "DLCO (mL/min/mmHg)", .01, 100, ["dlco ml/min/mmhg"]), number("dlco", "DLCO (% predicted)", 1, 200, ["dlco %", "dlco % pred", "dlco percent predicted"]),
       { key: "context", label: "Bronchodilator context", type: "choice", options: [["unknown", "Not documented"], ["pre", "Pre-BD"], ["post", "Post-BD"]], aliases: ["context", "pre/post bd", "bd"] }, notes],
@@ -57,6 +58,14 @@
     return Number.isFinite(Date.parse(full)) && new Date(full).toISOString().slice(0, 10) === full ? date : null;
   }
   function empty() { return { records: Object.fromEntries(kinds.map(k => [k, []])), selections: Object.fromEntries(kinds.map(k => [k, { current: null, comparison: null }])) }; }
+  function calculatedRatio(row) {
+    const a = row.fev1L, b = row.fvcL;
+    return typeof a === "number" && typeof b === "number" && Number.isFinite(a) && Number.isFinite(b) && a >= .01 && b >= .01 && a <= 12 && b <= 12 && a <= b ? a / b : null;
+  }
+  function resolveRatio(row) {
+    const reported = row.ratioSource === "reported" || row.ratioSource !== "calculated" && row.ratio !== null && row.ratio !== undefined && row.ratio !== "";
+    return reported ? { ratio: row.ratio, ratioSource: "reported" } : { ratio: calculatedRatio(row), ratioSource: "calculated" };
+  }
   function normalize(input) {
     const out = empty();
     if (!input) return out;
@@ -72,6 +81,7 @@
           next[f.key] = f.type === "number" ? v === "" || v == null ? null : Number(v) : clean(v);
           if (f.type === "choice" && !f.options.some(([id]) => id === next[f.key])) next[f.key] = "unknown";
         });
+        if (kind === "pft") Object.assign(next, resolveRatio({ ...next, ratioSource: row.ratioSource }));
         return next;
       });
       for (const role of ["current", "comparison"]) {
@@ -104,6 +114,7 @@
           if (problem) errors.push({ key: "studies", text: `${definitions[kind].singular} row ${i + 1}, ${f.label}: ${problem}.` });
         });
         if (kind === "walk" && row.oxygen === "roomair" && row.flow > 0) errors.push({ key: "studies", text: `6MWT row ${i + 1}: room air conflicts with a positive supplemental oxygen flow.` });
+        if (kind === "pft" && Number.isFinite(row.fvcL) && Number.isFinite(row.fev1L) && row.fev1L > row.fvcL) errors.push({ key: "studies", text: `PFT row ${i + 1}: FEV1 (L) exceeds FVC (L). Verify the volumes, units and matching bronchodilator conditions before calculating the ratio.` });
       });
     });
     return errors;
@@ -124,12 +135,12 @@
   function rawTable(kind, bundle, compact = true) {
     const rows = order(bundle.records[kind]), fields = definitions[kind].fields;
     if (!compact) {
-      const used = fields.filter(f => ["date", "role"].includes(f.key) || rows.some(r => r[f.key] !== null && r[f.key] !== undefined && r[f.key] !== "" && r[f.key] !== "unknown"));
-      return { headers: used.map(f => f.label), rows: rows.map(r => used.map(f => f.type === "role" ? roleFor(bundle, kind, r) : displayField(f, r[f.key]))) };
+      const used = fields.filter(f => ["date", "role"].includes(f.key) || rows.some(r => (f.key !== "ratioSource" || r.ratio != null) && r[f.key] !== null && r[f.key] !== undefined && r[f.key] !== "" && r[f.key] !== "unknown"));
+      return { headers: used.map(f => f.label), rows: rows.map(r => used.map(f => f.type === "role" ? roleFor(bundle, kind, r) : f.key === "ratioSource" && r.ratio == null ? "Not documented" : f.key === "ratio" && r.ratioSource === "calculated" && Number.isFinite(r.ratio) ? String(Number(r.ratio.toFixed(3))) : displayField(f, r[f.key]))) };
     }
     const pair = (r, abs, pct, unit) => [r[abs] != null ? `${r[abs]} ${unit}` : "", r[pct] != null ? `${r[pct]}% pred` : ""].filter(Boolean).join(" / ") || "Not documented";
     const leading = r => [r.date || "Not documented", roleFor(bundle, kind, r)];
-    if (kind === "pft") return { headers: ["Date", "Encounter role", "FVC", "FEV1", "FEV1/FVC", "TLC", "DLCO", "Context / notes"], rows: rows.map(r => [...leading(r), pair(r, "fvcL", "fvc", "L"), pair(r, "fev1L", "fev1", "L"), value(r.ratio), pair(r, "tlcL", "tlc", "L"), pair(r, "dlcoAbs", "dlco", "mL/min/mmHg"), [displayField(fields.find(f => f.key === "context"), r.context), r.notes].filter(Boolean).join(". ")]) };
+    if (kind === "pft") return { headers: ["Date", "Encounter role", "FVC", "FEV1", "FEV1/FVC", "TLC", "DLCO", "Context / notes"], rows: rows.map(r => [...leading(r), pair(r, "fvcL", "fvc", "L"), pair(r, "fev1L", "fev1", "L"), r.ratio == null ? "Not documented" : Number(r.ratio.toFixed(3)) + (r.ratioSource === "calculated" ? " (calculated)" : ""), pair(r, "tlcL", "tlc", "L"), pair(r, "dlcoAbs", "dlco", "mL/min/mmHg"), [displayField(fields.find(f => f.key === "context"), r.context), r.notes].filter(Boolean).join(". ")]) };
     if (kind === "walk") return { headers: ["Date", "Encounter role", "Distance", "Rest / nadir SpO2", "Oxygen conditions", "Notes"], rows: rows.map(r => [...leading(r), r.distance != null ? `${r.distance} m` : "Not documented", r.rest == null && r.nadir == null ? "Not documented" : `${r.rest != null ? r.rest + "%" : "Not documented"} / ${r.nadir != null ? r.nadir + "%" : "Not documented"}`, [displayField(fields.find(f => f.key === "oxygen"), r.oxygen), r.flow != null ? `${r.flow} L/min` : "", r.device].filter(Boolean).join("; "), value(r.notes)]) };
     if (kind === "echo") return { headers: ["Date", "Encounter role", "LVEF", "RVSP / PASP", "RV / TR velocity", "Conclusion / impression / notes"], rows: rows.map(r => [...leading(r), r.lvef && !missing(r.lvef) ? `${r.lvef.replace(/%$/, "")}%` : "Not documented", r.rvsp || r.pasp ? [`RVSP ${value(r.rvsp)}`, `PASP ${value(r.pasp)}`].join("; ") + " mmHg" : "Not documented", [r.rv, r.trv != null ? `TRV ${r.trv} m/s` : ""].filter(Boolean).join("; ") || "Not documented", [r.impression, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
     return { headers: ["Date", "Encounter role", "Modality", "Reported findings", "Conclusion / impression", "Reported interval comparison / notes"], rows: rows.map(r => [...leading(r), displayField(fields.find(f => f.key === "modality"), r.modality), value(r.findings), value(r.impression), [r.comparison, r.notes].filter(Boolean).join("\n") || "Not documented"]) };
@@ -145,9 +156,13 @@
   }
   const quote = s => /[\t\n\r"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   function plainTable(kind, bundle) { const t = table(kind, bundle, false); return [t.headers, ...t.rows].map(row => row.map(v => quote(String(v))).join("\t")).join("\n"); }
-  function htmlTable(kind, bundle) {
-    const t = table(kind, bundle, false), cell = (tag, s) => `<${tag} style="border:1px solid #cbd5df;padding:7px;text-align:left;vertical-align:top;white-space:pre-wrap">${escape(s)}</${tag}>`;
-    return `<table style="border-collapse:collapse;font:12px Arial,sans-serif;width:100%"><caption style="text-align:left;font-weight:bold;padding:8px 0">${escape(definitions[kind].title)}</caption><thead><tr>${t.headers.map(s => cell("th", s)).join("")}</tr></thead><tbody>${t.rows.map(row => `<tr>${row.map(s => cell("td", s)).join("")}</tr>`).join("")}</tbody></table>`;
+  function noteTableText(kind, bundle) {
+    const t = table(kind, bundle);
+    return t.rows.map(row => row.map((v, i) => i === 0 ? v : `${t.headers[i]}: ${v}`).join(" | ")).join("\n");
+  }
+  function htmlTable(kind, bundle, compact = false) {
+    const t = table(kind, bundle, compact), cell = (tag, s, first) => `<${tag}${tag === "th" ? ' scope="col"' : ""} style="border:1px solid #aebdcc;padding:8px;text-align:left;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;${tag === "th" ? "background-color:#edf3f7;font-weight:bold;" : ""}${first ? "min-width:82px;" : ""}">${escape(s)}</${tag}>`;
+    return `<table class="clinical-table" border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;font:12px/1.5 Arial,sans-serif;width:100%;margin:14px 0;border:1px solid #aebdcc"><caption style="text-align:left;font-weight:bold;padding:8px 0">${escape(definitions[kind].title)} history</caption><thead><tr>${t.headers.map((s, i) => cell("th", s, !i)).join("")}</tr></thead><tbody>${t.rows.map(row => `<tr>${row.map((s, i) => cell("td", s, !i)).join("")}</tr>`).join("")}</tbody></table>`;
   }
   function delimited(text, delimiter) {
     const rows = []; let row = [], cell = "", quoted = false;
@@ -198,7 +213,7 @@
     const used = map.filter(Boolean), canonical = k => k === "distanceFt" ? "distance" : k === "ratioPct" ? "ratio" : k;
     const destinations = used.flatMap(k => combined[k] ? combined[k].slice(0, 2) : canonical(k));
     if (new Set(destinations).size !== destinations.length) errors.push("Map each destination field only once.");
-    if (!used.some(k => !["date", "role"].includes(k))) errors.push("Map at least one measurement or report field; ambiguous units are not assumed.");
+    if (!used.some(k => !["date", "role", "ratioSource"].includes(k))) errors.push("Map at least one measurement or report field; ambiguous units are not assumed.");
     const source = hasHeaders ? grid.slice(1) : grid;
     if (!source.length) errors.push("No result rows were found below the headings.");
     source.forEach((cells, i) => {
@@ -238,14 +253,19 @@
           if (row[dest] === "unknown" && raw.toLowerCase() !== "unknown") errors.push(`Row ${i + 1}, ${f.label}: select a recognized value or map this column to Notes instead.`);
         } else row[dest] = raw;
       });
-      if (definitions[kind].fields.every(f => ["date", "role"].includes(f.key) || row[f.key] == null || row[f.key] === "" || row[f.key] === "unknown")) errors.push(`Row ${i + 1}: no measurement or report content was recognized.`);
+      if (kind === "pft" && row.ratioSource === "calculated" && Number.isFinite(row.ratio) && (row.fvcL == null || row.fev1L == null)) {
+        row.ratioSource = "reported";
+        notices.push("A previously calculated ratio was retained as reported data because its source volumes are unavailable for recalculation.");
+      }
+      if (definitions[kind].fields.every(f => ["date", "role", "ratioSource"].includes(f.key) || row[f.key] == null || row[f.key] === "" || row[f.key] === "unknown")) errors.push(`Row ${i + 1}: no measurement or report content was recognized.`);
       records.push(row);
     });
     const bundle = empty(); bundle.records[kind] = records;
-    errors.push(...validate(normalize(bundle)).map(e => e.text));
+    const normalized = normalize(bundle); errors.push(...validate(normalized).map(e => e.text));
     if (map.some(k => !k)) notices.push("Unmapped columns will not be imported. Review their content before applying.");
     if (!map.includes("date")) notices.push("No date column is mapped. These results will be undated.");
-    return { records, errors: [...new Set(errors)], notices: [...new Set(notices)] };
+    if (kind === "pft" && normalized.records.pft.some(r => r.ratio != null && r.ratioSource === "calculated")) notices.push("FEV1/FVC was calculated from the same row's FEV1 and FVC in liters, not from percent-predicted values.");
+    return { records: normalized.records[kind].map((r, i) => ({ ...r, role: records[i].role })), errors: [...new Set(errors)], notices: [...new Set(notices)] };
   }
   const signature = (kind, row) => JSON.stringify(definitions[kind].fields.filter(f => f.type !== "role").map(f => row[f.key] ?? (f.type === "number" ? null : f.type === "choice" ? "unknown" : "")));
   function merge(bundle, kind, incoming, replace = false) {
@@ -253,7 +273,9 @@
     if (replace) next.selections[kind] = { current: null, comparison: null };
     const seen = new Map(rows.map(r => [signature(kind, r), r.id]));
     let added = 0, duplicates = 0;
-    incoming.forEach(row => {
+    const incomingBundle = empty(); incomingBundle.records[kind] = incoming;
+    normalize(incomingBundle).records[kind].forEach((normalizedRow, index) => {
+      const row = { ...normalizedRow, role: incoming[index].role };
       const sig = signature(kind, row); let id = seen.get(sig);
       if (id) duplicates++;
       else { id = `${kind}-${Date.now()}-${added}`; while (rows.some(r => r.id === id)) id += "x"; rows.push({ ...row, id }); seen.set(sig, id); added++; }
@@ -264,5 +286,5 @@
     next.records[kind] = rows;
     return { bundle: normalize(next), added, duplicates };
   }
-  return { definitions, kinds, combined, empty, normalize, validate, selected, project, order, roleFor, table, plainTable, htmlTable, escape, parseDate, parseGrid, transpose, mapping, importRows, merge };
+  return { definitions, kinds, combined, empty, normalize, validate, selected, project, order, roleFor, table, plainTable, noteTableText, htmlTable, calculatedRatio, resolveRatio, escape, parseDate, parseGrid, transpose, mapping, importRows, merge };
 });

@@ -3,7 +3,9 @@
   const L = window.sarcoidosisLogic, W = window.sarcoidosisWorkflow, N = window.sarcoidosisNotes, S = window.sarcoidosisSchema, C = window.sarcoidosisMedications, I = window.sarcoidosisInvestigations, T = window.sarcoidosisTables;
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
-  let state = { ...L.emptyState(), studies: I.empty() }, recommendation = L.buildRecommendation(state), steps = W.steps(state, recommendation), stepId = "context", generated = false, stale = true;
+  let state = { ...L.emptyState(), studies: I.empty() }, recommendation = L.buildRecommendation(state), steps = W.steps(state, recommendation), stepId = "context", generated = false, stale = true, noteRevision = 0;
+  const copyButtons = ["copy-note-btn", "copy-note-bottom-btn", "copy-note-text-btn"];
+  function copyStatus(text) { $("copy-status").textContent = text; $("copy-status-bottom").textContent = text; }
   const histories = T.create({ getBundle: () => state.studies, invalidate, update(bundle) {
     state = L.normalize({ ...state, studies: bundle, prescriptionReviewed: null });
     invalidate(); recompute(); renderProgress();
@@ -13,12 +15,11 @@
   function keepViewport(fn) { const x = scrollX, y = scrollY; fn(); window.scrollTo({ left: x, top: y, behavior: "instant" }); }
   function recompute() { const previous = steps; recommendation = L.buildRecommendation(state); steps = W.steps(state, recommendation); stepId = W.reconcileStep(stepId, steps, previous); renderUrgent(); }
   function invalidate() {
-    stale = true; $("copy-note-btn").disabled = true; $("note-output").value = "";
+    stale = true; noteRevision++; copyButtons.forEach(id => { $(id).disabled = true; }); $("note-output").value = "";
     $("output-status").textContent = generated ? "Inputs changed. Regenerate before copying." : "";
     $("output-status").classList.toggle("needs-review", generated);
     $("results").classList.toggle("stale-output", generated);
-    $("copy-status").textContent = "";
-    $("note-tables").replaceChildren();
+    copyStatus(""); $("note-preview").replaceChildren();
     $("regenerate-btn").classList.remove("success"); $("regenerate-btn").textContent = "Regenerate recommendations";
     const b = $("generate-btn"); if (b) { b.classList.remove("success"); b.textContent = "Generate recommendations"; }
     $("note-output").closest("article").classList.add("stale");
@@ -182,10 +183,14 @@
       if (recommendation.prescription?.blockers.length || recommendation.taper?.blockers.length) out.append(blockersBox());
       if (recommendation.placeholders.length) { const box = el("article", "result-card"); box.append(el("h3", "", "Decisions to complete")); recommendation.placeholders.forEach(t => box.append(el("p", "", t))); out.append(box); }
       if (recommendation.cautions.length || recommendation.warnings.length) { const box = el("details", "result-card"); box.append(el("summary", "", "Safety checks and interpretation")); [...recommendation.cautions, ...recommendation.warnings.map(w => w.text)].forEach(t => box.append(el("p", "", t))); out.append(box); }
-      $("note-output").value = N.buildNoteText(recommendation); $("copy-note-btn").disabled = recommendation.invalid; $("note-output").closest("article").classList.remove("stale");
-      const noteTables = $("note-tables"); noteTables.replaceChildren();
-      if (!recommendation.invalid) I.kinds.filter(k => state.studies.records[k].length).forEach(kind => {
-        const section = el("section", "note-study"); section.append(el("h3", "", I.definitions[kind].title + " history"), T.renderTable(kind, state.studies)); noteTables.append(section);
+      noteRevision++; copyStatus("");
+      $("note-output").value = N.buildNoteText(recommendation); copyButtons.forEach(id => { $(id).disabled = recommendation.invalid; }); $("note-output").closest("article").classList.remove("stale");
+      // Only the escaped, internally generated clinical-note HTML is rendered here; never pasted HTML.
+      const preview = $("note-preview"); preview.innerHTML = N.buildNoteHtml(recommendation);
+      preview.querySelectorAll("table").forEach(table => {
+        const wrap = el("div", "note-table-wrap"); wrap.tabIndex = 0; wrap.setAttribute("role", "region"); wrap.setAttribute("aria-label", table.caption.textContent + " comparison table");
+        if (table.rows[0].cells.length > 3) table.style.minWidth = table.rows[0].cells.length * 85 + "px";
+        table.before(wrap); wrap.append(table);
       });
       $("output-status").textContent = recommendation.invalid ? "Correct invalid entries before copying." : "Recommendations regenerated. Review the clinical draft before use.";
       $("output-status").classList.toggle("needs-review", recommendation.invalid);
@@ -197,12 +202,20 @@
   $("next-btn").addEventListener("click", () => navigate(steps[Math.min(steps.length - 1, steps.findIndex(s => s.id === stepId) + 1)].id));
   $("review-btn").addEventListener("click", () => navigate("followup"));
   $("regenerate-btn").addEventListener("click", generate);
-  $("copy-note-btn").addEventListener("click", async () => {
+  async function copyNote(textOnly = false) {
     if (stale || recommendation.invalid) return;
-    $("copy-status").textContent = "Copying clinical draft...";
-    try { await T.copy($("note-output").value, N.buildNoteHtml(recommendation)); $("copy-status").textContent = "Clinical draft copied, including formatted investigation tables where supported."; }
-    catch { $("note-output").focus(); $("note-output").select(); $("copy-status").textContent = "Clipboard access was unavailable. The clinical draft is selected for manual copying."; }
-  });
+    const revision = noteRevision, text = $("note-output").value, html = N.buildNoteHtml(recommendation); copyStatus("Copying clinical draft...");
+    try {
+      const format = textOnly ? (await navigator.clipboard.writeText(text), "text") : await T.copy(text, html);
+      copyStatus(revision !== noteRevision ? "An earlier draft was copied. Regenerate and copy the updated note before use." : format === "formatted" ? "Clinical draft copied with formatted tables. Paste normally into your EMR." : "Clinical draft copied as plain text with dated, labelled results.");
+    } catch {
+      if (revision !== noteRevision) return;
+      $("plain-note").open = true; $("note-output").focus(); $("note-output").select(); copyStatus("Clipboard access was unavailable. The clinical draft is selected for manual copying.");
+    }
+  }
+  $("copy-note-btn").addEventListener("click", () => copyNote());
+  $("copy-note-bottom-btn").addEventListener("click", () => copyNote());
+  $("copy-note-text-btn").addEventListener("click", () => copyNote(true));
   $("reset-btn").addEventListener("click", () => { state = { ...L.emptyState(), studies: I.empty() }; histories.reset(); stepId = "context"; generated = false; invalidate(); recompute(); $("results").hidden = true; renderStep(true); });
   renderStep(false);
 })();
