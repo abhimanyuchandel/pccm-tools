@@ -1,9 +1,13 @@
 (function () {
   "use strict";
-  const L = window.sarcoidosisLogic, W = window.sarcoidosisWorkflow, N = window.sarcoidosisNotes, S = window.sarcoidosisSchema, C = window.sarcoidosisMedications;
+  const L = window.sarcoidosisLogic, W = window.sarcoidosisWorkflow, N = window.sarcoidosisNotes, S = window.sarcoidosisSchema, C = window.sarcoidosisMedications, I = window.sarcoidosisInvestigations, T = window.sarcoidosisTables;
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
-  let state = L.emptyState(), recommendation = L.buildRecommendation(state), steps = W.steps(state, recommendation), stepId = "context", generated = false, stale = true;
+  let state = { ...L.emptyState(), studies: I.empty() }, recommendation = L.buildRecommendation(state), steps = W.steps(state, recommendation), stepId = "context", generated = false, stale = true;
+  const histories = T.create({ getBundle: () => state.studies, invalidate, update(bundle) {
+    state = L.normalize({ ...state, studies: bundle, prescriptionReviewed: null });
+    invalidate(); recompute(); renderProgress();
+  } });
   const doseKeys = ["predDose", "predWeeks", "dmardDose", "dmardTarget", "titrationWeeks", "mtxRoute", "tnfDose", "tnfInterval"];
   const prescriptionKeys = new Set([...doseKeys, "strategy", "targetDmard", "targetTnf", "currentPred", "currentPredDose", "currentDmard", "currentDmardDose", "currentDmardFrequency", "currentTnf", "currentTnfDose", "transition", "backgroundPred", "tnfPhase", "tnfSwitch", "activity", "indication", "mimics", "infection", "toxicity", "adherence", "cbcSafe", "liverSafe", "renalReviewed", "renalFunction", "reproductive", "interactions", "hepatitis", "tb", "exposure", "tmpSmx", "xanthine", "thiopurine", "heartFailure", "demyelination", "weight", "eyePlan", "hcqCardiacSafe", "supportingIndication", "refractory"]);
   function keepViewport(fn) { const x = scrollX, y = scrollY; fn(); window.scrollTo({ left: x, top: y, behavior: "instant" }); }
@@ -14,6 +18,7 @@
     $("output-status").classList.toggle("needs-review", generated);
     $("results").classList.toggle("stale-output", generated);
     $("copy-status").textContent = "";
+    $("note-tables").replaceChildren();
     $("regenerate-btn").classList.remove("success"); $("regenerate-btn").textContent = "Regenerate recommendations";
     const b = $("generate-btn"); if (b) { b.classList.remove("success"); b.textContent = "Generate recommendations"; }
     $("note-output").closest("article").classList.add("stale");
@@ -123,8 +128,18 @@
       keys.forEach(key => { const row = el("div", "answer-row"); row.append(el("dt", "", S[key].label), el("dd", "", display(key, state[key]))); dl.append(row); });
       const b = el("button", "quiet", "Edit these answers"); b.type = "button"; b.addEventListener("click", () => navigate(stage.id)); details.append(dl, b); outer.append(details);
     });
-    const hidden = Object.keys(S).filter(k => !seen.has(k) && state[k] !== null && state[k] !== "unknown" && state[k] !== "" && state[k] !== false);
+    const projected = new Set(["fvc", "fev1", "dlco", "priorFvc", "priorFev1", "priorDlco", "pftDate", "priorPftDate", "walkDistance", "walkSpo2"]);
+    const hidden = Object.keys(S).filter(k => !(state.studies && projected.has(k)) && !seen.has(k) && state[k] !== null && state[k] !== "unknown" && state[k] !== "" && state[k] !== false);
     if (hidden.length) { const details = el("details", "answer-group"); details.append(el("summary", "", "Retained additional findings")); hidden.forEach(k => details.append(el("p", "hint", S[k].label + ": " + display(k, state[k])))); outer.append(details); }
+    I.kinds.forEach(kind => {
+      if (!state.studies.records[kind].length) return;
+      const details = el("details", "answer-group"); details.append(el("summary", "", I.definitions[kind].title + " history"), T.renderTable(kind, state.studies));
+      const b = el("button", "quiet", "Edit this history"); b.type = "button"; b.addEventListener("click", () => {
+        const key = { pft: "includePft", walk: "includeWalk", echo: "includeEcho", ct: "includeCt" }[kind];
+        state[key] = true; recompute(); navigate(kind);
+      }); details.append(b); outer.append(details);
+    });
+    if (histories.pending().length) outer.prepend(el("p", "alert warning", "An investigation edit or import is unfinished. Save/apply or cancel it before generating: " + histories.pending().map(k => I.definitions[k].title).join(", ") + "."));
     return outer;
   }
   function usePreset() {
@@ -144,6 +159,7 @@
     if (stage.preset) { content.append(drugCard(stage.drug)); const b = el("button", "secondary", "Use common starting schedule"); b.id = "use-preset-btn"; b.type = "button"; b.addEventListener("click", usePreset); content.append(b, el("p", "hint", "An editable reference schedule, not a prescription until you complete the review.")); }
     if (stage.drug && !stage.preset) content.append(drugCard(stage.drug));
     const fields = el("div", "field-grid"); fields.style.marginTop = "22px"; stage.fields.forEach(k => fields.append(field(k))); content.append(fields);
+    if (stage.study) content.append(histories.mount(stage.study));
     if (stage.reference) content.append(reference(stage.reference));
     if (stage.decision) { const d = el("details", "reference"); d.append(el("summary", "", "Reference | Compare systemic medication options")); Object.keys(C.DRUGS).forEach(id => d.append(drugCard(id))); content.append(d); }
     if (stage.blockers) content.append(blockersBox());
@@ -152,6 +168,11 @@
   }
   function generate() {
     keepViewport(() => {
+      if (histories.pending().length) {
+        invalidate(); $("output-status").textContent = "Save/apply or cancel the unfinished investigation edit before generating: " + histories.pending().map(k => I.definitions[k].title).join(", ") + ".";
+        if (steps.find(s => s.id === stepId)?.review) renderStep(false);
+        return;
+      }
       recompute(); generated = true; stale = false; $("results").hidden = false;
       const out = $("results-content"); out.replaceChildren();
       if (recommendation.errors.length) { const box = el("article", "alert danger"); box.append(el("h3", "", "Verify the entered values")); recommendation.errors.forEach(e => box.append(el("p", "", e.text))); out.append(box); }
@@ -162,6 +183,10 @@
       if (recommendation.placeholders.length) { const box = el("article", "result-card"); box.append(el("h3", "", "Decisions to complete")); recommendation.placeholders.forEach(t => box.append(el("p", "", t))); out.append(box); }
       if (recommendation.cautions.length || recommendation.warnings.length) { const box = el("details", "result-card"); box.append(el("summary", "", "Safety checks and interpretation")); [...recommendation.cautions, ...recommendation.warnings.map(w => w.text)].forEach(t => box.append(el("p", "", t))); out.append(box); }
       $("note-output").value = N.buildNoteText(recommendation); $("copy-note-btn").disabled = recommendation.invalid; $("note-output").closest("article").classList.remove("stale");
+      const noteTables = $("note-tables"); noteTables.replaceChildren();
+      if (!recommendation.invalid) I.kinds.filter(k => state.studies.records[k].length).forEach(kind => {
+        const section = el("section", "note-study"); section.append(el("h3", "", I.definitions[kind].title + " history"), T.renderTable(kind, state.studies)); noteTables.append(section);
+      });
       $("output-status").textContent = recommendation.invalid ? "Correct invalid entries before copying." : "Recommendations regenerated. Review the clinical draft before use.";
       $("output-status").classList.toggle("needs-review", recommendation.invalid);
       $("results").classList.remove("stale-output");
@@ -174,9 +199,10 @@
   $("regenerate-btn").addEventListener("click", generate);
   $("copy-note-btn").addEventListener("click", async () => {
     if (stale || recommendation.invalid) return;
-    try { await navigator.clipboard.writeText($("note-output").value); $("copy-status").textContent = "Clinical draft copied."; }
+    $("copy-status").textContent = "Copying clinical draft...";
+    try { await T.copy($("note-output").value, N.buildNoteHtml(recommendation)); $("copy-status").textContent = "Clinical draft copied, including formatted investigation tables where supported."; }
     catch { $("note-output").focus(); $("note-output").select(); $("copy-status").textContent = "Clipboard access was unavailable. The clinical draft is selected for manual copying."; }
   });
-  $("reset-btn").addEventListener("click", () => { state = L.emptyState(); stepId = "context"; generated = false; invalidate(); recompute(); $("results").hidden = true; renderStep(true); });
+  $("reset-btn").addEventListener("click", () => { state = { ...L.emptyState(), studies: I.empty() }; histories.reset(); stepId = "context"; generated = false; invalidate(); recompute(); $("results").hidden = true; renderStep(true); });
   renderStep(false);
 })();

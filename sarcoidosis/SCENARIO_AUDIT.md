@@ -8,8 +8,10 @@ Review date: October 16, 2026. Branch: `codex/sarcoidosis-guided-soap`.
 - Includes a 576-combination drug/activity/indication/review matrix and 126 urgent-feature/context/strategy combinations, plus focused diagnostic, dosing, taper, screening, vaccine and documentation cases.
 - Every valid draft retains the shared clinical actions and resolves their references. Assertions check SOAP sections, numeric integrity and absence of invented examination, vaccine administration or completed counseling.
 - Boundary checks cover weekly MTX, eGFR, delivered dose increments, TPMT/NUDT15, interacting drugs, HCQ weight limits, TNF initiation versus maintenance, switching, combined treatment, current infusion units and steroid exposure before cessation.
-- All 441 combined sarcoidosis, asthma, COPD, PERT and OHCA regression tests passed locally. The existing asthma and COPD browser suites also passed.
+- All 474 combined sarcoidosis, investigation-history, asthma, COPD, PERT and OHCA regression tests passed locally. The initial preview's existing asthma and COPD browser suites also passed; this revision does not modify those applications.
 - Sarcoidosis browser verification covers actual guided entry, retained answers, editable schedules, drug-specific safety, selected pneumococcal product, urgent priority, staged taper, clipboard agreement, stale-output protection, keyboard focus and regeneration without viewport movement at 320/390/768/1280 px widths.
+- 33 additional pure investigation tests cover four-table copy/import round trips, unknown versus zero, partial and invalid dates, explicit unit mapping/conversions, combined absolute/percent PFT cells, transposed tables, CSV quoting, trailing blanks, duplicates/same-date conflicts, current/comparison selection, deletion, mismatched bronchodilator conditions, HTML escaping and historical-versus-acute safety separation.
+- Additional browser coverage exercises manual serial PFT entry, feet-to-meters walk-table import, echo ranges, safe HTML CT import, table review/cancel, deduplication, retained unsaved drafts, mapping ambiguous columns, formatted note copying, text-only/manual clipboard fallback and responsive layouts. Checks confirm no storage or non-GET clinical requests.
 
 ## Suggested Clinical Review Encounters
 
@@ -20,6 +22,7 @@ Review date: October 16, 2026. Branch: `codex/sarcoidosis-guided-soap`.
 5. **Fibrotic disease or disproportionate dyspnea:** enter comparable PFTs and relevant oxygen data. Choose PH evaluation or multidisciplinary advanced-care referral. Confirm the note does not automatically diagnose PH, prescribe PAH/antifibrotic therapy or declare transplant eligibility.
 6. **Warning symptoms:** enter syncope, acute eye symptoms, neurologic changes, severe hypoxemia or marked calcium elevation. Change encounter context and treatment selections. Confirm the warning remains effective and routine prescriptions/prevention are not allowed to override urgent assessment.
 7. **Prevention:** compare unknown versus due screening/vaccine records, low-dose prednisone versus explicitly confirmed immune compromise, and prior PCV20/21 versus no prior pneumococcal vaccine. Check that no completed vaccination or counseling is invented.
+8. **Serial investigations:** add two dated PFTs, choose current/comparison roles, and copy the table. Paste it back, review units, and confirm exact duplicates are skipped. Add a new result and explicitly reassign roles. Try a 6MWT table in feet, echo LVEF `55-60`/RVSP `<35`, and dated CT impressions. Confirm the SOAP contains all four tables, no historical walk resting saturation becomes today's observation, and no echo/CT text automatically changes diagnosis or treatment.
 
 ## Limits
 

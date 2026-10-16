@@ -19,13 +19,13 @@
     if (r.findings.currentAny) add("response", "Treatment", "Response and tolerability", ["treatmentMonths", "response", "adherence", "toxicity"]);
     add("symptoms", "Course", "Interval symptoms and function", ["dyspnea", "cough", "fatigue", "limitation"], { negative: true });
     add("course", "Course", "What has changed?", ["trajectory", "qol", "relapse", "stableMonths"]);
-    add("available-data", "Course", "Available pulmonary testing", ["includePft", "oxygen"], { hint: "Do not repeat testing solely to complete this form. Existing measurements remain available in the answer summary." });
-    if (d.includePft) {
-      add("pft", "Course", "Current available pulmonary function", ["pftDate", "fvc", "fev1", "dlco"], { reference: "activity" });
-      add("pft-comparison", "Course", "Optional comparison pulmonary function", ["priorPftDate", "priorFvc", "priorFev1", "priorDlco"], { reference: "activity" });
-      add("imaging", "Course", "Available imaging context", ["imaging", "imagingTrend", "stage"], { reference: "activity" });
-    }
-    if (d.includePft || ["exertion", "rest"].includes(d.oxygen) || d.trajectory === "worse") add("oxygen", "Course", "Available oxygen and exercise observations", ["spo2", "oxygenConditions", "walkDistance", "walkSpo2"], { reference: "advanced" });
+    add("available-data", "Course", "Available investigation histories", ["includePft", "includeWalk", "includeEcho", "includeCt", "oxygen"], { hint: "Add dated results or paste a previous table. Testing is optional; do not repeat studies solely to complete this form. Unchecking a history hides its editor, not its saved results." });
+    if (d.includePft) add("pft", "Course", "Pulmonary function over time", [], { study: "pft", reference: "activity" });
+    if (d.includeWalk) add("walk", "Course", "Six-minute walk results over time", [], { study: "walk", reference: "advanced" });
+    if (d.includeEcho) add("echo", "Course", "Echocardiography over time", [], { study: "echo" });
+    if (d.includeCt) add("ct", "Course", "Chest CT / HRCT over time", [], { study: "ct" });
+    if (d.includePft || d.includeCt || d.studies?.records.ct.length) add("imaging", "Course", "Clinical imaging interpretation", ["imaging", "imagingTrend", "stage"], { reference: "activity", hint: "Your interpretation is separate from the reported CT text. Imaging alone does not establish active inflammation or a treatment indication." });
+    if (d.includePft || d.includeWalk || ["exertion", "rest"].includes(d.oxygen) || d.trajectory === "worse") add("oxygen", "Course", "Today's available resting oxygen observations", ["spo2", "oxygenConditions"], { reference: "advanced", hint: "These are current encounter observations, not historical walk-test measurements. Leave unavailable measurements blank." });
     add("organs", "Screening", "Cardiac, eye and neurologic review", ["cardiac", "ocular", "neuro"], { organNegative: true, reference: "screening" });
     add("systemic", "Screening", "Other organ involvement", ["renal", "hepatic", "skin", "joints"], { organNegative: true });
     if (d.renal === "suspected" || d.renal === "confirmed" || d.urgentCalcium === true) add("calcium-safety", "Screening", "Renal and calcium safety", ["urgentCalcium", "calcium", "renalFunction"]);

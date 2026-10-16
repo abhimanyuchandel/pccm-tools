@@ -7,13 +7,15 @@
     <meta name="description" content="Guided adult sarcoidosis follow-up, clinician-selected treatment and structured SOAP documentation.">
     <link rel="icon" type="image/svg+xml" href="/assets/pccmapps.svg?v=20260408-3">
     <link rel="apple-touch-icon" href="/assets/pccmapps.png">
-    <link rel="stylesheet" href="/sarcoidosis/styles.css?v=20261016-1">
-    <script defer src="/sarcoidosis/input-schema.js?v=20261016-1"></script>
-    <script defer src="/sarcoidosis/medications.js?v=20261016-1"></script>
-    <script defer src="/sarcoidosis/logic.js?v=20261016-1"></script>
-    <script defer src="/sarcoidosis/workflow.js?v=20261016-1"></script>
-    <script defer src="/sarcoidosis/notes.js?v=20261016-1"></script>
-    <script defer src="/sarcoidosis/app.js?v=20261016-1"></script>
+    <link rel="stylesheet" href="/sarcoidosis/styles.css?v=20261016-2">
+    <script defer src="/sarcoidosis/input-schema.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/medications.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/investigations.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/logic.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/workflow.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/notes.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/investigations-ui.js?v=20261016-2"></script>
+    <script defer src="/sarcoidosis/app.js?v=20261016-2"></script>
   </head>
   <body>
     <a class="skip-link" href="#encounter">Skip to encounter</a>
@@ -55,6 +57,8 @@
           <div class="section-heading"><h2>Copy/Paste Clinical Note</h2><button id="copy-note-btn" type="button" class="primary" disabled>Copy note</button></div>
           <p class="muted">Editable clinical draft. Complete the *** placeholders and verify the selected plan against the actual encounter before EMR insertion. No administration or completed counseling is assumed.</p>
           <p id="copy-status" class="status-line" role="status"></p>
+          <div id="note-tables" aria-label="Investigation tables included in the copied note"></div>
+          <p class="hint">Copy note includes formatted tables where your EMR supports them. The text version below retains all dates, units and values for systems that accept plain text.</p>
           <label class="sr-only" for="note-output">SOAP clinical note</label>
           <textarea id="note-output" readonly spellcheck="false"></textarea>
         </article>

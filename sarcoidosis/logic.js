@@ -1,10 +1,10 @@
 (function (root, factory) {
   const api = typeof module !== "undefined" && module.exports
-    ? factory(require("./input-schema.js"), require("./medications.js"))
-    : factory(root.sarcoidosisSchema, root.sarcoidosisMedications);
+    ? factory(require("./input-schema.js"), require("./medications.js"), require("./investigations.js"))
+    : factory(root.sarcoidosisSchema, root.sarcoidosisMedications, root.sarcoidosisInvestigations);
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.sarcoidosisLogic = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (S, C) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (S, C, I) {
   "use strict";
   const known = n => typeof n === "number" && Number.isFinite(n);
   const systemic = ["methotrexate", "azathioprine", "leflunomide", "mycophenolate"];
@@ -27,6 +27,7 @@
       else if (f.type === "date") d[key] = typeof v === "string" ? v : "";
       else d[key] = f.options.some(([id]) => id === v) ? v : "unknown";
     }
+    if (input.studies) { d.studies = I.normalize(input.studies); I.project(d); }
     return d;
   }
   function validate(d) {
@@ -43,9 +44,14 @@
         if (!known(v) || v < f.min || v > f.max || f.integer && !Number.isInteger(v)) errors.push({ key, text: `${f.label}: verify the value (${f.min}-${f.max}${f.integer ? ", whole numbers" : ""}) or leave it blank.` });
         else if (f.warnLow !== undefined && v < f.warnLow || f.warnHigh !== undefined && v > f.warnHigh) warnings.push({ key, text: `${f.label}: clinically concerning or unusual; verify and interpret in context. This is not necessarily an entry error.` });
       }
-      if (f.type === "date" && v && (!/^\d{4}-\d{2}-\d{2}$/.test(v) || !Number.isFinite(Date.parse(v)) || new Date(v).toISOString().slice(0, 10) !== v)) errors.push({ key, text: `${f.label}: enter a valid date or leave blank.` });
+      if (f.type === "date" && v && !(d.studies && ["pftDate", "priorPftDate"].includes(key)) && (!/^\d{4}-\d{2}-\d{2}$/.test(v) || !Number.isFinite(Date.parse(v)) || new Date(v).toISOString().slice(0, 10) !== v)) errors.push({ key, text: `${f.label}: enter a valid date or leave blank.` });
     }
-    if (d.pftDate && d.priorPftDate && d.priorPftDate > d.pftDate) errors.push({ key: "priorPftDate", text: "The comparison PFT date must not follow the current PFT date." });
+    if (!d.studies && d.pftDate && d.priorPftDate && d.priorPftDate > d.pftDate) errors.push({ key: "priorPftDate", text: "The comparison PFT date must not follow the current PFT date." });
+    if (d.studies) {
+      errors.push(...I.validate(d.studies));
+      const now = I.selected(d.studies, "pft", "current"), prior = I.selected(d.studies, "pft", "comparison");
+      if (now && prior && now.context !== "unknown" && prior.context !== "unknown" && now.context !== prior.context) warnings.push({ key: "studies", text: "PFT bronchodilator conditions differ. Numeric changes are not calculated across pre-/post-BD conditions; compare like-for-like tests." });
+    }
     if (d.currentDmard === "methotrexate" && ["daily", "bid"].includes(d.currentDmardFrequency)) errors.push({ key: "currentDmardFrequency", text: "Potential methotrexate dosing error: routine sarcoidosis treatment is once weekly, never daily. Verify urgently before further doses." });
     if (C.DRUGS[d.currentDmard] && known(currentDailyDose(d)) && currentDailyDose(d) > C.DRUGS[d.currentDmard].max) warnings.push({ key: "currentDmardDose", text: "The current scheduled dose exceeds this routine drug template. Count both doses of a twice-daily schedule when checking a daily-dose limit. Verify units, formulation and the individualized plan before unchanged continuation." });
     if (d.currentTnf === "infliximab" && known(d.currentTnfDose) && d.currentTnfDose > 10) errors.push({ key: "currentTnfDose", text: "Verify the infliximab dose and units: enter mg/kg, not the total infusion dose in mg." });
@@ -53,6 +59,10 @@
     return { errors, warnings };
   }
   function changes(d) {
+    if (d.studies) {
+      const now = I.selected(d.studies, "pft", "current"), prior = I.selected(d.studies, "pft", "comparison");
+      if (now && prior && now.context !== "unknown" && prior.context !== "unknown" && now.context !== prior.context) return [];
+    }
     return ["Fvc", "Fev1", "Dlco"].flatMap(name => {
       const now = d[name.toLowerCase()], prior = d["prior" + name];
       return known(now) && known(prior) && prior > 0 ? [{ label: name === "Dlco" ? "DLCO" : name.toUpperCase(), points: now - prior, relative: (now - prior) / prior * 100 }] : [];

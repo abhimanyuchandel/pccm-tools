@@ -72,7 +72,7 @@ async function main() {
     await walk(baseline); await generate();
     assert.match(await note(), /Observe without systemic/); assert.doesNotMatch(await note(), /Start prednisone/);
     assert.equal(await page.locator("#copy-note-btn").isDisabled(), false);
-    await page.locator("#copy-note-btn").click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
+    await page.locator("#copy-note-btn").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
     await go("symptoms"); await set("cough", true); assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await note(), "");
     await go("followup"); await generate(); assert.match(await note(), /reported cough/);
     await page.locator("#reset-btn").click(); await walk(mtx); await generate();
@@ -100,9 +100,11 @@ async function main() {
     await generate(); assert.match(await note(), /Reduce prednisone to 15 mg/); assert.match(await note(), /then 10 mg/);
     for (const w of [320, 390, 768, 1280]) await width(w);
     await page.locator(".note-card").screenshot({ path: "/tmp/sarcoidosis-note-desktop.png" });
-    await go("available-data"); await set("includePft", true); await go("pft"); await set("fvc", 70); await go("available-data"); await set("includePft", false);
-    await go("followup"); await generate(); assert.match(await note(), /Current FVC: 70% predicted/);
-    const retained = page.getByText("Retained additional findings", { exact: true }); assert.ok(await retained.count());
+    await go("available-data"); await set("includePft", true); await go("pft");
+    await page.getByRole("button", { name: "Add PFT", exact: true }).click(); await page.locator("#study-edit-pft-fvc").fill("70"); await page.locator("#study-edit-pft-role").selectOption("current"); await page.getByRole("button", { name: "Save result", exact: true }).click();
+    await go("available-data"); await set("includePft", false);
+    await go("followup"); await generate(); assert.match(await note(), /Pulmonary function history/); assert.match(await note(), /FVC \(% predicted\)/); assert.match(await note(), /70/);
+    assert.ok(await page.getByText("Pulmonary function history", { exact: true }).count());
     await go("context"); await set("age", 17); await go("followup");
     await page.locator("#generate-btn").click(); assert.equal(await page.locator("#copy-note-btn").isDisabled(), true); assert.equal(await note(), "");
     assert.ok(!await page.locator("#generate-btn").evaluate(n => n.classList.contains("success")));

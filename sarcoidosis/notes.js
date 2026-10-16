@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const api = typeof module !== "undefined" && module.exports ? factory(require("./medications.js")) : factory(root.sarcoidosisMedications);
+  const api = typeof module !== "undefined" && module.exports ? factory(require("./medications.js"), require("./investigations.js")) : factory(root.sarcoidosisMedications, root.sarcoidosisInvestigations);
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.sarcoidosisNotes = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (C) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (C, I) {
   "use strict";
   const known = n => typeof n === "number" && Number.isFinite(n);
   const round = n => Number(n.toFixed(1));
@@ -34,8 +34,10 @@
     if (d.diagnosticBasis === "clinical") o.push("A clinical diagnosis without biopsy was documented" + (d.clinicalPattern !== "unknown" ? " in the setting of " + { lofgren: "Lofgren syndrome", heerfordt: "Heerfordt syndrome", lupus: "lupus pernio with compatible systemic assessment", other: "an established clinical presentation ***" }[d.clinicalPattern] : "") + ".");
     if (d.compatible === true) o.push("A compatible clinical/radiographic presentation was documented.");
     if (d.mimics === true) o.push("Relevant diagnostic mimics had been evaluated.");
-    ["fvc", "fev1", "dlco"].forEach(k => { if (known(d[k])) o.push(`Current ${k.toUpperCase()}: ${d[k]}% predicted${d.pftDate ? " (" + d.pftDate + ")" : ""}.`); });
-    ["Fvc", "Fev1", "Dlco"].forEach(k => { if (known(d["prior" + k])) o.push(`Prior ${k.toUpperCase()}: ${d["prior" + k]}% predicted${d.priorPftDate ? " (" + d.priorPftDate + ")" : ""}.`); });
+    if (!d.studies) {
+      ["fvc", "fev1", "dlco"].forEach(k => { if (known(d[k])) o.push(`Current ${k.toUpperCase()}: ${d[k]}% predicted${d.pftDate ? " (" + d.pftDate + ")" : ""}.`); });
+      ["Fvc", "Fev1", "Dlco"].forEach(k => { if (known(d["prior" + k])) o.push(`Prior ${k.toUpperCase()}: ${d["prior" + k]}% predicted${d.priorPftDate ? " (" + d.priorPftDate + ")" : ""}.`); });
+    }
     f.changes.forEach(c => o.push(`${c.label} change: ${c.points >= 0 ? "+" : ""}${round(c.points)} percentage points, ${c.relative >= 0 ? "+" : ""}${round(c.relative)}% relative change.`));
     if (d.imaging !== "unknown") o.push("Available thoracic imaging showed " + { normal: "no current abnormality", nodes: "predominant hilar/mediastinal adenopathy", parenchymal: "parenchymal inflammatory-appearing disease", fibrotic: "predominantly fibrotic disease", mixed: "mixed fibrosis and possible activity" }[d.imaging] + ".");
     if (d.imagingTrend !== "unknown") o.push("Imaging trajectory was " + { stable: "stable", improved: "improving", worse: "worsening" }[d.imagingTrend] + ".");
@@ -44,8 +46,8 @@
     if (known(d.renalFunction)) o.push(`eGFR: ${d.renalFunction} mL/min/1.73 m2.`);
     if (known(d.weight)) o.push(`Verified actual body weight: ${d.weight} kg.`);
     if (known(d.spo2)) o.push(`Resting SpO2: ${d.spo2}%${d.oxygenConditions === "roomair" ? " on room air" : d.oxygenConditions === "oxygen" ? " on supplemental oxygen" : " (oxygen conditions not documented)"}.`);
-    if (known(d.walkDistance)) o.push(`6MWT distance: ${d.walkDistance} m.`);
-    if (known(d.walkSpo2)) o.push(`Exertional nadir SpO2: ${d.walkSpo2}%.`);
+    if (!d.studies && known(d.walkDistance)) o.push(`6MWT distance: ${d.walkDistance} m.`);
+    if (!d.studies && known(d.walkSpo2)) o.push(`Exertional nadir SpO2: ${d.walkSpo2}%.`);
     const organs = { cardiac: "cardiac", ocular: "ocular", neuro: "neurologic", renal: "renal/calcium-related", hepatic: "hepatic", skin: "cutaneous", joints: "musculoskeletal" };
     const established = Object.keys(organs).filter(k => d[k] === "confirmed").map(k => organs[k]);
     const suspected = Object.keys(organs).filter(k => d[k] === "suspected").map(k => organs[k]);
@@ -66,7 +68,21 @@
     if (r.emergency) a.push("Urgent findings require prompt assessment before routine outpatient planning.");
     r.actions.forEach((action, i) => plan.push(`${i + 1}. ${action.text}`));
     if (!r.emergency) r.placeholders.forEach(text => plan.push(`${plan.length + 1}. ${text}`));
-    return ["Subjective", s.join("\n\n"), "Objective", o.map(t => "- " + t).join("\n"), "Assessment", a.join(" "), "Plan", plan.join("\n\n")].join("\n\n");
+    const tables = d.studies ? I.kinds.filter(k => d.studies.records[k].length).map(k => I.definitions[k].title + " history\n" + I.plainTable(k, d.studies)).join("\n\n") : "";
+    return ["Subjective", s.join("\n\n"), "Objective", [tables, o.map(t => "- " + t).join("\n")].filter(Boolean).join("\n\n"), "Assessment", a.join(" "), "Plan", plan.join("\n\n")].join("\n\n");
   }
-  return { buildNoteText };
+  function buildNoteHtml(r) {
+    let text = buildNoteText(r);
+    if (!text) return "";
+    const replacements = [];
+    if (r.data.studies) I.kinds.filter(k => r.data.studies.records[k].length).forEach(kind => {
+      const token = `\u0000TABLE${replacements.length}\u0000`;
+      text = text.replace(I.definitions[kind].title + " history\n" + I.plainTable(kind, r.data.studies), token);
+      replacements.push({ token, html: I.htmlTable(kind, r.data.studies) });
+    });
+    let html = I.escape(text).replace(/^(Subjective|Objective|Assessment|Plan)$/gm, "<strong>$1</strong>").replace(/\n/g, "<br>");
+    replacements.forEach(({ token, html: table }) => { html = html.replace(token, () => table); });
+    return `<div style="font:14px/1.5 Arial,sans-serif">${html}</div>`;
+  }
+  return { buildNoteText, buildNoteHtml };
 });
