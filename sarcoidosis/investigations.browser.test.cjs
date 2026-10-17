@@ -10,9 +10,13 @@ async function main() {
     page.on("pageerror", e => errors.push(e.message)); page.on("request", r => { if (r.method() !== "GET") posts.push(r.url()); if (!r.url().startsWith(new URL(base).origin)) external.push(r.url()); });
     await page.goto(base); await page.waitForSelector("#step-title:not(:empty)");
     async function go(id) {
-      await page.getByRole("button", { name: "Course", exact: true }).click();
-      for (let i = 0; i < 90; i++) { if (await page.locator("#encounter").getAttribute("data-step") === id) return; if (!await page.locator("#next-btn").isVisible()) break; await page.locator("#next-btn").click(); }
-      throw new Error("Could not reach " + id);
+      await page.getByRole("button", { name: id === "followup" ? "Review" : "Assessment", exact: true }).click();
+      if (id === "followup") return;
+      const outer = page.locator("#section-study-histories"); if (!await outer.evaluate(n => n.open)) await outer.locator(":scope > summary").click();
+      for (const kind of ["pft", "walk", "echo", "ct"]) {
+        const detail = page.locator("#section-study-" + kind), open = await detail.evaluate(n => n.open);
+        if (open !== (kind === id)) await detail.locator(":scope > summary").click();
+      }
     }
     const button = name => name === "Copy note" ? page.locator("#copy-note-btn") : page.getByRole("button", { name, exact: true });
     async function setStudy(kind, values) {
@@ -38,7 +42,7 @@ async function main() {
     const note = () => page.locator("#note-output").inputValue();
     const bounds = async () => { for (const width of [320, 390, 768, 1280]) { await page.setViewportSize({ width, height: 1000 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Overflow at " + width); } };
     await go("available-data");
-    for (const key of ["includePft", "includeWalk", "includeEcho", "includeCt"]) await page.locator("#field-" + key).check();
+    assert.equal(await page.locator("#chapter-nav button").count(), 5);
     await go("pft");
     await button("Add PFT").click();
     assert.equal(await page.locator("#study-edit-pft-date").getAttribute("type"), "date");
@@ -58,20 +62,20 @@ async function main() {
     await button("Add PFT").click(); await page.locator("#study-date-precision-pft").selectOption("month"); await page.locator("#study-edit-pft-date").fill("2025-10"); await page.locator("#study-date-precision-pft").selectOption("date"); assert.equal(await page.locator("#study-edit-pft-date").inputValue(), "", "A partial date must not acquire an invented day"); await button("Cancel edit").click();
     await setStudy("pft", { date: "2025-10", fvcL: 3.2, fvc: 80, fev1L: 2.6, fev1: 78, dlco: 70, context: "pre", role: "comparison" });
     await setStudy("pft", { date: "2026-10-16", fvcL: 3.1, fvc: 78, fev1L: 2.5, fev1: 76, dlco: 64, context: "pre", role: "current" });
-    assert.match(await page.locator(".study-table").textContent(), /3.1 L \/ 78% pred/);
+    assert.match(await page.locator(".study-manager:visible .study-table").textContent(), /3.1 L \/ 78% pred/);
     await bounds(); await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-pft-tables-desktop.png" });
     await page.setViewportSize({ width: 390, height: 900 }); await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-pft-tables-mobile.png" });
     await button("Copy table").click();
     await page.waitForFunction(() => document.querySelector(".study-copy-status").textContent.includes("Table copied"));
     const pftText = await page.evaluate(() => navigator.clipboard.readText()); assert.match(pftText, /FVC \(L\)/); assert.match(pftText, /Comparison/);
     const clipHtml = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return await (await items[0].getType("text/html")).text(); }); assert.match(clipHtml, /<table/);
-    await importText("pft", pftText); await bounds(); await button("Apply reviewed results").click(); assert.match(await page.locator(".study-copy-status").textContent(), /0 results added; 2 exact duplicates skipped/);
+    await importText("pft", pftText); await bounds(); await button("Apply reviewed results").click(); assert.match(await page.locator(".study-manager:visible .study-copy-status").textContent(), /0 results added; 2 exact duplicates skipped/);
     await go("walk");
     await button("Add 6MWT").click(); assert.equal(await page.locator("#study-edit-walk-date").getAttribute("type"), "date"); assert.ok(await page.getByRole("button", { name: "Open calendar for 6MWT date", exact: true }).isVisible()); await button("Cancel edit").click();
     await importText("walk", "Date\tDistance (ft)\tResting SpO2 (%)\tNadir SpO2 (%)\tOxygen conditions\tOxygen flow (L/min)\n2025-10\t1000\t94\t89\tSupplemental oxygen\t2\n2026-10-16\t1100\t93\t88\tSupplemental oxygen\t2");
     assert.match(await page.locator(".study-import").textContent(), /converted to meters/); await button("Apply reviewed results").click();
     assert.equal(await page.locator("#urgent-alert").isVisible(), false);
-    await page.locator(".study-row-controls > summary").click();
+    await page.locator(".study-manager:visible .study-row-controls > summary").click();
     await page.getByRole("combobox", { name: "6MWT 2026-10-16 encounter role", exact: true }).focus();
     await page.getByRole("combobox", { name: "6MWT 2026-10-16 encounter role", exact: true }).selectOption("current");
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "6MWT 2026-10-16 encounter role");
@@ -88,11 +92,11 @@ async function main() {
     assert.equal(await page.locator("#study-edit-echo-impression").inputValue(), echoConclusion);
     await bounds(); await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-echo-report-desktop.png" });
     await page.setViewportSize({ width: 390, height: 900 }); await page.locator(".report-editor").screenshot({ path: "/tmp/sarcoidosis-echo-report-mobile.png" });
-    await button("Save report").click(); assert.equal(await page.locator(".study-table thead th").count(), 2);
-    assert.match(await page.locator(".study-table").textContent(), /2025-09-01/); assert.ok((await page.locator(".study-table").textContent()).includes(echoConclusion));
-    await page.locator(".study-row-controls > summary").click(); await page.locator(".study-row-control").first().getByRole("button", { name: "Edit", exact: true }).click();
+    await button("Save report").click(); assert.equal(await page.locator(".study-manager:visible .study-table thead th").count(), 2);
+    assert.match(await page.locator(".study-manager:visible .study-table").textContent(), /2025-09-01/); assert.ok((await page.locator(".study-manager:visible .study-table").textContent()).includes(echoConclusion));
+    await page.locator(".study-manager:visible .study-row-controls > summary").click(); await page.locator(".study-manager:visible .study-row-control").first().getByRole("button", { name: "Edit", exact: true }).click();
     assert.equal(await page.locator("#study-edit-echo-impression").inputValue(), echoConclusion); assert.equal(await page.locator(".study-optional").evaluate(n => n.open), false);
-    await button("Save report").click(); assert.equal(await page.locator(".study-table tbody tr").count(), 1);
+    await button("Save report").click(); assert.equal(await page.locator(".study-manager:visible .study-table tbody tr").count(), 1);
     await setStudy("echo", { date: "2026-09", lvef: "55-60", rvsp: "<35", rv: "Normal reported RV size and function", impression: "Technically limited study. PASP not estimated.", role: "current" });
     await go("ct");
     const html = '<table><tr><th>Date</th><th>Modality</th><th>Reported findings</th><th>Reported impression</th></tr><tr><td>2025-10</td><td>HRCT</td><td>Upper-lobe fibrosis<img src="https://example.invalid/pasted-report-image"></td><td>Stable compared with prior &lt;uncertain&gt;<script>window.badPaste = true</script></td></tr></table>';
@@ -128,19 +132,19 @@ async function main() {
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Import column 2");
     await page.locator("#study-paste-pft").fill("Date\tFVC (% predicted)\n2026\t65"); assert.equal(await button("Apply reviewed results").count(), 0, "Editing source must discard the old preview");
     await button("Review pasted table").click(); assert.match(await page.locator(".study-import .study-table").textContent(), /65% pred/); await button("Cancel import").click();
-    assert.equal(await page.locator(".study-table tbody tr").count(), 2);
+    assert.equal(await page.locator(".study-manager:visible .study-table tbody tr").count(), 2);
     await generate();
     // A plain-text clipboard restriction must still allow copying the draft.
     await page.evaluate(() => { navigator.clipboard.write = async () => { throw new Error("Rich format unavailable"); }; });
     await button("Copy note").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
     await page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error("Clipboard denied"); }; });
     await button("Copy note").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("manual copying")); assert.match(await page.locator("#copy-status").textContent(), /manual copying/);
-    await go("pft"); await page.locator(".study-row-controls > summary").click();
-    await page.locator(".study-row-control").first().getByRole("button", { name: "Remove", exact: true }).click();
+    await go("pft"); await page.locator(".study-manager:visible .study-row-controls > summary").click();
+    await page.locator(".study-manager:visible .study-row-control").first().getByRole("button", { name: "Remove", exact: true }).click();
     await generate(); assert.doesNotMatch(await note(), /FVC change:/); assert.equal(await page.locator("#note-preview table").first().locator("tbody tr").count(), 1);
     assert.deepEqual(posts, []); assert.deepEqual(external, []); assert.deepEqual(errors, []);
     assert.deepEqual(await page.evaluate(() => [Object.keys(localStorage), Object.keys(sessionStorage)]), [[], []]);
-    await page.reload(); await go("available-data"); await page.locator("#field-includePft").check(); await go("pft"); assert.equal(await page.locator(".study-table").count(), 0);
+    await page.reload(); await go("pft"); assert.equal(await page.locator(".study-table").count(), 0);
     console.log("Investigation browser checks passed: serial editing, text/HTML import, unit mapping, deduplication, selected comparisons, retained drafts, rich/text/manual clipboard, SOAP tables, stale safeguards, no persistence/transmission, and 320/390/768/1280 layouts.");
   } finally { await browser.close(); }
 }

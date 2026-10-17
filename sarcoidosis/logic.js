@@ -13,6 +13,16 @@
   const organKeys = ["cardiac", "ocular", "neuro", "renal", "hepatic", "skin", "joints"];
   const drugFor = d => ["methotrexate", "bridge"].includes(d.strategy) ? "methotrexate" : d.strategy === "alternative" ? d.targetDmard : d.strategy === "biologic" ? d.targetTnf : d.strategy === "prednisone" ? "prednisone" : null;
   const currentDailyDose = d => known(d.currentDmardDose) ? d.currentDmardDose * (d.currentDmardFrequency === "bid" && ["azathioprine", "leflunomide", "hydroxychloroquine"].includes(d.currentDmard) ? 2 : 1) : null;
+  const overallReviewed = d => d.reviewApproach === "overall" && d.prescriptionReviewed === true;
+  const reviewValues = {
+    mimics: [null, true], organSafety: [null, true], infection: [null, false], toxicity: [null, false], interactions: [null, true],
+    exposure: ["unknown", "none", "cleared"], cbcSafe: [null, true], liverSafe: [null, true], renalReviewed: [null, true], renalFunction: [null],
+    hepatitis: ["unknown", "clear", "managed"], reproductive: ["unknown", "na", "cleared"], tmpSmx: [null, false], xanthine: [null, false],
+    thiopurine: ["unknown", "normal"], tb: ["unknown", "clear", "managed"], heartFailure: [null, false], demyelination: [null, false],
+    eyePlan: [null, true], hcqCardiacSafe: [null, true], refractory: [null, true], supportingIndication: [null, true],
+  };
+  // Missing details use the overall confirmation, without converting them to normal findings.
+  const coveredByReview = (d, keys) => d.reviewApproach === "overall" && keys?.length && keys.every(k => reviewValues[k]?.includes(d[k]));
   function emptyState() {
     return Object.fromEntries(Object.entries(S).map(([key, f]) => [key, f.type === "number" || f.boolean ? null : f.type === "date" ? "" : f.value ?? "unknown"]));
   }
@@ -26,6 +36,14 @@
       else if (f.type === "checkbox") d[key] = v === true;
       else if (f.type === "date") d[key] = typeof v === "string" ? v : "";
       else d[key] = f.options.some(([id]) => id === v) ? v : "unknown";
+    }
+    if (d.reviewApproach === "overall") {
+      if (d.diagnosisSummary !== "unknown") {
+        d.diagnosis = d.diagnosisSummary === "uncertain" ? "uncertain" : "established";
+        d.diagnosticBasis = ["biopsy", "clinical", "records"].includes(d.diagnosisSummary) ? d.diagnosisSummary : "unknown";
+      }
+      // A deliberate negative review supplies only previously unanswered warning findings.
+      if (d.warningReview === "none") urgentKeys.forEach(k => { if (d[k] === null) d[k] = false; });
     }
     if (input.studies) { d.studies = I.normalize(input.studies); I.project(d); }
     return d;
@@ -70,6 +88,14 @@
   }
   function currentTreatment(d) {
     const parts = [];
+    if (d.reviewApproach === "overall") {
+      if (d.currentPred === true) parts.push((["prednisone", "prednisolone"].includes(d.currentSteroid) ? d.currentSteroid : "systemic corticosteroid") + (known(d.currentPredDose) ? ` ${d.currentPredDose} mg/day prednisone-equivalent` : ""));
+      if (C.DRUGS[d.currentDmard]) parts.push([C.DRUGS[d.currentDmard].name, known(d.currentDmardDose) ? d.currentDmardDose + " mg" : "", { oral: "orally", sc: "subcutaneously" }[d.currentDmardRoute], { weekly: "once weekly", daily: "once daily", bid: "twice daily" }[d.currentDmardFrequency]].filter(Boolean).join(" "));
+      if (C.DRUGS[d.currentTnf]) parts.push(C.DRUGS[d.currentTnf].name + (known(d.currentTnfDose) ? ` ${d.currentTnfDose} ${d.currentTnf === "infliximab" ? "mg/kg IV" : "mg subcutaneously"}` : "") + (known(d.currentTnfInterval) ? ` every ${d.currentTnfInterval} weeks` : ""));
+      if (d.currentDmard === "other" || d.currentTnf === "other") parts.push("other systemic treatment (details in the medication record)");
+      if (parts.length) return parts.join(", ");
+      return d.currentPred === false && d.currentDmard === "none" && d.currentTnf === "none" ? "no systemic sarcoidosis medication" : "systemic treatment not fully documented";
+    }
     if (d.currentPred === true) parts.push(`${["prednisone", "prednisolone"].includes(d.currentSteroid) ? d.currentSteroid : "systemic corticosteroid at prednisone-equivalent"} ${known(d.currentPredDose) ? d.currentPredDose + " mg/day" : "dose ***"}`);
     if (C.DRUGS[d.currentDmard]) {
       const frequency = { weekly: "once weekly", daily: "once daily", bid: "twice daily", other: "schedule ***" }[d.currentDmardFrequency] || "schedule ***";
@@ -85,8 +111,8 @@
     const blockers = [], stages = [], issues = [];
     const unresolved = (text, keys) => { blockers.push(text); issues.push({ text, keys }); };
     if (d.currentPred !== true || !known(d.currentPredDose) || d.currentPredDose <= 0) unresolved("Verify the actual current prednisone dose before writing a taper.", ["currentPred", "currentPredDose"]);
-    if (!known(d.predMonths)) unresolved("Review the duration of systemic-steroid exposure.", ["predMonths"]);
-    if (d.adrenalReview !== true) unresolved("Review disease control, relapse risk and the adrenal/withdrawal plan.", ["adrenalReview"]);
+    if (!known(d.predMonths) && !overallReviewed(d)) unresolved("Review the duration of systemic-steroid exposure.", ["predMonths"]);
+    if (d.adrenalReview !== true && !(overallReviewed(d) && d.adrenalReview === null)) unresolved("Review disease control, relapse risk and the adrenal/withdrawal plan.", ["adrenalReview"]);
     if (!["inactive", "controlled", "fibrotic"].includes(d.activity) && d.response !== "improved" && d.response !== "stable") unresolved("Document sufficient disease control or an individualized toxicity-driven reduction plan before tapering.", ["activity", "response"]);
     let last = d.currentPredDose;
     for (let i = 1; i <= 3; i++) {
@@ -103,7 +129,9 @@
   }
   function prescription(d, r) {
     const id = drugFor(d), drug = C.DRUGS[id], blockers = [], issues = [], schedule = [];
-    const need = (test, text, keys, type = "review") => { if (!test) { blockers.push(text); issues.push({ text, keys, type }); } };
+    const need = (test, text, keys, type = "review") => {
+      if (!test && !(type === "review" && coveredByReview(d, keys))) { blockers.push(text); issues.push({ text, keys, type }); }
+    };
     if (!drug) return { id, blockers: ["Select the medication."], issues: [{ text: "Select the medication.", keys: [d.strategy === "biologic" ? "targetTnf" : "targetDmard"], type: "review" }], schedule: "", text: "" };
     need(urgentKeys.every(key => d[key] === false), "Complete the warning-symptom review before a definitive routine outpatient prescription. Unassessed findings are not negative findings.", urgentKeys);
     need(r.findings.diagnosisSupported, "Clarify diagnostic support before starting systemic treatment.", ["diagnosis"]);
@@ -119,6 +147,7 @@
     need(!d.adherence, "Address the documented adherence/access concern before routine escalation.", ["adherence"], "concern");
     need(d.interactions === true, "Review allergies, interactions and drug-specific precautions.", ["interactions"], d.interactions === false ? "concern" : "review");
     need(d.prescriptionReviewed === true, "Confirm the selected prescription and monitoring plan after reviewing this schedule.", ["prescriptionReviewed"]);
+    if (d.reviewApproach === "overall") need(["now", "after-tests"].includes(d.initiationTiming), "Choose whether treatment starts now or after baseline evaluation.", ["initiationTiming"]);
     need(["none", "cleared"].includes(d.exposure), "Complete exposure-based endemic infection assessment.", ["exposure"]);
     if (id !== "prednisone") {
       need(d.cbcSafe === true, "Review a current CBC for prescribing safety.", ["cbcSafe"], d.cbcSafe === false ? "concern" : "review");
@@ -198,7 +227,7 @@
     }
     if (id === "prednisone" && C.DRUGS[d.currentDmard]) text += d.transition === "retain" ? " Retain the reconciled conventional background regimen with continued safety monitoring." : " Stop the prior conventional agent under the reviewed transition plan.";
     if (!["infliximab", "adalimumab"].includes(id) && C.DRUGS[d.currentTnf]) text += d.backgroundTnf === "retain" ? " Retain the reconciled TNF inhibitor under the reviewed combination-treatment plan." : " Stop the current TNF inhibitor under an individualized transition plan. Actual timing: ***.";
-    return { id, blockers: [...new Set(blockers)], issues, schedule: issues.some(i => i.type === "schedule") ? "" : schedule.join(" "), text, monitoring: drug.monitoring, sources: drug.sources };
+    return { id, blockers: [...new Set(blockers)], issues, schedule: issues.some(i => i.type === "schedule") ? "" : schedule.join(" "), text, monitoring: d.reviewApproach === "overall" ? drug.followupMonitoring : drug.monitoring, sources: drug.sources };
   }
   function buildRecommendation(input = {}) {
     const d = normalize(input), quality = validate(d), activeDrug = drugFor(d);
@@ -263,17 +292,18 @@
       || C.DRUGS[d.currentDmard] && known(currentDailyDose(d)) && currentDailyDose(d) > C.DRUGS[d.currentDmard].max
       || d.currentDmard === "hydroxychloroquine" && known(currentDailyDose(d)) && known(d.weight) && currentDailyDose(d) > 5 * d.weight
       || d.currentDmard === "methotrexate" && (d.tmpSmx === true || known(d.renalFunction) && d.renalFunction < 30)
-      || ["methotrexate", "leflunomide", "mycophenolate"].includes(d.currentDmard) && d.reproductive === "pregnant";
+      || ["methotrexate", "leflunomide", "mycophenolate"].includes(d.currentDmard) && d.reproductive === "pregnant"
+      || d.reviewApproach === "overall" && (d.renalReviewed === false || d.interactions === false || ["infliximab", "adalimumab"].includes(d.currentTnf) && (d.heartFailure === true || d.demyelination === true || d.tb === "concern" || d.hepatitis === "concern") || d.currentDmard === "azathioprine" && d.xanthine === true);
     if (knownUnsafe) r.cautions.push("A known infection, toxicity, interaction or contraindication requires individualized treatment review; routine unchanged continuation is not safety-cleared.");
     if (!r.emergency && !r.errors.length) {
       if (d.strategy === "observe") {
-        if (!diagnosisSupported || ["organ", "both"].includes(d.indication) || d.indication === "unknown" || !currentKnown || currentAny || ["cardiac", "ocular", "neuro"].some(k => d[k] === "suspected") && d.organSafety !== true) r.placeholders.push("Observation requires clarification of organ risk, diagnosis and current treatment; do not discontinue existing therapy automatically. Selected plan: ***.");
+        if (!diagnosisSupported || ["organ", "both"].includes(d.indication) || d.indication === "unknown" && d.reviewApproach !== "overall" || !currentKnown || currentAny || ["cardiac", "ocular", "neuro"].some(k => d[k] === "suspected") && d.organSafety !== true) r.placeholders.push("Observation requires clarification of organ risk, diagnosis and current treatment; do not discontinue existing therapy automatically. Selected plan: ***.");
         else add("strategy", "Observe without systemic sarcoidosis treatment at this time. Monitor symptoms, function and pulmonary physiology; reassess if symptoms, organ findings or objective disease worsen.");
       } else if (d.strategy === "continue") {
-        if (!currentKnown || !currentAny || knownUnsafe) r.placeholders.push("Reconcile the current regimen and resolve safety concerns before documenting unchanged continuation: ***.");
+        if (!currentKnown || !currentAny || knownUnsafe || d.reviewApproach === "overall" && !overallReviewed(d)) r.placeholders.push("Review the current regimen, resolve safety concerns and confirm the prescribing plan before documenting unchanged continuation: ***.");
         else {
           add("strategy", "Continue the reconciled current systemic regimen of " + currentTreatment(d) + ".");
-          [d.currentDmard, d.currentTnf].filter(id => C.DRUGS[id]).forEach(id => add("monitor-" + id, C.DRUGS[id].monitoring, "monitoring", C.DRUGS[id].sources));
+          [d.currentDmard, d.currentTnf].filter(id => C.DRUGS[id]).forEach(id => add("monitor-" + id, d.reviewApproach === "overall" ? C.DRUGS[id].followupMonitoring : C.DRUGS[id].monitoring, "monitoring", C.DRUGS[id].sources));
         }
       } else if (d.strategy === "reassess") add("strategy", "Complete the outstanding disease-activity, diagnostic and treatment-safety evaluation before changing systemic therapy. Do not attribute symptoms to inflammatory sarcoidosis without considering competing causes.");
       else if (immuneStrategies.includes(d.strategy)) {
@@ -284,7 +314,10 @@
           if (activeDrug !== "prednisone") add("pretreatment", "Obtain or review pretreatment CBC, renal and liver tests, relevant hepatitis results and drug-specific infection/reproductive screening. Resolve abnormal results, interactions and contraindications before the final prescription.", "testing", r.prescription.sources || ["pharmacology"]);
           r.placeholders.push("Final medication prescription after outstanding review: ***.");
         } else {
-          add("prescription", r.prescription.text, "prescription", r.prescription.sources);
+          const afterTests = d.reviewApproach === "overall" && d.initiationTiming === "after-tests";
+          r.prescription.afterTests = afterTests;
+          add("prescription", afterTests ? "After the required baseline evaluation is acceptable, implement the following regimen: " + r.prescription.text : r.prescription.text, "prescription", r.prescription.sources);
+          if (afterTests) add("baseline-evaluation", C.DRUGS[activeDrug].baseline, "testing", r.prescription.sources);
           add("drug-monitoring", r.prescription.monitoring, "monitoring", r.prescription.sources);
           if (d.strategy === "bridge") add("pred-monitoring", C.DRUGS.prednisone.monitoring, "monitoring", C.DRUGS.prednisone.sources);
           if (d.transition === "retain" && C.DRUGS[d.currentDmard] && d.currentDmard !== activeDrug) add("background-monitoring", C.DRUGS[d.currentDmard].monitoring, "monitoring", C.DRUGS[d.currentDmard].sources);
@@ -345,8 +378,47 @@
       r.actions = r.actions.filter(a => a.kind === "urgent" || ["mimic-toxicity", "mtx-interaction"].includes(a.id));
       r.placeholders = []; r.prescription = null; r.taper = null;
     }
+    if (d.reviewApproach === "overall" && !r.emergency) streamlineActions(r);
     r.invalid = r.errors.length > 0;
     return r;
+  }
+  function streamlineActions(r) {
+    const d = r.data, all = [...r.actions];
+    if (!r.findings.advanced) { d.careAdvanced = false; d.careOxygen = false; }
+    if (!r.findings.immune) d.carePjp = false;
+    if (d.currentPred !== true && !["prednisone", "bridge", "taper"].includes(d.strategy)) d.careBone = false;
+    const chosen = new Set(["strategy", "prescription", "pending", "pending-schedule", "baseline-evaluation", "drug-monitoring", "pred-monitoring", "background-monitoring", "background-tnf-monitoring", "background-pred", "taper", "followup", "return", "diagnosis-review", "mimic-toxicity", "mtx-interaction", "calcium-evaluation"]);
+    [d.currentDmard, d.currentTnf].forEach(id => chosen.add("monitor-" + id));
+    const select = (flag, ids) => { if (d[flag]) ids.forEach(id => chosen.add(id)); };
+    select("careContributors", ["contributors", "fatigue"]); select("careOxygen", ["oxygen"]); select("careAdvanced", ["advanced"]);
+    select("careLabs", ["cbcScreen", "calciumScreen", "renalScreen", "alpScreen"]); select("careEye", ["eyeScreen"]); select("careEcg", ["ecgScreen"]);
+    if (d.careVaccines || d.vaccinePlan !== "unknown") ["vaccines", "vaccine-eligibility", "pneumococcal-product"].forEach(id => chosen.add(id));
+    if (d.careBone || d.bonePlan !== "unknown") chosen.add("bone");
+    if (d.carePjp || d.pjp !== "unknown") chosen.add("pjp");
+    if (d.cessation !== "unknown") chosen.add("cessation");
+    if (d.rehab !== "unknown") chosen.add("rehab");
+    const organs = { cardiac: "careCardiac", ocular: "careOcular", neuro: "careNeuro", renal: "careRenal", hepatic: "careHepatic", skin: "careSkin", joints: "careJoints" };
+    Object.entries(organs).forEach(([key, flag]) => { if (!["confirmed", "suspected"].includes(d[key])) d[flag] = false; select(flag, ["organ-" + key]); });
+    r.guidance = all.filter(a => !chosen.has(a.id));
+    r.actions = all.filter(a => chosen.has(a.id));
+    const add = (id, text, kind, sources) => { if (!r.actions.some(a => a.id === id)) r.actions.push({ id, text, kind, sources }); };
+    if (d.careLabs) {
+      r.actions = r.actions.filter(a => !["cbcScreen", "calciumScreen", "renalScreen", "alpScreen"].includes(a.id));
+      add("care-labs", "Obtain serum calcium, creatinine and alkaline phosphatase for indicated baseline/annual surveillance, with CBC for baseline assessment or medication monitoring as appropriate. Review abnormal findings rather than assuming they reflect sarcoidosis.", "screening", ["ats"]);
+    }
+    if (d.careEye && d.eyeScreen !== "current") add("eyeScreen", "Arrange a baseline ophthalmic examination if not previously completed. New visual symptoms require diagnostic assessment rather than routine screening.", "screening", ["ats"]);
+    if (d.careEcg && d.ecgScreen !== "current") add("ecgScreen", "Obtain a baseline ECG if not previously completed and review abnormalities or new cardiac symptoms for targeted evaluation.", "screening", ["ats"]);
+    if (d.careVaccines && !r.actions.some(a => a.id === "vaccines")) add("vaccines", "Review immunization records and arrange indicated age-, risk- and treatment-appropriate vaccines using current CDC schedules. Review prior doses and immunosuppression precautions before ordering.", "prevention", ["cdc", "immune"]);
+    if (d.careBone) add("bone", "Review fracture risk and indicated DXA/bone protection, together with steroid metabolic, mood and eye effects. Assess sarcoidosis-related calcium metabolism before calcium or vitamin-D supplementation.", "prevention", ["bone", "ats"]);
+    if (d.carePjp) add("pjp", "Assess the need for Pneumocystis prophylaxis from steroid exposure, combined immunosuppression and individual risk. Select an agent only after allergy, renal and interaction review; do not automatically combine TMP-SMX with methotrexate.", "prevention", ["pjp", "pharmacology"]);
+    if (d.carePft) add("care-pft", "Arrange follow-up pulmonary function testing to reassess physiology and treatment response, using comparable methods where available.", "monitoring", ["bts"]);
+    if (d.careRehab) add("care-rehab", "Refer to pulmonary rehabilitation for an individualized exercise program and persistent functional limitation.", "supportive", ["bts"]);
+    if (d.careActivity) add("care-activity", "Recommend regular individualized physical activity, paced to symptoms, oxygen needs and comorbid conditions.", "supportive", ["bts"]);
+    if (d.careContributors && !r.actions.some(a => ["contributors", "fatigue"].includes(a.id))) add("contributors", "Evaluate competing contributors to symptoms, including infection, cardiac or pulmonary vascular disease, airway disease, sleep disorders, anemia, deconditioning and medication effects.", "testing", ["bts"]);
+    r.placeholders = r.placeholders.filter(t => !/^(PJP-prevention|Steroid adverse-effect|Selected smoking-cessation|Advanced pulmonary)/.test(t));
+    if (d.careAdvanced && d.advancedPlan === "unknown") r.placeholders.push("Selected advanced pulmonary evaluation / referral plan: ***.");
+    const order = { safety: 0, prescription: 1, management: 2, testing: 3, monitoring: 4, screening: 5, organ: 6, referral: 6, prevention: 7, supportive: 8, followup: 9 };
+    r.actions.sort((a, b) => order[a.kind] - order[b.kind]);
   }
   return { emptyState, normalize, validate, changes, drugFor, currentTreatment, taperPlan, buildRecommendation, urgentKeys, organKeys };
 });

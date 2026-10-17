@@ -204,7 +204,7 @@ test("invalid histories prevent clinical-note copying rather than disappearing",
 test("editing visibility preserves useful histories and known urgent findings", () => {
   const d = L.normalize({ studies: bundle("pft"), includePft: false, includeWalk: true, includeEcho: true, includeCt: true, urgentVisual: true }), r = L.buildRecommendation(d), stages = W.steps(d, r);
   assert.equal(d.fvc, 78); assert.equal(r.emergency, true); assert.ok(!stages.some(s => s.id === "pft"));
-  for (const id of ["walk", "echo", "ct"]) assert.ok(stages.some(s => s.id === id && s.study === id));
+  assert.equal(stages.length, 5); assert.ok(stages.find(s => s.id === "interval").sections.some(s => s.optional && s.studies));
   assert.match(N.buildNoteText(r), /Pulmonary function history/);
 });
 test("oversized or non-tabular pastes are rejected", () => {

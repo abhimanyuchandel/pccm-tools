@@ -95,6 +95,28 @@
     ],
   };
   Object.entries(SAFETY).forEach(([id, items]) => { DRUGS[id].safety = items; });
+  const BASELINE = {
+    prednisone: "Before treatment, review infection/exposure risk, glucose, blood pressure, mood, bone/eye risk and the steroid response/reassessment plan.",
+    methotrexate: "Obtain or review CBC, creatinine/eGFR, liver tests and hepatitis results. Complete reproductive, infection/exposure and interaction review, including TMP-SMX. Confirm the once-weekly schedule and folic acid plan before the first dose or dose increase.",
+    azathioprine: "Obtain or review CBC, renal/liver tests and TPMT/NUDT15 assessment. Review hepatitis, reproductive and infection risks, allopurinol/febuxostat and the intended CBC-monitoring schedule before treatment.",
+    leflunomide: "Obtain or review CBC, liver/renal tests, blood pressure, TB and hepatitis assessment. Complete reproductive and interacting-medication review before treatment; this schedule has no loading dose.",
+    mycophenolate: "Obtain or review CBC, renal/liver tests and required pregnancy testing/contraception assessment. Review infection, hepatitis and drug interactions before treatment; verify the mofetil formulation.",
+    hydroxychloroquine: "Verify the nonpulmonary treatment indication, actual weight and dose. Review renal, cardiac/QT, retinal and interacting-medication risks, and arrange appropriate retinal surveillance before treatment.",
+    infliximab: "Complete TB/HBV evaluation and any prevention plan; review CBC/liver tests, serious infection, heart failure, demyelination, prior reactions and treatment history. Verify weight, biosimilar/infusion orders, induction versus maintenance and background-medication transitions before treatment.",
+    adalimumab: "Complete TB/HBV evaluation and any prevention plan; review CBC/liver tests, serious infection, heart failure, demyelination and refractory-disease treatment history. Verify the actual product/device, dosing interval and background-medication transitions before treatment.",
+  };
+  Object.entries(BASELINE).forEach(([id, text]) => { DRUGS[id].baseline = text; });
+  const FOLLOWUP_MONITORING = {
+    prednisone: DRUGS.prednisone.monitoring,
+    methotrexate: "Monitor CBC, renal function and liver tests every 2-4 weeks during initiation/titration, then about every 3 months when stable. Review tolerance and response before escalation. Continue the selected folate regimen and once-weekly dosing precautions.",
+    azathioprine: "Monitor CBC weekly during month 1, twice monthly during months 2-3, then monthly or more often after treatment changes per labeling/local protocol. Include liver/renal monitoring and skin-protection/surveillance review.",
+    leflunomide: "Monitor CBC and ALT at least monthly for 6 months, then every 6-8 weeks; review blood pressure, neuropathy and new respiratory symptoms. Increase monitoring with toxicity or combination treatment.",
+    mycophenolate: "Monitor CBC weekly during month 1, twice monthly during months 2-3, then monthly through year 1, with renal/liver monitoring per local protocol. Review GI tolerance, infection and reproductive precautions.",
+    hydroxychloroquine: DRUGS.hydroxychloroquine.monitoring,
+    infliximab: "Monitor CBC/liver tests about every 3-6 months and follow the verified infusion/reaction protocol. Reassess infection risk and clinical response before continued maintenance; infuse over at least 2 hours.",
+    adalimumab: "Monitor CBC/liver tests about every 3-6 months, infection risk and clinical response. Verify the selected product/device, injection instructions and authorization; avoid simultaneous TNF inhibitors.",
+  };
+  Object.entries(FOLLOWUP_MONITORING).forEach(([id, text]) => { DRUGS[id].followupMonitoring = text; });
   const REFERENCES = {
     diagnosis: { title: "Diagnosis at follow-up", sources: ["ats"], text: "Diagnosis rests on a compatible presentation, usually nonnecrotizing granulomas when tissue is needed, and exclusion of relevant alternatives. Biopsy is not mandatory in every classic presentation. Infection, occupational exposure, drug reactions and other granulomatous disorders remain important when findings are atypical. Unavailable historical records alone do not invalidate an established diagnosis." },
     activity: { title: "Activity is not the same as damage", sources: ["ers", "bts"], text: "Treat to prevent organ damage or improve unacceptable quality-of-life impairment. Interpret symptoms, serial physiology and imaging together. Fibrosis, an elevated ACE level, radiographic stage or a single low FVC does not independently prove treatable inflammation. Consider infection, PH, cardiac disease, airway disease, sleep disorders, anemia, deconditioning and treatment toxicity." },

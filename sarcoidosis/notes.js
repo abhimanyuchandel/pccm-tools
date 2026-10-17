@@ -27,10 +27,11 @@
     if (d.smoking !== "unknown") s.push({ never: "The patient reported never smoking tobacco.", former: "The patient previously smoked tobacco.", current: "The patient currently smokes tobacco." }[d.smoking]);
     if (["established", "new"].includes(d.diagnosis)) o.push(`${d.diagnosis === "new" ? "Newly established" : "Previously established"} sarcoidosis diagnosis${d.diagnosisDate ? " dated " + d.diagnosisDate : ""}.`);
     if (d.diagnosticBasis === "records") o.push("The original diagnostic reports were unavailable for review.");
-    if (d.diagnosticBasis === "biopsy") {
+    if (d.diagnosticBasis === "biopsy" && (d.reviewApproach !== "overall" || d.biopsyMethod !== "unknown" || d.pathology !== "unknown")) {
       const method = { ebus: "EBUS-guided lymph-node sampling", bronchoscopy: "bronchoscopic lung/endobronchial biopsy", surgical: "surgical lung/lymph-node biopsy", skin: "skin biopsy", other: "other sampling method/site ***" }[d.biopsyMethod] || "sampling method/site ***";
       o.push(`Diagnostic tissue evidence was obtained by ${method}${d.pathology === "granulomas" ? " and demonstrated nonnecrotizing granulomas" : d.pathology === "other" ? " with other/atypical findings requiring reconciliation" : " with pathology details ***"}.`);
     }
+    else if (d.diagnosticBasis === "biopsy") o.push("The established diagnosis was supported by prior tissue confirmation.");
     if (d.diagnosticBasis === "clinical") o.push("A clinical diagnosis without biopsy was documented" + (d.clinicalPattern !== "unknown" ? " in the setting of " + { lofgren: "Lofgren syndrome", heerfordt: "Heerfordt syndrome", lupus: "lupus pernio with compatible systemic assessment", other: "an established clinical presentation ***" }[d.clinicalPattern] : "") + ".");
     if (d.compatible === true) o.push("A compatible clinical/radiographic presentation was documented.");
     if (d.mimics === true) o.push("Relevant diagnostic mimics had been evaluated.");

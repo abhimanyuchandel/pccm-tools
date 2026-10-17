@@ -71,7 +71,7 @@ test("adding methotrexate to prednisone retains the selected dose, route, folate
     assert.match(note, /to 25 mg once weekly/); assert.match(note, /folic acid 1 mg orally daily/);
     assert.match(note, /Continue the reconciled systemic corticosteroid at 10 mg\/day/);
     assert.match(note, /controlled by the current treatment/); assert.doesNotMatch(note, /Start prednisone 20 mg/);
-    const stages = W.steps(r.data, r).map(s => s.id);
+    const stages = W.steps(r.data, r).flatMap(s => s.sections.map(g => g.id));
     assert.ok(stages.indexOf("steroid-background") < stages.indexOf("prescription"));
   }
   const { note } = evaluate(drug("methotrexate", { ...current, backgroundPred: "taper", taperDose1: 7.5, taperWeeks1: 4, taperDose2: 5, taperWeeks2: 4, adrenalReview: true }));
@@ -261,7 +261,7 @@ test("steroid protection is calcium-aware and PJP is not automatically prescribe
 });
 test("workflow only requests relevant prescribing and advanced detail, retaining raw answers", () => {
   const d = L.normalize(baseline), r = L.buildRecommendation(d), ids = W.steps(d, r).map(s => s.id); assert.ok(!ids.includes("lab-safety")); assert.ok(!ids.includes("prescription")); assert.ok(!ids.includes("pft"));
-  const advanced = L.normalize(drug("infliximab", { includePft: true })), ar = L.buildRecommendation(advanced), stages = W.steps(advanced, ar); assert.ok(stages.some(s => s.fields.includes("weight"))); assert.ok(stages.some(s => s.id === "tnf-safety")); assert.ok(stages.some(s => s.id === "pft"));
+  const advanced = L.normalize(drug("infliximab", { includePft: true })), ar = L.buildRecommendation(advanced), stages = W.steps(advanced, ar); assert.equal(stages.length, 5); assert.ok(stages.some(s => s.fields.includes("weight"))); assert.ok(stages.flatMap(s => s.sections).some(s => s.optional && s.fields.includes("heartFailure"))); assert.ok(stages.flatMap(s => s.sections).some(s => s.studies && s.optional));
   const mtx = L.normalize(drug("methotrexate")); assert.ok(!W.steps(mtx, L.buildRecommendation(mtx)).some(s => s.fields.includes("weight")));
   const changed = L.normalize({ ...advanced, strategy: "observe", includePft: false, fvc: 65, urgentVisual: true }); assert.equal(changed.fvc, 65); assert.equal(L.buildRecommendation(changed).emergency, true);
 });

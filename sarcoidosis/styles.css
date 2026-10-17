@@ -138,6 +138,41 @@ textarea { width:100%; resize:vertical; min-height:480px; padding:18px; border:1
 }
 @media(prefers-reduced-motion:no-preference) { button,.choice-option { transition:background-color .15s,border-color .15s; } }
 .study-manager { margin-top:8px; }
+.input-section { margin:24px 0; padding-top:22px; border-top:1px solid #e0e8ef; }
+.input-section:first-child { border:0; padding-top:0; }
+.input-section>h3 { font-family:inherit; font-size:1rem; letter-spacing:0; margin-bottom:16px; }
+.section-content>.field-grid { gap:18px 22px; }
+.optional-inputs { border:1px solid var(--line); background:#fff; border-radius:10px; margin:14px 0; font-size:.88rem; }
+.optional-inputs>summary { color:#28475e; padding:14px 16px; }
+.optional-inputs[open]>summary { border-bottom:1px solid #e1e9ef; background:#f8fafc; }
+.optional-content { padding:18px 16px; }
+.optional-inputs .study-manager { padding:0 14px 14px; }
+.optional-content>.field-grid { gap:18px; }
+.optional-content>.reference:last-child { margin-bottom:0; }
+.compact-checks,.care-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.care-grid>.field { grid-column:auto; }
+.care-grid .concern-option { height:100%; padding:12px; }
+.care-grid .hint:empty,.care-grid .field-feedback:empty { display:none; }
+.inline-controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.strategy-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.strategy-option { display:flex; gap:10px; border:1px solid #bacdd8; border-radius:11px; padding:17px; cursor:pointer; background:#fbfdff; }
+.strategy-option:has(:checked) { border-color:var(--teal); background:#edf7f4; box-shadow:inset 0 0 0 1px var(--teal); }
+.strategy-option input { flex:0 0 auto; accent-color:var(--teal); margin:4px 0 0; }
+.strategy-option strong { display:block; line-height:1.4; font-size:.9rem; margin-bottom:6px; }
+.strategy-option span span { display:block; font-size:.8rem; line-height:1.5; color:var(--muted); }
+.confirmation { border-color:#90b5ac; background:#f1f8f5; padding:17px; }
+.selected-plan .selected-plan { margin:14px 0 0; border:0; padding:0; background:none; }
+.section-content .field-grid:has(#field-initiationTiming-now) { margin-top:18px; }
+.treatment-shortcut { margin:-4px 0 10px; padding-left:0; text-decoration:underline; }
+.short-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); max-width:490px; }
+.short-choices .choice-option { padding:10px; font-size:.82rem; }
+.short-choices input { width:14px; height:14px; }
+@media(max-width:650px) {
+  .strategy-grid,.care-grid { grid-template-columns:minmax(0,1fr); }
+  .optional-content { padding:16px 12px; }
+  .strategy-option { padding:14px; }
+  .choice-grid.short-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
 .selected-plan { margin:24px 0; padding:20px; border:1px solid #a5c7c8; border-left:4px solid var(--teal); border-radius:12px; background:linear-gradient(120deg,#edf7f5,#f9fcfd); }
 .selected-plan h3 { margin:10px 0 8px; font-size:1.08rem; }
 .selected-plan p:last-child,.drug-safety p:last-child { margin-bottom:0; }
