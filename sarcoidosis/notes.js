@@ -22,7 +22,7 @@
     if (d.relapse === true) s.push("Worsening during a prior steroid taper was reported.");
     if (d.relapse === false) s.push("No prior taper-associated worsening was reported.");
     if (d.response !== "unknown") s.push("Response to current treatment was " + { improved: "improved", stable: "stable with maintained benefit", inadequate: "inadequate", toxic: "limited by adverse effects" }[d.response] + ".");
-    if (known(d.treatmentMonths)) s.push(`Current steroid-sparing/biologic treatment duration was ${d.treatmentMonths} months.`);
+    if (known(d.treatmentMonths)) s.push(`The current treatment regimen had been used for ${d.treatmentMonths} months.`);
     s.push(`Current sarcoidosis medications are: ${f.currentTreatment}. Additional medication details: ***.`);
     if (d.smoking !== "unknown") s.push({ never: "The patient reported never smoking tobacco.", former: "The patient previously smoked tobacco.", current: "The patient currently smokes tobacco." }[d.smoking]);
     if (["established", "new"].includes(d.diagnosis)) o.push(`${d.diagnosis === "new" ? "Newly established" : "Previously established"} sarcoidosis diagnosis${d.diagnosisDate ? " dated " + d.diagnosisDate : ""}.`);
@@ -56,11 +56,12 @@
     o.push("Examination: ***.");
     a.push(`${known(d.age) ? `This ${d.age} year old patient` : "The patient"} ${f.diagnosisSupported ? "has an established diagnosis of sarcoidosis" : "has a working sarcoidosis diagnosis that requires clarification"}.`);
     if (d.diagnosticBasis === "biopsy" && d.pathology === "granulomas" && d.compatible === true) a.push("The diagnosis was supported by a compatible presentation and tissue showing nonnecrotizing granulomas.");
-    a.push({ inactive: "There is no evidence of clinically important active pulmonary inflammation on the documented assessment.", active: "The current assessment supports clinically important inflammatory pulmonary disease.", fibrotic: "Pulmonary disease appears predominantly fixed or fibrotic.", mixed: "Fibrotic pulmonary disease coexists with suspected inflammatory activity.", uncertain: "Pulmonary disease activity remains uncertain and requires evaluation for competing causes.", unknown: "Pulmonary disease activity has not yet been characterized." }[d.activity]);
+    a.push({ inactive: "There is no evidence of clinically important active pulmonary inflammation on the documented assessment.", controlled: "Inflammatory pulmonary disease is controlled by the current treatment.", active: "The current assessment supports clinically important inflammatory pulmonary disease.", fibrotic: "Pulmonary disease appears predominantly fixed or fibrotic.", mixed: "Fibrotic pulmonary disease coexists with suspected inflammatory activity.", uncertain: "Pulmonary disease activity remains uncertain and requires evaluation for competing causes.", unknown: "Pulmonary disease activity has not yet been characterized." }[d.activity]);
     if (positive.length) a.push("The reported symptom burden includes " + positive.join(" and ") + ".");
     if (d.indication === "none") a.push("No current systemic treatment indication was identified.");
     else if (["organ", "both"].includes(d.indication)) a.push("The treatment assessment identified risk of organ dysfunction or progressive pulmonary disease.");
     else if (d.indication === "qol") a.push("Disease related quality of life impairment supports considering treatment after review of competing causes.");
+    else if (d.indication === "steroid") a.push("The treatment goal is to reduce documented steroid dependence or unacceptable steroid adverse effects while maintaining disease control.");
     if (d.currentPred === true || f.currentAny) a.push("Current systemic treatment consists of " + f.currentTreatment + ".");
     if (established.length) a.push("Documented extrapulmonary involvement includes " + established.join(" and ") + ".");
     if (suspected.length) a.push("Additional organ involvement requires targeted assessment.");

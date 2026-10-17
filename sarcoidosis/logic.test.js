@@ -62,6 +62,71 @@ test("methotrexate is weekly, includes folate and is not automatically a pulmona
 test("prednisone bridge preserves both selected prescriptions without inventing a taper", () => {
   const { r, note } = evaluate(drug("methotrexate", { strategy: "bridge" })); assert.deepEqual(r.prescription.blockers, []); assert.match(note, /Start prednisone 20 mg/); assert.match(note, /Start Methotrexate 15 mg/); assert.doesNotMatch(note, /Reduce prednisone to/);
 });
+test("adding methotrexate to prednisone retains the selected dose, route, folate and steroid plan in SOAP", () => {
+  const current = { currentPred: true, currentSteroid: "prednisone", currentPredDose: 10, predMonths: 8, backgroundPred: "continue", activity: "controlled", indication: "steroid" };
+  for (const mtxRoute of ["oral", "sc"]) {
+    const { r, note } = evaluate(drug("methotrexate", { ...current, mtxRoute }));
+    assert.deepEqual(r.prescription.blockers, []);
+    assert.match(note, new RegExp("Start Methotrexate 15 mg " + (mtxRoute === "oral" ? "orally" : "subcutaneously") + " once weekly, never daily"));
+    assert.match(note, /to 25 mg once weekly/); assert.match(note, /folic acid 1 mg orally daily/);
+    assert.match(note, /Continue the reconciled systemic corticosteroid at 10 mg\/day/);
+    assert.match(note, /controlled by the current treatment/); assert.doesNotMatch(note, /Start prednisone 20 mg/);
+    const stages = W.steps(r.data, r).map(s => s.id);
+    assert.ok(stages.indexOf("steroid-background") < stages.indexOf("prescription"));
+  }
+  const { note } = evaluate(drug("methotrexate", { ...current, backgroundPred: "taper", taperDose1: 7.5, taperWeeks1: 4, taperDose2: 5, taperWeeks2: 4, adrenalReview: true }));
+  assert.match(note, /Start Methotrexate 15 mg/); assert.match(note, /Reduce prednisone to 7.5 mg/);
+});
+test("steroid-sparing indication cannot turn inactive disease or steroid exposure alone into a prescription", () => {
+  for (const v of [{ currentPred: false }, { currentPredDose: null }, { currentPredDose: 0 }, { activity: "inactive" }, { activity: "fibrotic" }]) {
+    const { r } = evaluate(drug("methotrexate", { currentPred: true, currentPredDose: 10, activity: "controlled", indication: "steroid", ...v }));
+    assert.ok(r.prescription.blockers.length); assert.ok(!r.actions.some(a => a.id === "prescription"));
+  }
+  const { r } = evaluate(drug("infliximab", { currentPred: true, currentPredDose: 10, activity: "controlled", indication: "steroid" }));
+  assert.ok(r.prescription.blockers.length, "Steroid dependence alone cannot justify TNF treatment");
+});
+test("unconfirmed prescriptions retain a conditional schedule and specific outstanding actions, not a start instruction", () => {
+  for (const id of Object.keys(C.DRUGS)) {
+    const { r, note } = evaluate(drug(id, { prescriptionReviewed: null }));
+    assert.ok(!r.actions.some(a => a.id === "prescription"));
+    assert.ok(r.prescription.schedule); assert.match(note, /Proposed schedule for review only, not yet cleared for initiation/);
+    assert.ok(note.includes(r.prescription.schedule)); assert.match(note, /Confirm the selected prescription/);
+    assert.ok(r.prescription.issues.some(i => i.keys.includes("prescriptionReviewed")));
+    assert.doesNotMatch(r.prescription.schedule, /^(Start|Adjust)|null|undefined|NaN/);
+  }
+});
+test("incomplete schedules never produce a dose preview or guessed patient-specific prescription", () => {
+  for (const [id, change] of [["methotrexate", { dmardDose: null }], ["methotrexate", { mtxRoute: "unknown" }], ["methotrexate", { titrationWeeks: null }], ["azathioprine", { dmardTarget: 133 }], ["prednisone", { predWeeks: null }], ["infliximab", { weight: null }], ["adalimumab", { tnfInterval: 3 }]]) {
+    const { r, note } = evaluate(drug(id, change));
+    assert.equal(r.prescription.schedule, ""); assert.ok(r.prescription.issues.some(i => i.type === "schedule"));
+    assert.ok(!r.actions.some(a => a.id === "pending-schedule" || a.id === "prescription")); assert.doesNotMatch(note, /null mg|undefined mg/);
+  }
+});
+test("known safety concerns do not copy a proposed dosing instruction into a pending plan", () => {
+  for (const [id, change] of [["methotrexate", { tmpSmx: true }], ["methotrexate", { renalFunction: 45 }], ["methotrexate", { reproductive: "pregnant" }], ["azathioprine", { xanthine: true }], ["leflunomide", { liverSafe: false }], ["infliximab", { heartFailure: true }], ["adalimumab", { demyelination: true }], ["hydroxychloroquine", { hcqCardiacSafe: false }]]) {
+    const { r, note } = evaluate(drug(id, change));
+    assert.ok(r.prescription.issues.some(i => i.type === "concern"));
+    assert.ok(!r.actions.some(a => a.id === "prescription" || a.id === "pending-schedule"));
+    assert.match(note, /Proposed regimen remains pending/); assert.ok(note.includes(C.DRUGS[id].name));
+  }
+});
+test("outstanding prescription issues map to reachable fields and every medication has practical safety reminders", () => {
+  const S = require("./input-schema.js");
+  for (const id of Object.keys(C.DRUGS)) {
+    const d = { ...drug(id), prescriptionReviewed: null, infection: null, exposure: "unknown", cbcSafe: null, renalReviewed: null, reproductive: "unknown" };
+    const { r } = evaluate(d), keys = new Set(W.steps(r.data, r).flatMap(s => s.fields));
+    for (const issue of r.prescription.issues) { assert.ok(issue.keys.length); assert.ok(issue.keys.every(k => S[k])); assert.ok(issue.keys.some(k => keys.has(k))); }
+    assert.equal(C.DRUGS[id].safety.length, 2); assert.ok(C.DRUGS[id].safety.every(([title, text]) => title && text.length > 30));
+  }
+});
+test("an unchosen alternative or TNF agent produces an editable pending plan without crashing", () => {
+  for (const strategy of ["alternative", "biologic"]) {
+    const { r, note } = run({ ...safe, strategy });
+    assert.ok(r.prescription.blockers.includes("Select the medication.")); assert.match(note, /selected medication plan/);
+    assert.equal(r.prescription.schedule, ""); assert.ok(!r.actions.some(a => a.id === "prescription"));
+    assert.ok(W.steps(r.data, r).some(s => s.fields.includes(r.prescription.issues[0].keys[0])));
+  }
+});
 test("missing or failed prerequisites yield a testing plan, not an invented prescription", () => {
   for (const id of Object.keys(C.DRUGS)) for (const flag of ["prescriptionReviewed", "interactions", "infection", "toxicity", "exposure", "reproductive"]) {
     const values = drug(id, { [flag]: ["infection", "toxicity"].includes(flag) ? true : ["exposure", "reproductive"].includes(flag) ? "unknown" : null });

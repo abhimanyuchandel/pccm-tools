@@ -14,8 +14,8 @@
     else add("diagnostic-context", "Diagnosis", "Clinical diagnostic context", [...(d.diagnosticBasis === "clinical" ? ["clinicalPattern"] : []), "compatible", "mimics"], { reference: "diagnosis" });
     add("current", "Treatment", "Current systemic treatment", ["currentPred", "currentDmard", "currentTnf"], { noTreatment: true });
     if (d.currentPred === true) add("current-steroid", "Treatment", "Current steroid exposure", ["currentSteroid", "currentPredDose", "predMonths"], { reference: "taper" });
-    if (!["none", "unknown", "other"].includes(d.currentDmard)) add("current-dmard", "Treatment", "Reconciled conventional prescription", ["currentDmardDose", "currentDmardFrequency", "currentDmardRoute"]);
-    if (!["none", "unknown", "other"].includes(d.currentTnf)) add("current-tnf", "Treatment", "Reconciled TNF prescription", ["currentTnfDose", "currentTnfInterval"]);
+    if (!["none", "unknown", "other"].includes(d.currentDmard)) add("current-dmard", "Treatment", "Current steroid-sparing medication schedule", ["currentDmardDose", "currentDmardFrequency", "currentDmardRoute"]);
+    if (!["none", "unknown", "other"].includes(d.currentTnf)) add("current-tnf", "Treatment", "Current TNF inhibitor schedule", ["currentTnfDose", "currentTnfInterval"]);
     if (r.findings.currentAny) add("response", "Treatment", "Response and tolerability", ["treatmentMonths", "response", "adherence", "toxicity"]);
     add("symptoms", "Course", "Interval symptoms and function", ["dyspnea", "cough", "fatigue", "limitation"], { negative: true });
     add("course", "Course", "What has changed?", ["trajectory", "qol", "relapse", "stableMonths"]);
@@ -41,12 +41,13 @@
     if (drug && !["unknown", "none"].includes(drug)) {
       if (d.currentDmard !== "none" && d.currentDmard !== "unknown" && d.currentDmard !== drug) add("transition", "Prescribing", "Coordinate existing treatment", ["transition", ...(d.currentTnf !== "none" && ["methotrexate", "azathioprine", "leflunomide", "mycophenolate", "hydroxychloroquine"].includes(drug) ? ["refractory"] : [])]);
       if (!["none", "unknown"].includes(d.currentTnf) && !["infliximab", "adalimumab"].includes(drug)) add("background-tnf", "Prescribing", "Coordinate existing TNF treatment", ["backgroundTnf"]);
-      add("prescription", "Prescribing", "Choose and review the schedule", [
+      if (d.currentPred === true && ["methotrexate", "alternative", "biologic"].includes(d.strategy)) add("steroid-background", "Prescribing", "Keep or taper the existing steroid?", ["backgroundPred"], { reference: "taper", hint: `Current documented dose: ${d.currentPredDose ?? "not yet entered"} mg/day prednisone-equivalent. This is separate from the new medication.` });
+      add("prescription", "Prescribing", "Set the new medication schedule", [
         ...(["prednisone", "bridge"].includes(d.strategy) ? ["predDose", "predWeeks"] : []),
         ...(["methotrexate", "azathioprine", "leflunomide", "mycophenolate", "hydroxychloroquine"].includes(drug) ? ["dmardDose", "dmardTarget", ...(drug === "hydroxychloroquine" ? [] : ["titrationWeeks"]), ...(drug === "methotrexate" ? ["mtxRoute"] : [])] : []),
         ...(["infliximab", "adalimumab"].includes(drug) ? ["tnfDose", "tnfInterval"] : []),
-      ], { drug, preset: true });
-      add("infection-safety", "Prescribing", "Infection and interaction safety", ["infection", "toxicity", "exposure", "interactions"]);
+      ], { drug, preset: true, plan: true, hint: "Use the reference schedule or enter your own supported doses. Starting dose, target dose and route must be specified; selecting a medication alone does not set them." });
+      add("infection-safety", "Prescribing", "Can this medication be used safely?", ["infection", "toxicity", "exposure", "interactions"], { safetyDrug: drug });
       if (drug !== "prednisone") {
         add("lab-safety", "Prescribing", "Laboratory and organ-function review", ["cbcSafe", "liverSafe", "renalReviewed", ...(drug === "methotrexate" ? ["renalFunction"] : [])]);
         add("hepatitis-safety", "Prescribing", "Viral-hepatitis and reproductive safety", ["hepatitis", "reproductive"]);
@@ -57,7 +58,6 @@
       if (drug === "hydroxychloroquine") add("hcq-safety", "Prescribing", "Weight and retinal/cardiac safety", ["weight", "eyePlan", "hcqCardiacSafe"], { drug });
       if (["infliximab", "adalimumab"].includes(drug)) add("tnf-safety", "Prescribing", "TNF-specific safety", ["tb", "heartFailure", "demyelination", ...(drug === "infliximab" ? ["weight"] : [])], { drug });
     }
-    if (d.currentPred === true && ["methotrexate", "alternative", "biologic"].includes(d.strategy)) add("steroid-background", "Prescribing", "Plan for existing prednisone", ["backgroundPred"], { reference: "taper" });
     if (d.strategy === "taper" || d.backgroundPred === "taper" && d.currentPred === true && ["methotrexate", "alternative", "biologic"].includes(d.strategy)) {
       add("taper", "Prescribing", "Prednisone taper stages", ["taperDose1", "taperWeeks1", "taperDose2", "taperWeeks2", "taperDose3", "taperWeeks3"], { reference: "taper" });
       add("taper-review", "Prescribing", "Taper safety review", ["predMonths", "adrenalReview"], { reference: "taper", blockers: true });
@@ -76,8 +76,8 @@
     add("support", "Prevention", "Function and tobacco exposure", ["rehab", "smoking"]);
     if (d.smoking === "current") add("cessation", "Prevention", "Selected cessation support", ["cessation"]);
     if (r.findings.advanced) add("advanced", "Prevention", "Advanced pulmonary care plan", ["advancedPlan"], { reference: "advanced" });
-    if (drug && !["unknown", "none"].includes(drug)) add("prescription-confirm", "Review", "Confirm this selected prescription", ["prescriptionReviewed"], { drug, blockers: true });
-    add("followup", "Review", "Follow-up and final review", ["followupWeeks"], { review: true });
+    if (drug && !["unknown", "none"].includes(drug)) add("prescription-confirm", "Review", "Review and confirm the intended prescription", ["prescriptionReviewed"], { plan: true, blockers: true });
+    add("followup", "Review", "Follow-up and final review", ["followupWeeks"], { review: true, plan: Boolean(drug), blockers: Boolean(drug) });
     return out;
   }
   function reconcileStep(id, next, previous = []) {

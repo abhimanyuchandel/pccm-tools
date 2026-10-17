@@ -56,7 +56,7 @@ async function main() {
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       assert.ok(Math.abs(await page.evaluate(() => scrollY) - before) <= 1, "Regeneration changed scroll position");
       assert.ok(await b.evaluate(n => document.activeElement === n));
-      assert.ok(await b.evaluate(n => n.classList.contains("success")));
+      assert.ok(await b.evaluate(n => n.classList.contains("success")), await page.locator("#results-content").textContent());
     }
     async function width(w) { await page.setViewportSize({ width: w, height: 900 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Overflow at " + w); }
     const note = () => page.locator("#note-output").inputValue();
@@ -85,6 +85,33 @@ async function main() {
     assert.match(await note(), /Proposed regimen remains pending/); assert.doesNotMatch(await note(), /Start Methotrexate/); assert.match(await page.locator("#results-content").textContent(), /eGFR at least 60/);
     await go("vaccine-status"); await page.locator("#reference-vaccines > summary").click(); assert.equal(await page.locator(".reference-table tbody tr").count(), 7);
     for (const w of [320, 390, 768, 1280]) { await width(w); if (w === 390) await page.locator("#encounter").screenshot({ path: "/tmp/sarcoidosis-vaccines-mobile.png" }); }
+    await page.locator("#reset-btn").click();
+    const steroidSparing = { ...mtx, currentPred: true, currentSteroid: "prednisone", currentPredDose: 10, predMonths: 8, activity: "controlled", indication: "steroid", trajectory: "stable", response: "stable", backgroundPred: "continue", dmardDose: null, dmardTarget: null, titrationWeeks: null, mtxRoute: "unknown", cbcSafe: null, prescriptionReviewed: null };
+    await walk(steroidSparing); await generate();
+    assert.match(await note(), /selected Methotrexate plan/); assert.match(await note(), /Enter starting and target doses/); assert.doesNotMatch(await note(), /Start Methotrexate/);
+    await go("prescription");
+    assert.match(await page.locator('label[for="field-dmardDose"]').textContent(), /methotrexate dose \(mg once weekly\)/i);
+    await page.locator("#use-preset-btn").click();
+    assert.match(await page.locator('#step-content [data-plan-summary]').textContent(), /15 mg orally once weekly, never daily/);
+    assert.match(await page.locator('#step-content [data-plan-summary]').textContent(), /continue 10 mg\/day/);
+    for (const w of [320, 390, 768, 1280]) { await width(w); if (w === 390 || w === 1280) await page.locator("#encounter").screenshot({ path: `/tmp/sarcoidosis-prescription-${w}.png` }); }
+    await set("dmardDose", 12.5);
+    assert.match(await page.locator('#step-content [data-plan-summary]').textContent(), /12.5 mg orally once weekly/);
+    await go("infection-safety"); assert.match(await page.locator(".drug-safety").textContent(), /TMP-SMX|once-weekly/);
+    await go("prescription-confirm");
+    await page.locator('#step-content button[data-review-field="cbcSafe"]').click();
+    assert.equal(await stage(), "lab-safety"); assert.ok(await page.locator("#field-cbcSafe-unknown").evaluate(n => n === document.activeElement));
+    await set("cbcSafe", true); await go("followup"); await generate();
+    assert.match(await note(), /Proposed schedule for review only/); assert.match(await note(), /12.5 mg orally once weekly/); assert.doesNotMatch(await note(), /Start Methotrexate/);
+    await page.locator('#step-content button[data-review-field="prescriptionReviewed"]').click();
+    assert.equal(await stage(), "prescription-confirm"); await set("prescriptionReviewed", true);
+    assert.match(await page.locator('#step-content [data-plan-summary]').textContent(), /Ready for note/);
+    await go("followup"); await generate();
+    assert.match(await note(), /Start Methotrexate 12.5 mg orally once weekly, never daily/);
+    assert.match(await note(), /to 25 mg once weekly/); assert.match(await note(), /folic acid 1 mg orally daily/); assert.match(await note(), /corticosteroid at 10 mg\/day/);
+    await page.locator("#copy-note-btn").click(); await page.waitForFunction(() => document.getElementById("copy-status").textContent.includes("Clinical draft copied")); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await note());
+    await go("mtx-safety"); await set("tmpSmx", true); assert.equal(await page.locator("#copy-note-btn").isDisabled(), true);
+    await go("followup"); await generate(); assert.match(await note(), /Resolve TMP-SMX/); assert.doesNotMatch(await note(), /Start Methotrexate|Proposed schedule for review only/);
     await page.locator("#reset-btn").click();
     const tnf = { ...mtx, strategy: "biologic", targetTnf: "infliximab", tnfPhase: "initiation", refractory: true, tnfDose: 5, tnfInterval: 6, tb: "clear", heartFailure: false, demyelination: false, weight: 80 };
     await walk(tnf); await generate(); assert.match(await note(), /400 mg before pharmacy/); assert.match(await note(), /weeks 0, 2 and 6/);

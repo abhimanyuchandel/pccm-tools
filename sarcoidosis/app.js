@@ -30,7 +30,7 @@
     if (["strategy", "targetDmard", "targetTnf"].includes(key) && L.drugFor(state) !== oldDrug) doseKeys.forEach(k => { state[k] = S[k].type === "number" ? null : "unknown"; });
     invalidate(); recompute(); renderProgress();
     if (rerender) { const focusId = document.activeElement?.id; keepViewport(() => renderStep(false)); if (focusId) $(focusId)?.focus({ preventScroll: true }); }
-    else renderWarnings();
+    else { renderWarnings(); refreshPlanPanels(); }
   }
   function display(key, value) {
     const f = S[key];
@@ -70,10 +70,26 @@
     const drug = C.DRUGS[id]; if (!drug) return el("span");
     const card = el("aside", "drug-card"); card.append(el("span", "badge", "Prescribing reference"), el("h3", "", drug.name), el("p", "", drug.text));
     if (id !== "prednisone") card.append(el("p", "", "Sarcoidosis dosing is off-label. Verify the selected formulation, product, authorization and local protocol."));
-    const detail = el("details"); detail.append(el("summary", "", "Administration and monitoring"), el("p", "", drug.monitoring)); card.append(detail, sourceLinks(drug.sources)); return card;
+    const detail = el("details"); detail.append(el("summary", "", "Administration and monitoring"), el("p", "", drug.monitoring));
+    const safety = el("details"); safety.append(el("summary", "", "When to avoid or individualize this medication"), safetyCard(id));
+    card.append(detail, safety, sourceLinks(drug.sources)); return card;
+  }
+  function safetyCard(id) {
+    const box = el("aside", "drug-safety"); box.append(el("h3", "", C.DRUGS[id].name + " | safety reminders"));
+    C.DRUGS[id].safety.forEach(([title, text]) => { const p = el("p"); p.append(el("strong", "", title + ": "), document.createTextNode(text)); box.append(p); });
+    box.append(el("p", "hint", "Examples, not a complete list. A precaution may require adjusted dosing or specialist review rather than permanent avoidance.")); return box;
+  }
+  function drugReference(id) {
+    const d = el("details", "reference"); d.append(el("summary", "", "Reference | " + C.DRUGS[id].name + ": evidence and prescribing"), drugCard(id)); return d;
+  }
+  function fieldCopy(key) {
+    const drug = C.DRUGS[recommendation.activeDrug];
+    if (drug && ["dmardDose", "dmardTarget"].includes(key)) return { label: `${key === "dmardDose" ? "Starting" : "Target"} ${drug.name.split(" (")[0]} dose (${drug.unit})`, hint: key === "dmardTarget" ? "Use the starting dose again if no increase is planned. Escalate only if tolerated and monitoring permits." : "Dose per administration, not the number of tablets." };
+    if (key === "tnfDose") return { label: recommendation.activeDrug === "infliximab" ? "Infliximab dose (mg/kg per infusion)" : "Adalimumab dose (mg per injection)" };
+    return S[key];
   }
   function field(key) {
-    const f = S[key], box = el("div", "field"), id = "field-" + key, hint = id + "-hint", feedback = id + "-feedback";
+    const f = { ...S[key], ...fieldCopy(key) }, box = el("div", "field"), id = "field-" + key, hint = id + "-hint", feedback = id + "-feedback";
     box.dataset.field = key;
     if (f.type === "checkbox") {
       const label = el("label", "concern-option"), input = el("input"); input.type = "checkbox"; input.id = id; input.checked = state[key];
@@ -112,13 +128,47 @@
     nav.replaceChildren(); [...new Set(steps.map(s => s.chapter))].forEach(chapter => { const b = el("button", "chapter-link" + (stage.chapter === chapter ? " active" : "")); b.type = "button"; if (stage.chapter === chapter) b.setAttribute("aria-current", "step"); b.append(el("span", "chapter-dot"), el("span", "", chapter)); b.addEventListener("click", () => navigate(steps.find(s => s.chapter === chapter).id)); nav.append(b); });
     $("back-btn").disabled = i === 0; $("next-btn").hidden = i === steps.length - 1;
   }
+  function reviewField(key) {
+    const stage = steps.find(s => s.fields.includes(key)); if (!stage) return;
+    navigate(stage.id);
+    document.querySelector(`.field[data-field="${key}"] input, .field[data-field="${key}"] select`)?.focus({ preventScroll: true });
+  }
   function blockersBox() {
-    const items = [...(recommendation.prescription?.blockers || []), ...(recommendation.taper?.blockers || [])];
+    const issues = [...(recommendation.prescription?.issues || []), ...(recommendation.taper?.issues || [])];
+    const items = issues.map(i => i.text);
     const box = el("div", items.length ? "alert warning" : "alert");
-    box.append(el("strong", "", items.length ? "Before this prescription can be documented" : "Selected schedule checks complete"));
-    if (items.length) { const ul = el("ul"); items.forEach(t => ul.append(el("li", "", t))); box.append(ul); }
+    box.dataset.planBlockers = "";
+    if (recommendation.invalid) { box.append(el("strong", "", "Correct invalid entries before verifying a prescription.")); return box; }
+    box.append(el("strong", "", items.length ? `${items.length} item${items.length === 1 ? "" : "s"} to resolve before prescribing` : "Selected schedule checks complete"));
+    if (items.length) {
+      const ul = el("ul", "prescription-issues");
+      issues.forEach(issue => {
+        const li = el("li"); li.append(el("span", "", issue.text));
+        const available = issue.keys?.filter(k => steps.some(s => s.fields.includes(k))) || [];
+        const key = available.find(k => state[k] === null || state[k] === "unknown") || available[0];
+        if (key) { const b = el("button", "quiet review-field", "Review"); b.type = "button"; b.dataset.reviewField = key; b.setAttribute("aria-label", "Review: " + S[key].label); b.addEventListener("click", () => reviewField(key)); li.append(b); }
+        ul.append(li);
+      }); box.append(ul);
+    }
     else box.append(el("p", "", "Verify that the plan matches the actual encounter before copying. This is not a complete interaction or contraindication database."));
     return box;
+  }
+  function planPanel() {
+    const p = recommendation.prescription, box = el("section", "selected-plan"); box.dataset.planSummary = "";
+    box.setAttribute("aria-label", "Selected medication plan");
+    box.append(el("span", "badge", p && !p.blockers.length ? "Ready for note" : "Prescription review"), el("h3", "", "Your selected medication plan"));
+    if (recommendation.invalid) box.append(el("p", "", "Correct invalid entries to review the medication schedule."));
+    else if (p?.schedule) box.append(el("p", "schedule-preview", p.schedule));
+    else box.append(el("p", "", "No complete schedule yet. Enter the dose, target, route and interval, or use the editable reference schedule."));
+    if (state.currentPred === true && ["methotrexate", "alternative", "biologic"].includes(state.strategy)) {
+      box.append(el("p", "hint", "Existing steroid plan: " + (state.backgroundPred === "continue" ? `continue ${state.currentPredDose ?? "***"} mg/day prednisone-equivalent initially` : display("backgroundPred", state.backgroundPred)) + "."));
+    }
+    if (p?.blockers.length) box.append(el("p", "hint", "Not yet cleared to prescribe. Complete the items below and confirm the final schedule. The note will identify any unresolved plan."));
+    return box;
+  }
+  function refreshPlanPanels() {
+    document.querySelectorAll("[data-plan-summary]").forEach(n => n.replaceWith(planPanel()));
+    document.querySelectorAll("[data-plan-blockers]").forEach(n => n.replaceWith(blockersBox()));
   }
   function summary() {
     const outer = el("div", "answer-list"), seen = new Set();
@@ -146,7 +196,7 @@
   function usePreset() {
     const id = recommendation.activeDrug, drug = C.DRUGS[id]; if (!drug) return;
     state.prescriptionReviewed = null;
-    if (id === "prednisone" || state.strategy === "bridge") { state.predDose = 20; state.predWeeks = 4; }
+    if (id === "prednisone" || state.strategy === "bridge") { state.predDose = state.currentPred === true ? state.currentPredDose : 20; state.predWeeks = 4; }
     if (["methotrexate", "azathioprine", "leflunomide", "mycophenolate", "hydroxychloroquine"].includes(id)) { state.dmardDose = drug.defaultDose; state.dmardTarget = drug.target; state.titrationWeeks = id === "methotrexate" ? 4 : 2; if (id === "methotrexate") state.mtxRoute = "oral"; }
     if (["infliximab", "adalimumab"].includes(id)) { state.tnfDose = drug.defaultDose; state.tnfInterval = id === "infliximab" ? 6 : 1; }
     invalidate(); recompute(); renderStep(false);
@@ -157,13 +207,23 @@
     content.replaceChildren();
     if (stage.negative || stage.organNegative) { const b = el("button", "secondary", stage.organNegative ? "Reviewed: no known involvement in this group" : "Reviewed: none of these symptoms"); b.type = "button"; b.addEventListener("click", () => { stage.fields.forEach(k => { state[k] = stage.organNegative ? "none" : false; }); invalidate(); recompute(); renderStep(false); }); content.append(b, el("p", "hint", "Use only after explicitly reviewing each finding.")); }
     if (stage.noTreatment) { const b = el("button", "secondary", "No systemic treatment"); b.type = "button"; b.addEventListener("click", () => { state.currentPred = false; state.currentDmard = "none"; state.currentTnf = "none"; state.prescriptionReviewed = null; invalidate(); recompute(); renderStep(false); }); content.append(b, el("p", "hint", "Confirms no current systemic steroid, conventional agent or TNF inhibitor.")); }
-    if (stage.preset) { content.append(drugCard(stage.drug)); const b = el("button", "secondary", "Use common starting schedule"); b.id = "use-preset-btn"; b.type = "button"; b.addEventListener("click", usePreset); content.append(b, el("p", "hint", "An editable reference schedule, not a prescription until you complete the review.")); }
-    if (stage.drug && !stage.preset) content.append(drugCard(stage.drug));
+    if (stage.preset) {
+      const drug = C.DRUGS[stage.drug]; content.append(drugReference(stage.drug));
+      const box = el("div", "schedule-shortcut");
+      const initial = stage.drug === "prednisone" && state.currentPred === true ? state.currentPredDose ?? "***" : drug.defaultDose;
+      const b = el("button", "secondary", `Use reference schedule: ${initial} ${drug.unit}${drug.target && drug.target !== drug.defaultDose ? " toward " + drug.target + " " + drug.unit : ""}`);
+      b.id = "use-preset-btn"; b.type = "button"; b.addEventListener("click", usePreset);
+      box.append(b, el("p", "hint", "Populates the dose fields below for your review. Edit them as needed; nothing is prescribed automatically.")); content.append(box);
+    }
+    if (stage.drug && !stage.preset) content.append(drugReference(stage.drug));
+    if (stage.safetyDrug) content.append(safetyCard(stage.safetyDrug));
+    if (stage.plan && !stage.preset) content.append(planPanel());
+    if (stage.blockers) content.append(blockersBox());
     const fields = el("div", "field-grid"); fields.style.marginTop = "22px"; stage.fields.forEach(k => fields.append(field(k))); content.append(fields);
     if (stage.study) content.append(histories.mount(stage.study));
     if (stage.reference) content.append(reference(stage.reference));
     if (stage.decision) { const d = el("details", "reference"); d.append(el("summary", "", "Reference | Compare systemic medication options")); Object.keys(C.DRUGS).forEach(id => d.append(drugCard(id))); content.append(d); }
-    if (stage.blockers) content.append(blockersBox());
+    if (stage.plan && stage.preset) { content.append(planPanel(), blockersBox()); }
     if (stage.review) { content.append(summary()); const b = el("button", "primary" + (generated && !stale && !recommendation.invalid ? " success" : ""), generated && !stale ? "Recommendations regenerated" : "Generate recommendations"); b.id = "generate-btn"; b.type = "button"; b.addEventListener("click", generate); content.append(b); }
     renderWarnings(); if (focus) $("step-title").focus({ preventScroll: true });
   }
@@ -176,6 +236,7 @@
       }
       recompute(); generated = true; stale = false; $("results").hidden = false;
       const out = $("results-content"); out.replaceChildren();
+      if (recommendation.prescription) out.append(planPanel());
       if (recommendation.errors.length) { const box = el("article", "alert danger"); box.append(el("h3", "", "Verify the entered values")); recommendation.errors.forEach(e => box.append(el("p", "", e.text))); out.append(box); }
       const assessment = el("article", "result-card"); assessment.append(el("h3", "", "Encounter assessment"), el("p", "", recommendation.findings.activity + "."), el("p", "hint", "Current treatment: " + recommendation.findings.currentTreatment + ".")); out.append(assessment);
       const labels = { urgent: "Urgent assessment", prescription: "Selected prescriptions", management: "Selected treatment strategy", testing: "Necessary evaluation", safety: "Treatment safety", monitoring: "Monitoring", screening: "Screening and surveillance", organ: "Organ-directed review", referral: "Advanced pulmonary care", prevention: "Prevention", supportive: "Function and symptoms", followup: "Follow-up and precautions" };

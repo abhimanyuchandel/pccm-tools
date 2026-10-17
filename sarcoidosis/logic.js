@@ -82,118 +82,123 @@
     return parts.length ? parts.join(", ") : "systemic treatment not fully documented";
   }
   function taperPlan(d) {
-    const blockers = [], stages = [];
-    if (d.currentPred !== true || !known(d.currentPredDose) || d.currentPredDose <= 0) blockers.push("Verify the actual current prednisone dose before writing a taper.");
-    if (!known(d.predMonths)) blockers.push("Review the duration of systemic-steroid exposure.");
-    if (d.adrenalReview !== true) blockers.push("Review disease control, relapse risk and the adrenal/withdrawal plan.");
-    if (!["inactive", "fibrotic"].includes(d.activity) && d.response !== "improved" && d.response !== "stable") blockers.push("Document sufficient disease control or an individualized toxicity-driven reduction plan before tapering.");
+    const blockers = [], stages = [], issues = [];
+    const unresolved = (text, keys) => { blockers.push(text); issues.push({ text, keys }); };
+    if (d.currentPred !== true || !known(d.currentPredDose) || d.currentPredDose <= 0) unresolved("Verify the actual current prednisone dose before writing a taper.", ["currentPred", "currentPredDose"]);
+    if (!known(d.predMonths)) unresolved("Review the duration of systemic-steroid exposure.", ["predMonths"]);
+    if (d.adrenalReview !== true) unresolved("Review disease control, relapse risk and the adrenal/withdrawal plan.", ["adrenalReview"]);
+    if (!["inactive", "controlled", "fibrotic"].includes(d.activity) && d.response !== "improved" && d.response !== "stable") unresolved("Document sufficient disease control or an individualized toxicity-driven reduction plan before tapering.", ["activity", "response"]);
     let last = d.currentPredDose;
     for (let i = 1; i <= 3; i++) {
       const dose = d["taperDose" + i], weeks = d["taperWeeks" + i];
       if (dose === null && weeks === null && i === 3) continue;
-      if (!known(dose) || !known(weeks)) { blockers.push(`Complete taper stage ${i} dose and duration.`); continue; }
-      if (dose > last || last === 0) blockers.push("Taper stages must not increase the dose or resume dosing after a zero-dose stage.");
+      if (!known(dose) || !known(weeks)) { unresolved(`Complete taper stage ${i} dose and duration.`, ["taperDose" + i, "taperWeeks" + i]); continue; }
+      if (dose > last || last === 0) unresolved("Taper stages must not increase the dose or resume dosing after a zero-dose stage.", ["taperDose" + i]);
       stages.push({ dose, weeks }); last = dose;
     }
     const zeroIndex = stages.findIndex(s => s.dose === 0);
     const exposureBeforeZero = known(d.predMonths) ? d.predMonths * 52 / 12 + stages.slice(0, zeroIndex < 0 ? stages.length : zeroIndex).reduce((total, s) => total + s.weeks, 0) : null;
-    if (zeroIndex >= 0 && (exposureBeforeZero === null || exposureBeforeZero >= 3)) blockers.push("This routine taper template does not discontinue prolonged prednisone at zero. Select a nonzero endpoint and complete an individualized adrenal-recovery/cessation plan; count both prior exposure and the planned taper.");
-    return { blockers, text: stages.map(s => s.dose === 0 ? `stop the systemic steroid and reassess after ${s.weeks} weeks` : `${s.dose} mg orally each morning for ${s.weeks} week${s.weeks === 1 ? "" : "s"}`).join(", then ") };
+    if (zeroIndex >= 0 && (exposureBeforeZero === null || exposureBeforeZero >= 3)) unresolved("This routine taper template does not discontinue prolonged prednisone at zero. Select a nonzero endpoint and complete an individualized adrenal-recovery/cessation plan; count both prior exposure and the planned taper.", ["adrenalReview", "taperDose1", "taperDose2", "taperDose3"]);
+    return { blockers, issues, text: stages.map(s => s.dose === 0 ? `stop the systemic steroid and reassess after ${s.weeks} weeks` : `${s.dose} mg orally each morning for ${s.weeks} week${s.weeks === 1 ? "" : "s"}`).join(", then ") };
   }
   function prescription(d, r) {
-    const id = drugFor(d), drug = C.DRUGS[id], blockers = [];
-    const need = (test, text) => { if (!test) blockers.push(text); };
-    if (!drug) return { id, blockers: ["Select the medication."], text: "" };
-    need(urgentKeys.every(key => d[key] === false), "Complete the warning-symptom review before a definitive routine outpatient prescription. Unassessed findings are not negative findings.");
-    need(r.findings.diagnosisSupported, "Clarify diagnostic support before starting systemic treatment.");
-    need(d.compatible !== false && d.pathology !== "other", "Resolve conflicting clinical/radiographic or pathology evidence before a new systemic prescription.");
-    if (["cardiac", "ocular", "neuro"].some(k => d[k] === "suspected")) need(d.organSafety === true, "Assess the new high-risk organ concern and confirm the appropriateness of an outpatient pulmonary treatment plan.");
-    need(d.mimics === true, "Review relevant diagnostic mimics before a new immunosuppressive prescription.");
-    need(["qol", "organ", "both"].includes(d.indication) || id === "hydroxychloroquine" && d.supportingIndication === true, "Document the clinical treatment indication.");
-    need(["active", "mixed"].includes(d.activity) || id === "hydroxychloroquine" && d.supportingIndication === true, "Clarify active treatable disease rather than fixed damage or nonspecific symptoms alone.");
-    need(d.currentPred !== null && d.currentDmard !== "unknown" && d.currentDmard !== "other" && d.currentTnf !== "unknown" && d.currentTnf !== "other", "Reconcile existing systemic agents to avoid duplicate treatment.");
-    need(d.infection === false, "Evaluate active or unassessed infection before increasing immunosuppression.");
-    need(d.toxicity === false, "Resolve possible treatment toxicity before escalation.");
-    need(!d.adherence, "Address the documented adherence/access concern before routine escalation.");
-    need(d.interactions === true, "Review allergies, interactions and drug-specific precautions.");
-    need(d.prescriptionReviewed === true, "Confirm the selected prescription and monitoring plan after reviewing this schedule.");
-    need(["none", "cleared"].includes(d.exposure), "Complete exposure-based endemic infection assessment.");
+    const id = drugFor(d), drug = C.DRUGS[id], blockers = [], issues = [], schedule = [];
+    const need = (test, text, keys, type = "review") => { if (!test) { blockers.push(text); issues.push({ text, keys, type }); } };
+    if (!drug) return { id, blockers: ["Select the medication."], issues: [{ text: "Select the medication.", keys: [d.strategy === "biologic" ? "targetTnf" : "targetDmard"], type: "review" }], schedule: "", text: "" };
+    need(urgentKeys.every(key => d[key] === false), "Complete the warning-symptom review before a definitive routine outpatient prescription. Unassessed findings are not negative findings.", urgentKeys);
+    need(r.findings.diagnosisSupported, "Clarify diagnostic support before starting systemic treatment.", ["diagnosis"]);
+    need(d.compatible !== false && d.pathology !== "other", "Resolve conflicting clinical/radiographic or pathology evidence before a new systemic prescription.", ["compatible", "pathology"], "concern");
+    if (["cardiac", "ocular", "neuro"].some(k => d[k] === "suspected")) need(d.organSafety === true, "Assess the new high-risk organ concern and confirm the appropriateness of an outpatient pulmonary treatment plan.", ["organSafety"]);
+    need(d.mimics === true, "Review relevant diagnostic mimics before a new immunosuppressive prescription.", ["mimics"]);
+    const steroidSparing = systemic.includes(id) && d.indication === "steroid" && d.currentPred === true && known(d.currentPredDose) && d.currentPredDose > 0;
+    need(["qol", "organ", "both"].includes(d.indication) || steroidSparing || id === "hydroxychloroquine" && d.supportingIndication === true, "Document the clinical treatment indication, including a continuing disease-treatment need if reducing steroid dependence or adverse effects.", ["indication", "currentPredDose"]);
+    need(["active", "mixed"].includes(d.activity) || d.activity === "controlled" && steroidSparing || id === "hydroxychloroquine" && d.supportingIndication === true, "Clarify active treatable disease, or disease controlled by prednisone with an ongoing steroid-sparing indication, rather than fixed damage or nonspecific symptoms alone.", ["activity", "indication"]);
+    need(d.currentPred !== null && d.currentDmard !== "unknown" && d.currentDmard !== "other" && d.currentTnf !== "unknown" && d.currentTnf !== "other", "Reconcile existing systemic agents to avoid duplicate treatment.", ["currentPred", "currentDmard", "currentTnf"]);
+    need(d.infection === false, "Evaluate active or unassessed infection before increasing immunosuppression.", ["infection"], d.infection === true ? "concern" : "review");
+    need(d.toxicity === false, "Resolve possible treatment toxicity before escalation.", ["toxicity"], d.toxicity === true ? "concern" : "review");
+    need(!d.adherence, "Address the documented adherence/access concern before routine escalation.", ["adherence"], "concern");
+    need(d.interactions === true, "Review allergies, interactions and drug-specific precautions.", ["interactions"], d.interactions === false ? "concern" : "review");
+    need(d.prescriptionReviewed === true, "Confirm the selected prescription and monitoring plan after reviewing this schedule.", ["prescriptionReviewed"]);
+    need(["none", "cleared"].includes(d.exposure), "Complete exposure-based endemic infection assessment.", ["exposure"]);
     if (id !== "prednisone") {
-      need(d.cbcSafe === true, "Review a current CBC for prescribing safety.");
-      need(d.liverSafe === true, "Review liver tests and hepatic risks.");
-      need(d.renalReviewed === true, "Review renal function and drug-specific dosing.");
-      need(["clear", "managed"].includes(d.hepatitis), "Complete viral-hepatitis assessment and any prevention plan.");
+      need(d.cbcSafe === true, "Review a current CBC for prescribing safety.", ["cbcSafe"], d.cbcSafe === false ? "concern" : "review");
+      need(d.liverSafe === true, "Review liver tests and hepatic risks.", ["liverSafe"], d.liverSafe === false ? "concern" : "review");
+      need(d.renalReviewed === true, "Review renal function and drug-specific dosing.", ["renalReviewed"], d.renalReviewed === false ? "concern" : "review");
+      need(["clear", "managed"].includes(d.hepatitis), "Complete viral-hepatitis assessment and any prevention plan.", ["hepatitis"], d.hepatitis === "concern" ? "concern" : "review");
     }
-    if (["methotrexate", "leflunomide", "mycophenolate"].includes(id)) need(["na", "cleared"].includes(d.reproductive), "Resolve pregnancy, contraception and lactation safety before this teratogenic drug.");
-    else need(["na", "cleared"].includes(d.reproductive), "Complete drug-specific reproductive/lactation review; pregnancy requires an individualized plan, not an assumed contraindication to every option.");
+    if (["methotrexate", "leflunomide", "mycophenolate"].includes(id)) need(["na", "cleared"].includes(d.reproductive), "Resolve pregnancy, contraception and lactation safety before this teratogenic drug.", ["reproductive"], ["pregnant", "lactating"].includes(d.reproductive) ? "concern" : "review");
+    else need(["na", "cleared"].includes(d.reproductive), "Complete drug-specific reproductive/lactation review; pregnancy requires an individualized plan, not an assumed contraindication to every option.", ["reproductive"]);
     const newConventional = systemic.includes(id) || id === "hydroxychloroquine";
-    if (id === "prednisone" && d.currentDmard !== "none") need(["retain", "replace"].includes(d.transition), "Select whether the existing conventional agent is retained or stopped when adding prednisone.");
-    if (!["infliximab", "adalimumab"].includes(id) && d.currentTnf !== "none") need(["retain", "stop"].includes(d.backgroundTnf), "Choose the plan for the existing TNF inhibitor before documenting this regimen change.");
-    if (newConventional && d.currentDmard !== "none" && d.currentDmard !== id) need(d.transition === "replace", "Select replacement of the existing conventional agent; this template does not add a second conventional agent.");
-    if (newConventional && d.currentTnf !== "none") need(d.refractory === true, "Confirm the intended specialist-reviewed background/TNF combination and treatment history.");
+    if (id === "prednisone" && d.currentDmard !== "none") need(["retain", "replace"].includes(d.transition), "Select whether the existing conventional agent is retained or stopped when adding prednisone.", ["transition"]);
+    if (!["infliximab", "adalimumab"].includes(id) && d.currentTnf !== "none") need(["retain", "stop"].includes(d.backgroundTnf), "Choose the plan for the existing TNF inhibitor before documenting this regimen change.", ["backgroundTnf"]);
+    if (newConventional && d.currentDmard !== "none" && d.currentDmard !== id) need(d.transition === "replace", "Select replacement of the existing conventional agent; this template does not add a second conventional agent.", ["transition"]);
+    if (newConventional && d.currentTnf !== "none") need(d.refractory === true, "Confirm the intended specialist-reviewed background/TNF combination and treatment history.", ["refractory"]);
     let text = "";
     if (id === "prednisone" || d.strategy === "bridge") {
-      need(known(d.predDose) && d.predDose >= 5 && d.predDose <= 40 && known(d.predWeeks) && d.predWeeks >= 1 && d.predWeeks <= 6, "Enter a prednisone dose and a reassessment period within the routine pulmonary template.");
+      need(known(d.predDose) && d.predDose >= 5 && d.predDose <= 40 && known(d.predWeeks) && d.predWeeks >= 1 && d.predWeeks <= 6, "Enter a prednisone dose and a reassessment period within the routine pulmonary template.", ["predDose", "predWeeks"], "schedule");
+      schedule.push(`Prednisone ${d.predDose} mg orally each morning for ${d.predWeeks} weeks, then reassess before adjusting or tapering.`);
       text = `${d.currentPred === true ? "Adjust" : "Start"} prednisone ${d.predDose} mg orally each morning for ${d.predWeeks} weeks pending reassessment. Then adjust or taper according to clinical response rather than extending this dose automatically.`;
     }
     if (newConventional) {
       const dose = d.dmardDose, target = d.dmardTarget;
-      need(known(dose) && known(target) && dose >= drug.min && target <= drug.max && target >= dose && dose <= drug.max, `Enter starting and target doses within the ${drug.name} template (${drug.min}-${drug.max} ${drug.unit}).`);
-      if (target !== dose) need(known(d.titrationWeeks) && d.titrationWeeks >= 2 && d.titrationWeeks <= 8, "Choose the titration interval.");
+      need(known(dose) && known(target) && dose >= drug.min && target <= drug.max && target >= dose && dose <= drug.max, `Enter starting and target doses within the ${drug.name} template (${drug.min}-${drug.max} ${drug.unit}).`, ["dmardDose", "dmardTarget"], "schedule");
+      if (target !== dose) need(known(d.titrationWeeks) && d.titrationWeeks >= 2 && d.titrationWeeks <= 8, "Choose the titration interval.", ["titrationWeeks"], "schedule");
       if (id === "methotrexate") {
-        need(known(d.renalFunction) && d.renalFunction >= 60, "The standard methotrexate template requires verified eGFR at least 60. Lower renal function needs an individualized adjusted regimen, not this preset.");
-        need(d.tmpSmx === false, "Resolve TMP-SMX use before methotrexate prescribing.");
-        need(["oral", "sc"].includes(d.mtxRoute), "Select the methotrexate route.");
-        need(Number.isInteger(dose / 2.5) && Number.isInteger(target / 2.5), "Use a deliverable methotrexate dose in 2.5 mg increments within this template.");
+        need(known(d.renalFunction) && d.renalFunction >= 60, "The standard methotrexate template requires verified eGFR at least 60. Lower renal function needs an individualized adjusted regimen, not this preset.", ["renalFunction"], known(d.renalFunction) ? "concern" : "review");
+        need(d.tmpSmx === false, "Resolve TMP-SMX use before methotrexate prescribing.", ["tmpSmx"], d.tmpSmx === true ? "concern" : "review");
+        need(["oral", "sc"].includes(d.mtxRoute), "Select the methotrexate route.", ["mtxRoute"], "schedule");
+        need(Number.isInteger(dose / 2.5) && Number.isInteger(target / 2.5), "Use a deliverable methotrexate dose in 2.5 mg increments within this template.", ["dmardDose", "dmardTarget"], "schedule");
       }
       if (id === "azathioprine") {
-        need(d.thiopurine === "normal", "Review TPMT/NUDT15; reduced/poor metabolism requires a different individualized regimen.");
-        need(d.xanthine === false, "Resolve allopurinol/febuxostat use before a standard azathioprine prescription.");
-        need(Number.isInteger(dose / 25) && Number.isInteger(target / 25), "Use azathioprine doses in 25 mg increments in this template.");
+        need(d.thiopurine === "normal", "Review TPMT/NUDT15; reduced/poor metabolism requires a different individualized regimen.", ["thiopurine"], ["reduced", "deficient"].includes(d.thiopurine) ? "concern" : "review");
+        need(d.xanthine === false, "Resolve allopurinol/febuxostat use before a standard azathioprine prescription.", ["xanthine"], d.xanthine === true ? "concern" : "review");
+        need(Number.isInteger(dose / 25) && Number.isInteger(target / 25), "Use azathioprine doses in 25 mg increments in this template.", ["dmardDose", "dmardTarget"], "schedule");
       }
-      if (id === "mycophenolate") need(Number.isInteger(dose / 250) && Number.isInteger(target / 250), "Use mycophenolate mofetil doses in 250 mg increments in this template.");
+      if (id === "mycophenolate") need(Number.isInteger(dose / 250) && Number.isInteger(target / 250), "Use mycophenolate mofetil doses in 250 mg increments in this template.", ["dmardDose", "dmardTarget"], "schedule");
       if (id === "leflunomide") {
-        need([10, 20].includes(dose) && [10, 20].includes(target), "Select a 10 or 20 mg leflunomide dose; no loading dose is included.");
-        need(["clear", "managed"].includes(d.tb), "Complete TB evaluation before leflunomide.");
+        need([10, 20].includes(dose) && [10, 20].includes(target), "Select a 10 or 20 mg leflunomide dose; no loading dose is included.", ["dmardDose", "dmardTarget"], "schedule");
+        need(["clear", "managed"].includes(d.tb), "Complete TB evaluation before leflunomide.", ["tb"], d.tb === "concern" ? "concern" : "review");
       }
       if (id === "hydroxychloroquine") {
-        need(d.supportingIndication === true, "Confirm a supported nonpulmonary indication; hydroxychloroquine is not a pulmonary substitute.");
-        need(!(["organ", "both"].includes(d.indication) && ["active", "mixed"].includes(d.activity)), "Do not substitute hydroxychloroquine for treatment of significant active pulmonary disease. Select a pulmonary regimen and coordinate the nonpulmonary plan separately.");
-        need([200, 400].includes(dose) && dose === target, "Select 200 or 400 mg/day as a fixed hydroxychloroquine schedule within this template.");
-        need(known(d.weight) && target <= 5 * d.weight, "Verify actual weight and keep hydroxychloroquine at or below 5 mg/kg/day and 400 mg/day; use an individualized lower regimen if needed.");
-        need(d.eyePlan === true && d.hcqCardiacSafe === true, "Confirm retinal surveillance and cardiac/QT/renal safety.");
+        need(d.supportingIndication === true, "Confirm a supported nonpulmonary indication; hydroxychloroquine is not a pulmonary substitute.", ["supportingIndication"]);
+        need(!(["organ", "both"].includes(d.indication) && ["active", "mixed"].includes(d.activity)), "Do not substitute hydroxychloroquine for treatment of significant active pulmonary disease. Select a pulmonary regimen and coordinate the nonpulmonary plan separately.", ["strategy", "indication"], "concern");
+        need([200, 400].includes(dose) && dose === target, "Select 200 or 400 mg/day as a fixed hydroxychloroquine schedule within this template.", ["dmardDose", "dmardTarget"], "schedule");
+        need(known(d.weight) && target <= 5 * d.weight, "Verify actual weight and keep hydroxychloroquine at or below 5 mg/kg/day and 400 mg/day; use an individualized lower regimen if needed.", ["weight", "dmardTarget"], known(d.weight) && known(target) ? "concern" : "review");
+        need(d.eyePlan === true && d.hcqCardiacSafe === true, "Confirm retinal surveillance and cardiac/QT/renal safety.", ["eyePlan", "hcqCardiacSafe"], d.hcqCardiacSafe === false ? "concern" : "review");
       }
       const route = id === "methotrexate" && d.mtxRoute === "sc" ? "subcutaneously" : "orally";
       const freq = id === "methotrexate" ? "once weekly, never daily" : id === "mycophenolate" ? "twice daily" : "once daily";
       const step = id === "methotrexate" ? 5 : drug.increment;
       const conventionalText = `${id === d.currentDmard ? "Adjust" : "Start"} ${drug.name} ${dose} mg ${route} ${freq}${target !== dose ? `, increasing by up to ${step} mg per administration every ${d.titrationWeeks} weeks if tolerated and laboratory review permits, to ${target} mg ${freq}` : ""}.`;
+      schedule.push(conventionalText.substring(conventionalText.indexOf(" ") + 1), ...(id === "methotrexate" ? ["Folic acid 1 mg orally daily."] : []));
       text = [text, conventionalText, id === "methotrexate" ? "Prescribe folic acid 1 mg orally daily." : ""].filter(Boolean).join(" ");
       if (d.currentDmard !== "none" && d.currentDmard !== id) text = `Stop ${C.DRUGS[d.currentDmard]?.name || "the prior conventional agent"} under the reviewed transition/washout plan before replacement. ` + text;
     }
     if (["infliximab", "adalimumab"].includes(id)) {
-      need(d.refractory === true, "Confirm refractory active disease or documented conventional-treatment intolerance.");
-      need(["clear", "managed"].includes(d.tb), "Complete active/latent TB assessment and management before TNF treatment.");
-      need(d.heartFailure === false && d.demyelination === false, "Resolve heart-failure/demyelination or other TNF-specific risks; use individualized expert review when present.");
-      need(["initiation", "maintenance"].includes(d.tnfPhase), "Select initiation versus established maintenance.");
-      if (d.currentTnf === id) need(d.tnfPhase === "maintenance", "Do not automatically re-induce an established TNF regimen; select maintenance or individualize.");
-      else need(d.tnfPhase === "initiation", "A new TNF agent requires an initiation/transition plan.");
-      if (d.currentTnf !== "none" && d.currentTnf !== id) need(d.tnfSwitch === true, "Confirm discontinuation and transition timing for the existing TNF inhibitor.");
-      if (d.currentDmard !== "none") need(["retain", "replace"].includes(d.transition), "Select whether the conventional background agent is retained or stopped.");
+      need(d.refractory === true, "Confirm refractory active disease or documented conventional-treatment intolerance.", ["refractory"]);
+      need(["clear", "managed"].includes(d.tb), "Complete active/latent TB assessment and management before TNF treatment.", ["tb"], d.tb === "concern" ? "concern" : "review");
+      need(d.heartFailure === false && d.demyelination === false, "Resolve heart-failure/demyelination or other TNF-specific risks; use individualized expert review when present.", ["heartFailure", "demyelination"], d.heartFailure === true || d.demyelination === true ? "concern" : "review");
+      need(["initiation", "maintenance"].includes(d.tnfPhase), "Select initiation versus established maintenance.", ["tnfPhase"], "schedule");
+      if (d.currentTnf === id) need(d.tnfPhase === "maintenance", "Do not automatically re-induce an established TNF regimen; select maintenance or individualize.", ["tnfPhase"], "schedule");
+      else need(d.tnfPhase === "initiation", "A new TNF agent requires an initiation/transition plan.", ["tnfPhase"], "schedule");
+      if (d.currentTnf !== "none" && d.currentTnf !== id) need(d.tnfSwitch === true, "Confirm discontinuation and transition timing for the existing TNF inhibitor.", ["tnfSwitch"]);
+      if (d.currentDmard !== "none") need(["retain", "replace"].includes(d.transition), "Select whether the conventional background agent is retained or stopped.", ["transition"]);
       if (id === "infliximab") {
-        need([3, 5].includes(d.tnfDose) && known(d.weight), "Select 3 or 5 mg/kg infliximab and enter verified actual weight.");
-        need([4, 6, 8].includes(d.tnfInterval), "Choose a 4, 6 or 8 week infliximab maintenance interval.");
+        need([3, 5].includes(d.tnfDose) && known(d.weight), "Select 3 or 5 mg/kg infliximab and enter verified actual weight.", ["tnfDose", "weight"], "schedule");
+        need([4, 6, 8].includes(d.tnfInterval), "Choose a 4, 6 or 8 week infliximab maintenance interval.", ["tnfInterval"], "schedule");
         const amount = known(d.weight) && known(d.tnfDose) ? Number((d.weight * d.tnfDose).toFixed(1)) : "***";
         text = `${d.tnfPhase === "maintenance" ? "Adjust maintenance" : "Start"} infliximab / selected biosimilar ${d.tnfDose} mg/kg IV (${amount} mg before pharmacy verification/rounding) ${d.tnfPhase === "initiation" ? "at weeks 0, 2 and 6, then " : ""}every ${d.tnfInterval} weeks. Verify the actual product, infusion orders and reaction protocol; infuse over at least 2 hours.`;
       } else {
-        need(d.tnfDose === 40 && [1, 2].includes(d.tnfInterval), "Select adalimumab 40 mg every 1 or 2 weeks; this template contains no IBD/uveitis loading regimen.");
+        need(d.tnfDose === 40 && [1, 2].includes(d.tnfInterval), "Select adalimumab 40 mg every 1 or 2 weeks; this template contains no IBD/uveitis loading regimen.", ["tnfDose", "tnfInterval"], "schedule");
         text = `${d.tnfPhase === "maintenance" ? "Adjust" : "Start"} adalimumab / selected biosimilar 40 mg subcutaneously every ${d.tnfInterval === 1 ? "week" : "2 weeks"}. Confirm the product, device and injection instruction plan.`;
       }
+      schedule.push(text.replace(/^(Start|Adjust maintenance|Adjust) /, ""));
       if (d.currentTnf !== "none" && d.currentTnf !== id) text = `Stop the current ${C.DRUGS[d.currentTnf]?.name || "TNF inhibitor"} and reconcile transition timing; do not overlap TNF agents. ` + text;
       if (d.currentDmard !== "none") text += d.transition === "retain" ? " Retain the reconciled conventional background regimen with combination-treatment monitoring." : " Stop the conventional background agent under the reviewed transition plan.";
     }
     if (id === "prednisone" && C.DRUGS[d.currentDmard]) text += d.transition === "retain" ? " Retain the reconciled conventional background regimen with continued safety monitoring." : " Stop the prior conventional agent under the reviewed transition plan.";
     if (!["infliximab", "adalimumab"].includes(id) && C.DRUGS[d.currentTnf]) text += d.backgroundTnf === "retain" ? " Retain the reconciled TNF inhibitor under the reviewed combination-treatment plan." : " Stop the current TNF inhibitor under an individualized transition plan. Actual timing: ***.";
-    return { id, blockers: [...new Set(blockers)], text, monitoring: drug.monitoring, sources: drug.sources };
+    return { id, blockers: [...new Set(blockers)], issues, schedule: issues.some(i => i.type === "schedule") ? "" : schedule.join(" "), text, monitoring: drug.monitoring, sources: drug.sources };
   }
   function buildRecommendation(input = {}) {
     const d = normalize(input), quality = validate(d), activeDrug = drugFor(d);
@@ -217,7 +222,7 @@
     const currentAny = d.currentPred === true || C.DRUGS[d.currentDmard] || C.DRUGS[d.currentTnf];
     const immune = d.currentPred === true || systemic.includes(d.currentDmard) || ["infliximab", "adalimumab"].includes(d.currentTnf) || immuneStrategies.includes(d.strategy) && activeDrug !== "hydroxychloroquine";
     const advanced = d.phConcern === true || d.activity === "fibrotic" || d.activity === "mixed" || ["fibrotic", "mixed"].includes(d.imaging) || known(d.dlco) && d.dlco < 40 || ["exertion", "rest"].includes(d.oxygen) || known(d.walkSpo2) && d.walkSpo2 <= 88;
-    r.findings = { diagnosisSupported, currentKnown, currentAny: Boolean(currentAny), currentTreatment: currentTreatment(d), immune, advanced, changes: changes(d), activity: { inactive: "no important inflammatory activity identified", active: "clinically important pulmonary inflammatory activity", fibrotic: "predominantly fixed or fibrotic pulmonary disease", mixed: "fibrotic disease with suspected inflammatory activity", uncertain: "uncertain disease activity requiring reassessment", unknown: "pulmonary disease activity not fully characterized" }[d.activity] };
+    r.findings = { diagnosisSupported, currentKnown, currentAny: Boolean(currentAny), currentTreatment: currentTreatment(d), immune, advanced, changes: changes(d), activity: { inactive: "no important inflammatory activity identified", controlled: "inflammatory pulmonary disease controlled by current treatment", active: "clinically important pulmonary inflammatory activity", fibrotic: "predominantly fixed or fibrotic pulmonary disease", mixed: "fibrotic disease with suspected inflammatory activity", uncertain: "uncertain disease activity requiring reassessment", unknown: "pulmonary disease activity not fully characterized" }[d.activity] };
     if (!diagnosisSupported || d.compatible === false || d.mimics === false || d.pathology === "other") add("diagnosis-review", "Review diagnostic support and context-specific alternative diagnoses before attributing current findings to sarcoidosis. Retrieve relevant records or obtain targeted testing when indicated; repeat biopsy is not automatic.", "testing", ["ats"]);
     if (d.diagnosticBasis === "records") r.cautions.push("Unavailable original records do not by themselves invalidate an established sarcoidosis diagnosis.");
     if (d.infection === true || d.toxicity === true) add("mimic-toxicity", "Evaluate the documented infection/toxicity concern before increasing immunosuppression. Review whether an existing agent should be held or adjusted under an individualized plan; do not stop chronic prednisone abruptly.", "testing", ["pharmacology"]);
@@ -274,7 +279,8 @@
       else if (immuneStrategies.includes(d.strategy)) {
         r.prescription = prescription(d, r);
         if (r.prescription.blockers.length) {
-          add("pending", "Complete the selected prescription's outstanding safety/indication review before initiation or dose escalation. Proposed regimen remains pending.", "testing", r.prescription.sources || ["pharmacology"]);
+          add("pending", `The selected ${C.DRUGS[activeDrug]?.name || "medication"} plan requires completion of the following before initiation or dose escalation: ${r.prescription.blockers.join(" ")} Proposed regimen remains pending.`, "testing", r.prescription.sources || ["pharmacology"]);
+          if (r.prescription.schedule && !r.prescription.issues.some(i => i.type === "concern")) add("pending-schedule", "Proposed schedule for review only, not yet cleared for initiation: " + r.prescription.schedule + " Do not initiate or escalate until the outstanding review is complete.", "testing", r.prescription.sources);
           if (activeDrug !== "prednisone") add("pretreatment", "Obtain or review pretreatment CBC, renal and liver tests, relevant hepatitis results and drug-specific infection/reproductive screening. Resolve abnormal results, interactions and contraindications before the final prescription.", "testing", r.prescription.sources || ["pharmacology"]);
           r.placeholders.push("Final medication prescription after outstanding review: ***.");
         } else {

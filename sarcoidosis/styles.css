@@ -138,6 +138,26 @@ textarea { width:100%; resize:vertical; min-height:480px; padding:18px; border:1
 }
 @media(prefers-reduced-motion:no-preference) { button,.choice-option { transition:background-color .15s,border-color .15s; } }
 .study-manager { margin-top:8px; }
+.selected-plan { margin:24px 0; padding:20px; border:1px solid #a5c7c8; border-left:4px solid var(--teal); border-radius:12px; background:linear-gradient(120deg,#edf7f5,#f9fcfd); }
+.selected-plan h3 { margin:10px 0 8px; font-size:1.08rem; }
+.selected-plan p:last-child,.drug-safety p:last-child { margin-bottom:0; }
+.schedule-preview { font-weight:600; line-height:1.65; }
+.schedule-shortcut { padding:18px; background:var(--soft); border:1px dashed #a8bdcc; border-radius:10px; margin:20px 0; }
+.schedule-shortcut button { text-align:left; white-space:normal; }
+.schedule-shortcut .hint { margin-bottom:0; }
+.prescription-issues { padding-left:22px; }
+.prescription-issues li { padding:8px 0; border-bottom:1px solid #bfae8e55; font-size:.88rem; }
+.prescription-issues li:last-child { border:0; }
+.review-field { display:inline-block; padding:4px 9px; margin:5px 0 0 8px; text-decoration:underline; font-size:.82rem; }
+.drug-safety { border:1px solid #d9c7a4; background:#fffcf5; border-radius:10px; padding:16px 18px; margin:18px 0; font-size:.88rem; }
+.drug-safety h3 { font-size:1rem; margin:0 0 12px; }
+.drug-card details>.drug-safety { margin:0 12px 12px; }
+@media(max-width:520px) {
+  .selected-plan,.schedule-shortcut,.drug-safety { padding:16px 13px; }
+  .schedule-shortcut button { width:100%; font-size:.88rem; }
+  .review-field { min-height:38px; margin-left:0; }
+  .prescription-issues li { padding:12px 0; }
+}
 .study-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:18px 0 12px; }
 .study-empty { border:1px dashed #bccfdc; border-radius:10px; padding:24px; color:var(--muted); font-size:.88rem; }
 .study-table { border-collapse:collapse; width:100%; table-layout:fixed; margin:18px 0; font-size:.75rem; line-height:1.5; }

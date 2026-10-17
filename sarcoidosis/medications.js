@@ -12,6 +12,7 @@
     sarcort: { title: "SARCORT randomized trial (2023)", url: "https://publications.ersnet.org/content/erj/62/3/2300198.full" },
     pharmacology: { title: "Practical sarcoidosis pharmacology (expert review, 2024)", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10932410/" },
     mtx: { title: "Methotrexate U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=948e0bab-6524-4b87-9853-1799d4415558" },
+    prednisone: { title: "Prednisone U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3e0e3e28-e6ff-7b48-e063-6294a90a9acd" },
     aza: { title: "Azathioprine U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4d62b6e4-a9d4-4818-e063-6394a90aa208" },
     leflunomide: { title: "Leflunomide U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=91712aad-d96c-4ef0-97e7-b31ed18ca6d8" },
     mmf: { title: "Mycophenolate U.S. labeling", url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=721564bc-7c0b-4418-ab49-0af362e74eb7" },
@@ -33,7 +34,7 @@
     strongyloides: { title: "CDC exposure-based Strongyloides assessment", url: "https://www.cdc.gov/yellow-book/hcp/post-travel-evaluation/perspectives-screening-asymptomatic-travelers.html" },
   };
   const DRUGS = {
-    prednisone: { name: "Prednisone", defaultDose: 20, min: 5, max: 40, route: "orally", unit: "mg/day", sources: ["ers", "sarcort", "endocrine"],
+    prednisone: { name: "Prednisone", defaultDose: 20, min: 5, max: 40, route: "orally", unit: "mg/day", sources: ["ers", "sarcort", "endocrine", "prednisone"],
       text: "Often the quickest systemic option for inflammatory pulmonary disease. A 20 mg/day starting regimen is reasonable for many non-organ-threatening presentations; 40 mg was not superior to 20 mg for relapse/treatment failure in SARCORT. Dose and duration require individualization. This is not an organ-threatening rescue protocol.",
       monitoring: "Monitor glucose, blood pressure, weight, mood, infection, eyes and fracture risk. Reassess response within 4-6 weeks; do not continue the starting dose indefinitely. Plan a response-guided taper and review adrenal suppression before withdrawal." },
     methotrexate: { name: "Methotrexate", defaultDose: 15, target: 25, increment: 5, min: 5, max: 25, route: "orally", unit: "mg once weekly", sources: ["ers", "predmeth", "pharmacology", "mtx"],
@@ -58,6 +59,42 @@
       text: "A refractory-disease alternative, particularly when infliximab is not tolerated or feasible. Pulmonary evidence is smaller and mainly open-label; it is not an equally established first-line choice. Sarcoidosis schedules of 40 mg every 1-2 weeks are off-label and are not copied from uveitis or IBD loading regimens.",
       monitoring: "Review TB, HBV, serious infection, heart failure and demyelination risks. Monitor CBC/liver tests about every 3-6 months and reassess response. Verify the selected biosimilar, device and authorization; avoid simultaneous TNF inhibitors." },
   };
+  // These examples support clinical review; they are not an exhaustive contraindication database.
+  const SAFETY = {
+    prednisone: [
+      ["Avoid / evaluate first", "Systemic fungal infection, serious uncontrolled infection or prior severe product allergy. Evaluate relevant Strongyloides exposure before steroids when possible."],
+      ["Individualize", "Diabetes, severe mood or psychotic reactions, osteoporosis, glaucoma and infection risk may favor a lower exposure or steroid-sparing treatment. Never abruptly stop chronic therapy."],
+    ],
+    methotrexate: [
+      ["Avoid / defer", "Pregnancy, breastfeeding, serious infection or prior severe methotrexate allergy. Do not combine this template with TMP-SMX."],
+      ["Individualize", "Kidney impairment, significant liver disease/alcohol exposure, cytopenias or suspected drug pneumonitis need assessment or an alternative. eGFR below 60 requires an adjusted regimen outside this preset. Confirm once-weekly dosing, never daily."],
+    ],
+    azathioprine: [
+      ["Avoid a standard schedule", "TPMT/NUDT15 poor or reduced metabolism, significant cytopenias, or allopurinol/febuxostat use. Febuxostat coadministration is not recommended; allopurinol requires major specialist-directed dose reduction."],
+      ["Individualize", "Prior severe allergy, liver injury, active infection and malignancy history require review. Normal pharmacogenetic testing does not replace CBC monitoring."],
+    ],
+    leflunomide: [
+      ["Avoid / defer", "Pregnancy, severe hepatic impairment, pre-existing liver disease or ALT above 2 times the upper limit of normal, severe allergy, or concurrent teriflunomide."],
+      ["Individualize", "Infection/TB, cytopenias, neuropathy or new lung symptoms need review. Avoid routine methotrexate combination; toxicity or pregnancy planning may require an accelerated elimination procedure."],
+    ],
+    mycophenolate: [
+      ["Avoid / defer", "Pregnancy or pregnancy planning without an appropriate alternative and reproductive plan, prior severe product allergy, serious infection or clinically important cytopenias."],
+      ["Individualize", "GI bleeding/ulceration, severe diarrhea, renal impairment and breastfeeding require drug-specific review. Mycophenolate sodium and mofetil are not interchangeable milligram for milligram."],
+    ],
+    hydroxychloroquine: [
+      ["Avoid / evaluate first", "Prior severe 4-aminoquinoline allergy, documented QT prolongation, significant arrhythmia risk or interacting QT-prolonging medication."],
+      ["Individualize", "Retinal disease, tamoxifen and kidney impairment increase toxicity concern. Use actual weight, retain the 5 mg/kg/day limit and arrange retinal monitoring. This is not equivalent therapy for significant pulmonary inflammation."],
+    ],
+    infliximab: [
+      ["Avoid / defer", "Active serious infection, untreated TB, unresolved HBV prevention or prior severe infliximab reaction. Do not overlap TNF inhibitors."],
+      ["Individualize", "Heart failure or demyelinating disease needs expert review. Infliximab above 5 mg/kg is contraindicated in moderate/severe heart failure; this conservative template does not initiate it with known heart failure at any dose."],
+    ],
+    adalimumab: [
+      ["Avoid / defer", "Active serious infection, untreated TB, unresolved HBV prevention or prior serious product hypersensitivity. Do not overlap TNF inhibitors."],
+      ["Individualize", "Heart failure, multiple sclerosis/other demyelination, recurrent infection or malignancy history require review. These concerns are not all absolute FDA contraindications, but fall outside routine safety-cleared initiation here."],
+    ],
+  };
+  Object.entries(SAFETY).forEach(([id, items]) => { DRUGS[id].safety = items; });
   const REFERENCES = {
     diagnosis: { title: "Diagnosis at follow-up", sources: ["ats"], text: "Diagnosis rests on a compatible presentation, usually nonnecrotizing granulomas when tissue is needed, and exclusion of relevant alternatives. Biopsy is not mandatory in every classic presentation. Infection, occupational exposure, drug reactions and other granulomatous disorders remain important when findings are atypical. Unavailable historical records alone do not invalidate an established diagnosis." },
     activity: { title: "Activity is not the same as damage", sources: ["ers", "bts"], text: "Treat to prevent organ damage or improve unacceptable quality-of-life impairment. Interpret symptoms, serial physiology and imaging together. Fibrosis, an elevated ACE level, radiographic stage or a single low FVC does not independently prove treatable inflammation. Consider infection, PH, cardiac disease, airway disease, sleep disorders, anemia, deconditioning and treatment toxicity." },
